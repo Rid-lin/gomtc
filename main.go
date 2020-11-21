@@ -102,12 +102,57 @@ func decodeRecord(header *header, binRecord *binaryRecord, remoteAddr *net.UDPAd
 	return decodedRecord
 }
 
+func decodeRecordToSquid(header *header, binRecord *binaryRecord, remoteAddr string) string {
+	srcmac := make([]byte, 8)
+	dstmac := make([]byte, 8)
+	binary.BigEndian.PutUint16(srcmac, binRecord.SrcAs)
+	binary.BigEndian.PutUint16(dstmac, binRecord.DstAs)
+	// srcmac = srcmac[2:8]
+	// dstmac = dstmac[2:8]
+	var protocol string
+
+	switch fmt.Sprintf("%v", binRecord.Protocol) {
+	case "6":
+		protocol = "TCP_PACKET"
+	case "17":
+		protocol = "UDP_PACKET"
+	case "1":
+		protocol = "ICMP_PACKET"
+
+	default:
+		protocol = "OTHER_PACKET"
+	}
+
+	message := fmt.Sprintf("%v.000 %6v %v %v/- %v HEAD %v:%v %v FIRSTUP_PARENT/%v packet_netflow/%v/:%v ",
+		binRecord.FirstInt,                               // time
+		binRecord.FirstInt-binRecord.LastInt,             //delay
+		intToIPv4Addr(binRecord.Ipv4DstAddrInt).String(), // dst ip
+		protocol,          // protocol
+		binRecord.InBytes, // size
+		intToIPv4Addr(binRecord.Ipv4SrcAddrInt).String(), //src ip
+		binRecord.L4SrcPort,               // src port
+		net.HardwareAddr(srcmac).String(), // srcmac
+		remoteAddr,                        // routerIP
+		net.HardwareAddr(dstmac).String(), //dstmac
+		binRecord.L4DstPort)               //dstport
+	return message
+}
+
 func pipeOutputToStdout(outputChannel chan decodedRecord) {
 	var record decodedRecord
 	for {
 		record = <-outputChannel
 		out, _ := json.Marshal(record)
 		fmt.Println(string(out))
+	}
+}
+
+func pipeOutputToStdoutForSquid(outputChannel chan decodedRecord) {
+	var record decodedRecord
+	for {
+		record = <-outputChannel
+		message := decodeRecordToSquid(&record.header, &record.binaryRecord, record.Host)
+		fmt.Printf("\n%s", message)
 	}
 }
 
@@ -129,7 +174,9 @@ func lookUpWithCache(ipAddr string) string {
 	if (hostnameFromCache == cacheRecord{} || time.Now().After(hostnameFromCache.timeout)) {
 		hostTemp, err := net.LookupAddr(ipAddr)
 		if err == nil {
-			hostname = hostTemp[0]
+			if len(hostTemp) > 0 {
+				hostname = hostTemp[0]
+			}
 		}
 		cacheMutex.Lock()
 		cache[ipAddr] = cacheRecord{hostname, time.Now().AddDate(0, 0, 1)}
@@ -140,8 +187,8 @@ func lookUpWithCache(ipAddr string) string {
 	return hostname
 }
 
-func formatLineProtocol(record decodedRecord) []byte {
-	return []byte(fmt.Sprintf("netflow,host=%s,srcAddr=%s,dstAddr=%s,srcHostName=%s,dstHostName=%s,protocol=%d,srcPort=%d,dstPort=%d,input=%d,output=%d inBytes=%d,inPackets=%d,duration=%d %d",
+func formatLineProtocolForUDP(record decodedRecord) []byte {
+	return []byte(fmt.Sprintf("netflow,host=%s,srcAddr=%s,dstAddr=%s,srcHostName=%s,dstHostName=%s,protocol=%d,srcPort=%d,dstPort=%d,input=%d,output=%d,inBytes=%d,inPackets=%d,duration=%d %d",
 		record.Host, record.Ipv4SrcAddr, record.Ipv4DstAddr, record.SrcHostName, record.DstHostName, record.Protocol, record.L4SrcPort, record.L4DstPort, record.InputSnmp, record.OutputSnmp,
 		record.InBytes, record.InPkts, record.Duration,
 		uint64((uint64(record.UnixSec)*uint64(1000000000))+uint64(record.UnixNsec))))
@@ -164,7 +211,7 @@ func pipeOutputToUDPSocket(outputChannel chan decodedRecord, targetAddr string) 
 				var record decodedRecord
 				for {
 					record = <-outputChannel
-					var buf = formatLineProtocol(record)
+					var buf = formatLineProtocolForUDP(record)
 					conn := connection
 					conn.SetDeadline(time.Now().Add(3 * time.Second))
 					_, err := conn.Write(buf)
@@ -248,13 +295,15 @@ func main() {
 		go pipeOutputToStdout(outputChannel)
 	case "udp":
 		go pipeOutputToUDPSocket(outputChannel, outDestination)
+	case "squid":
+		go pipeOutputToStdoutForSquid(outputChannel)
 	default:
 		log.Fatalf("Unknown schema: %v\n", outMethod)
 
 	}
 
 	/* Start listening on the specified port */
-	log.Printf("Start listening on %v and sending to %v %v\n", inSource, outMethod, outDestination)
+	log.Infof("Start listening on %v and sending to %v %v", inSource, outMethod, outDestination)
 	addr, err := net.ResolveUDPAddr("udp", inSource)
 	if err != nil {
 		log.Fatalf("Error: %v\n", err)
