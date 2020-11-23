@@ -1,6 +1,6 @@
 # Minimalist Netflow v5 to influxdb UDP collector written in Go 
 
-Forcked by https://github.com/strzinek/gonflux
+Forked by https://github.com/strzinek/gonflux
 Broker listens on specified UDP port (2055 by default), accepting Netflow traffic, and collecting records with selected metadata formatted in line protocol to UDP listener of [influxdb](https://github.com/influxdata/influxdb).
 
 Project includes dockerfile for building runtime application as [docker](https://www.docker.com) container and also [Gitlab CI](https://about.gitlab.com/product/continuous-integration) definition file both for pushing build to docker registry and also for deploying to production docker server.
