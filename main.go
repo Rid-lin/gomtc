@@ -188,7 +188,7 @@ func lookUpWithCache(ipAddr string) string {
 }
 
 func formatLineProtocolForUDP(record decodedRecord) []byte {
-	return []byte(fmt.Sprintf("netflow,host=%s,srcAddr=%s,dstAddr=%s,srcHostName=%s,dstHostName=%s,protocol=%d,srcPort=%d,dstPort=%d,input=%d,output=%d,inBytes=%d,inPackets=%d,duration=%d %d",
+	return []byte(fmt.Sprintf("netflow,host=%s,srcAddr=%s,dstAddr=%s,srcHostName=%s,dstHostName=%s,protocol=%d,srcPort=%d,dstPort=%d,input=%d,output=%d inBytes=%d,inPackets=%d,duration=%d %d",
 		record.Host, record.Ipv4SrcAddr, record.Ipv4DstAddr, record.SrcHostName, record.DstHostName, record.Protocol, record.L4SrcPort, record.L4DstPort, record.InputSnmp, record.OutputSnmp,
 		record.InBytes, record.InPkts, record.Duration,
 		uint64((uint64(record.UnixSec)*uint64(1000000000))+uint64(record.UnixNsec))))
@@ -212,11 +212,17 @@ func pipeOutputToUDPSocket(outputChannel chan decodedRecord, targetAddr string) 
 				for {
 					record = <-outputChannel
 					var buf = formatLineProtocolForUDP(record)
+					// message := string(buf)
+					// log.Infof("%v", message)
 					conn := connection
-					conn.SetDeadline(time.Now().Add(3 * time.Second))
+					err = conn.SetDeadline(time.Now().Add(3 * time.Second))
+					if err != nil {
+						log.Errorf("Error SetDeadline: %v", err)
+						break
+					}
 					_, err := conn.Write(buf)
 					if err != nil {
-						log.Printf("Send Error: %v\n", err)
+						log.Errorf("Send Error: %v", err)
 						break
 					}
 				}
@@ -318,7 +324,6 @@ func main() {
 			if err != nil {
 				log.Errorln(err)
 			} else {
-				defer conn.Close()
 				/* Infinite-loop for reading packets */
 				for {
 					buf := make([]byte, 4096)
