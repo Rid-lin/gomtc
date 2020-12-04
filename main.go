@@ -278,7 +278,7 @@ func main() {
 		err                    error
 	)
 	flag.StringVar(&inSource, "in", "0.0.0.0:2055", "Address and port to listen NetFlow packets")
-	flag.StringVar(&outMethod, "method", "stdout", "Output method: stdout, udp")
+	flag.StringVar(&outMethod, "method", "stdout", "Output method: stdout, udp or squid")
 	flag.StringVar(&outDestination, "out", "", "Address and port of influxdb to send decoded data")
 	flag.IntVar(&receiveBufferSizeBytes, "buffer", 212992, "Size of RxQueue, i.e. value for SO_RCVBUF in bytes")
 	flag.Parse()
