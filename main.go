@@ -236,7 +236,9 @@ func pipeOutputToStdoutForSquid(outputChannel chan decodedRecord, writer *bufio.
 			continue
 		}
 		log.Tracef("Added to log:%v", message)
-		fmt.Fprintf(writer, "\n%s", message)
+		if _, err := fmt.Fprintf(writer, "\n%s", message); err != nil {
+			log.Errorf("Error writing data buffer:%v", err)
+		}
 	}
 }
 
