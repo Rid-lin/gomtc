@@ -175,7 +175,7 @@ func decodeRecordToSquid(header *header, binRecord *binaryRecord, remoteAddr str
 
 	} else if !ok && ok2 {
 		dstmac := lookMacUpWithCache(header.UnixSec, intToIPv4Addr(binRecord.Ipv4SrcAddrInt).String(), cfg.addrMacFromSyslog)
-		message = fmt.Sprintf("%v.000 %6v %v %v/- %v HEAD %v:%v %v FIRSTUP_PARENT/%v packet_netflow_inverse//%v/:%v ",
+		message = fmt.Sprintf("%v.000 %6v %v %v/- %v HEAD %v:%v %v FIRSTUP_PARENT/%v packet_netflow_inverse/%v/:%v ",
 			header.UnixSec,                                   // time
 			binRecord.LastInt-binRecord.FirstInt,             //delay
 			intToIPv4Addr(binRecord.Ipv4SrcAddrInt).String(), //src ip - Local
@@ -354,7 +354,7 @@ func getExitSignalsChannel() chan os.Signal {
 		syscall.SIGINT,  // Ctrl+C
 		syscall.SIGQUIT, // Ctrl-\
 		// syscall.SIGKILL, // "always fatal", "SIGKILL and SIGSTOP may not be caught by a program"
-		syscall.SIGHUP, // "terminal is disconnected"
+		// syscall.SIGHUP, // "terminal is disconnected"
 	)
 	return c
 

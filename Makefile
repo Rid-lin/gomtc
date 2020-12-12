@@ -44,7 +44,7 @@ build_all: prebuild_all pack
 run: build
 	build/$(PROJECTNAME)_$(TAG).exe
 	
-.DUFAULT_GOAL := build
+.DUFAULT_GOAL := prebuild_all
 
 pack:
 	$(UPX) --ultra-brute build/$(PROJECTNAME)*
