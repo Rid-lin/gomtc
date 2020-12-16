@@ -8,6 +8,7 @@ GOARCH := amd64
 TAG := $(VERSION)_$(GOOS)_$(GOARCH)
 PLATFORMS=darwin linux windows
 ARCHITECTURES=386 amd64
+UPX := $(shell /mnt/c/apps/upx.exe)
 
 # Use linker flags to provide version/build settings
 LDFLAGS=-ldflags "-w -s -X=main.Version=$(VERSION) -X=main.Build=$(BUILD)"
@@ -43,10 +44,10 @@ build_all: prebuild_all pack
 run: build
 	build/$(PROJECTNAME)_$(TAG).exe
 	
-.DUFAULT_GOAL := build
+.DUFAULT_GOAL := prebuild_all
 
 pack:
-	upx --ultra-brute build/$(PROJECTNAME)*
+	$(UPX) --ultra-brute build/$(PROJECTNAME)*
 
 mod_init:
 	go mod init github.com/$(USERNAME)/$(PROJECTNAME)
