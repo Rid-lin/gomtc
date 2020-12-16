@@ -360,6 +360,17 @@ func getExitSignalsChannel() chan os.Signal {
 
 }
 
+// func getNewLogSignalsChannel() chan os.Signal {
+
+// 	c := make(chan os.Signal, 1)
+// 	signal.Notify(c,
+// 		// https://www.gnu.org/software/libc/manual/html_node/Termination-Signals.html
+// 		syscall.SIGHUP, // "terminal is disconnected"
+// 	)
+// 	return c
+
+// }
+
 type Response struct {
 	Mac string `JSON:"Mac"`
 }
@@ -481,6 +492,19 @@ func main() {
 		os.Exit(0)
 
 	}()
+
+	// newLogChan := getNewLogSignalsChannel()
+
+	// go func() {
+	// 	<-newLogChan
+	// 	log.Println("Received a signal from logrotate, close the file.")
+	// 	writer.Flush()
+	// 	filetDestination.Close()
+	// 	log.Println("Opening a new file.")
+	// 	time.Sleep(2 * time.Second)
+	// 	writer = openOutputDevice(cfg.NameFileToLog)
+
+	// }()
 
 	/* Create output pipe */
 	outputChannel := make(chan decodedRecord, 100)
