@@ -257,23 +257,29 @@ type cacheRecord struct {
 	timeout  time.Time
 }
 
+type Cache struct {
+	cache map[string]cacheRecord
+	mux   *sync.RWMutex
+}
+
 var (
-	cache            = map[string]cacheRecord{}
-	cacheMutex       = sync.RWMutex{}
+	cache Cache
+	// cache      = map[string]cacheRecord{}
+	// cacheMutex = sync.RWMutex{}
 	writer           *bufio.Writer
 	filetDestination *os.File
 )
 
 func lookMacUpWithCache(timeInt uint32, ipAddr, addrMacFromSyslog string) string {
 	var hostname string
-	cacheMutex.Lock()
-	hostnameFromCache := cache[ipAddr]
-	cacheMutex.Unlock()
+	cache.mux.Lock()
+	hostnameFromCache := cache.cache[ipAddr]
+	cache.mux.Unlock()
 	if (hostnameFromCache == cacheRecord{} || time.Now().After(hostnameFromCache.timeout)) {
 		hostname = getMac(timeInt, ipAddr, addrMacFromSyslog)
-		cacheMutex.Lock()
-		cache[ipAddr] = cacheRecord{hostname, time.Now().Add(10 * time.Minute)}
-		cacheMutex.Unlock()
+		cache.mux.Lock()
+		cache.cache[ipAddr] = cacheRecord{hostname, time.Now().Add(10 * time.Minute)}
+		cache.mux.Unlock()
 	} else {
 		hostname = hostnameFromCache.Hostname
 	}
