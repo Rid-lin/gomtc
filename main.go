@@ -278,7 +278,7 @@ func lookMacUpWithCache(timeInt uint32, ipAddr, addrMacFromSyslog string) string
 	if (hostnameFromCache == cacheRecord{} || time.Now().After(hostnameFromCache.timeout)) {
 		hostname = getMac(timeInt, ipAddr, addrMacFromSyslog)
 		cache.Lock()
-		cache.cache[ipAddr] = cacheRecord{hostname, time.Now().Add(10 * time.Minute)}
+		cache.cache[ipAddr] = cacheRecord{hostname, time.Now().Add(1 * time.Minute)}
 		cache.Unlock()
 	} else {
 		hostname = hostnameFromCache.Hostname
