@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
@@ -71,32 +70,32 @@ type decodedRecord struct {
 	Duration          uint16
 }
 
-func openOutputDevice(filename string) *bufio.Writer {
-	if filename == "" {
-		writer = bufio.NewWriter(os.Stdout)
-		log.Debug("Output in os.Stdout")
-		return writer
+// func openOutputDevice(filename string) *bufio.Writer {
+// 	if filename == "" {
+// 		writer = bufio.NewWriter(os.Stdout)
+// 		log.Debug("Output in os.Stdout")
+// 		return writer
 
-	} else {
-		var err error
-		filetDestination, err = os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			log.Errorf("Error, the '%v' file could not be created (there are not enough premissions or it is busy with another program): %v", filename, err)
-			writer = bufio.NewWriter(os.Stdout)
-			filetDestination.Close()
-			log.Debug("Output in os.Stdout with error open file")
-			return writer
+// 	} else {
+// 		var err error
+// 		filetDestination, err = os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+// 		if err != nil {
+// 			log.Errorf("Error, the '%v' file could not be created (there are not enough premissions or it is busy with another program): %v", filename, err)
+// 			writer = bufio.NewWriter(os.Stdout)
+// 			filetDestination.Close()
+// 			log.Debug("Output in os.Stdout with error open file")
+// 			return writer
 
-		} else {
-			// defer filetDestination.Close()
-			writer = bufio.NewWriter(filetDestination)
-			log.Debugf("Output in file (%v)(%v)", filename, filetDestination)
-			return writer
+// 		} else {
+// 			// defer filetDestination.Close()
+// 			writer = bufio.NewWriter(filetDestination)
+// 			log.Debugf("Output in file (%v)(%v)", filename, filetDestination)
+// 			return writer
 
-		}
-	}
+// 		}
+// 	}
 
-}
+// }
 
 func intToIPv4Addr(intAddr uint32) net.IP {
 	return net.IPv4(
@@ -133,7 +132,10 @@ func decodeRecord(header *header, binRecord *binaryRecord, remoteAddr *net.UDPAd
 	return decodedRecord
 }
 
-func decodeRecordToSquid(header *header, binRecord *binaryRecord, remoteAddr string, cfg *Config) string {
+func decodeRecordToSquid(record *decodedRecord, cfg *Config) string {
+	binRecord := record.binaryRecord
+	header := record.header
+	remoteAddr := record.Host
 	srcmacB := make([]byte, 8)
 	dstmacB := make([]byte, 8)
 	binary.BigEndian.PutUint16(srcmacB, binRecord.SrcAs)
@@ -226,17 +228,17 @@ func pipeOutputToStdout(outputChannel chan decodedRecord) {
 	}
 }
 
-func pipeOutputToStdoutForSquid(outputChannel chan decodedRecord, writer *bufio.Writer, cfg *Config) {
+func pipeOutputToStdoutForSquid(outputChannel chan decodedRecord, filetDestination *os.File, cfg *Config) {
 	var record decodedRecord
 	for {
 		record = <-outputChannel
-		message := decodeRecordToSquid(&record.header, &record.binaryRecord, record.Host, cfg)
+		message := decodeRecordToSquid(&record, cfg)
 		message = filtredMessage(message, cfg.IgnorList)
 		if message == "" {
 			continue
 		}
 		log.Tracef("Added to log:%v", message)
-		if _, err := fmt.Fprintf(writer, "\n%s", message); err != nil {
+		if _, err := filetDestination.WriteString(message); err != nil {
 			log.Errorf("Error writing data buffer:%v", err)
 		}
 	}
@@ -266,7 +268,7 @@ var (
 	cache Cache
 	// cache      = map[string]cacheRecord{}
 	// cacheMutex = sync.RWMutex{}
-	writer           *bufio.Writer
+	// writer           *bufio.Writer
 	filetDestination *os.File
 )
 
@@ -443,7 +445,7 @@ func main() {
 		configFilename string = "config.toml"
 	)
 	/* Parse command-line arguments */
-	flag.StringVar(&cfg.addrMacFromSyslog, "port", "http://localhost:3030", "Address for service mac-address determining")
+	flag.StringVar(&cfg.addrMacFromSyslog, "port", "localhost:3030", "Address for service mac-address determining")
 	flag.StringVar(&cfg.outMethod, "method", "stdout", "Output method: stdout, udp or squid")
 	flag.StringVar(&cfg.outDestination, "out", "", "Address and port of influxdb to send decoded data")
 	flag.IntVar(&cfg.receiveBufferSizeBytes, "buffer", 212992, "Size of RxQueue, i.e. value for SO_RCVBUF in bytes")
@@ -487,14 +489,18 @@ func main() {
 		cfg.ProcessingDirection,
 		cfg.NameFileToLog)
 
-	writer := openOutputDevice(cfg.NameFileToLog)
+	filetDestination, err = os.OpenFile(cfg.NameFileToLog, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		filetDestination.Close()
+		log.Fatalf("Error, the '%v' file could not be created (there are not enough premissions or it is busy with another program): %v", cfg.NameFileToLog, err)
+	}
 
 	/*Creating a channel to intercept the program end signal*/
 	exitChan := getExitSignalsChannel()
 
 	go func() {
 		<-exitChan
-		writer.Flush()
+		filetDestination.Close()
 		conn.Close()
 		log.Println("Shutting down")
 		os.Exit(0)
@@ -522,7 +528,7 @@ func main() {
 	case "udp":
 		go pipeOutputToUDPSocket(outputChannel, cfg.outDestination)
 	case "squid":
-		go pipeOutputToStdoutForSquid(outputChannel, writer, &cfg)
+		go pipeOutputToStdoutForSquid(outputChannel, filetDestination, &cfg)
 	default:
 		log.Fatalf("Unknown schema: %v\n", cfg.outMethod)
 
