@@ -259,7 +259,7 @@ type cacheRecord struct {
 
 type Cache struct {
 	cache map[string]cacheRecord
-	mux   *sync.RWMutex
+	sync.RWMutex
 }
 
 var (
@@ -272,14 +272,14 @@ var (
 
 func lookMacUpWithCache(timeInt uint32, ipAddr, addrMacFromSyslog string) string {
 	var hostname string
-	cache.mux.Lock()
+	cache.Lock()
 	hostnameFromCache := cache.cache[ipAddr]
-	cache.mux.Unlock()
+	cache.Unlock()
 	if (hostnameFromCache == cacheRecord{} || time.Now().After(hostnameFromCache.timeout)) {
 		hostname = getMac(timeInt, ipAddr, addrMacFromSyslog)
-		cache.mux.Lock()
+		cache.Lock()
 		cache.cache[ipAddr] = cacheRecord{hostname, time.Now().Add(10 * time.Minute)}
-		cache.mux.Unlock()
+		cache.Unlock()
 	} else {
 		hostname = hostnameFromCache.Hostname
 	}
@@ -455,6 +455,8 @@ func main() {
 	flag.StringVar(&cfg.NameFileToLog, "log", "", "The file where logs will be written in the format of squid logs")
 
 	flag.Parse()
+
+	cache.cache = make(map[string]cacheRecord)
 
 	var config_source string
 	err = cleanenv.ReadConfig(configFilename, &cfg)
