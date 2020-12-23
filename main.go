@@ -10,11 +10,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
 
+	"github.com/go-routeros/routeros"
 	"github.com/ilyakaznacheev/cleanenv"
 	log "github.com/sirupsen/logrus"
 )
@@ -132,7 +134,7 @@ func decodeRecord(header *header, binRecord *binaryRecord, remoteAddr *net.UDPAd
 	return decodedRecord
 }
 
-func decodeRecordToSquid(record *decodedRecord, cfg *Config) string {
+func (data *transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) string {
 	binRecord := record.binaryRecord
 	header := record.header
 	remoteAddr := record.Host
@@ -161,7 +163,9 @@ func decodeRecordToSquid(record *decodedRecord, cfg *Config) string {
 	ok2 := cfg.CheckEntryInSubNet(intToIPv4Addr(binRecord.Ipv4SrcAddrInt))
 
 	if ok && !ok2 {
-		dstmac := lookMacUpWithCache(header.UnixSec, intToIPv4Addr(binRecord.Ipv4DstAddrInt).String(), cfg.addrMacFromSyslog)
+		dstmac := data.GetInfo(&request{
+			IP:   intToIPv4Addr(binRecord.Ipv4DstAddrInt).String(),
+			Time: fmt.Sprint(header.UnixSec)}).Mac
 		message = fmt.Sprintf("%v.000 %6v %v %v/- %v HEAD %v:%v %v FIRSTUP_PARENT/%v packet_netflow/%v/:%v ",
 			header.UnixSec,                                   // time
 			binRecord.LastInt-binRecord.FirstInt,             //delay
@@ -228,11 +232,11 @@ func pipeOutputToStdout(outputChannel chan decodedRecord) {
 	}
 }
 
-func pipeOutputToStdoutForSquid(outputChannel chan decodedRecord, filetDestination *os.File, cfg *Config) {
+func (data *transport) pipeOutputToStdoutForSquid(outputChannel chan decodedRecord, filetDestination *os.File, cfg *Config) {
 	var record decodedRecord
 	for {
 		record = <-outputChannel
-		message := decodeRecordToSquid(&record, cfg)
+		message := data.decodeRecordToSquid(&record, cfg)
 		message = filtredMessage(message, cfg.IgnorList)
 		if message == "" {
 			continue
@@ -407,6 +411,30 @@ func getMac(timeInt uint32, ip, addrMacFromSyslog string) string {
 	}
 }
 
+// func getMac(timeInt uint32, ip, addrMacFromSyslog string) string {
+// 	time := fmt.Sprint(timeInt)
+// 	URL := fmt.Sprintf("%v/getmac?ip=%v&time=%v", addrMacFromSyslog, ip, time)
+// 	client := http.Client{}
+// 	resp, err := client.Get(URL)
+// 	if err != nil {
+// 		log.Warning(err)
+// 		return "00:00:00:00:00:00"
+// 	}
+// 	var response Response
+// 	// var result map[string]interface{}
+// 	err2 := json.NewDecoder(resp.Body).Decode(&response)
+// 	if err2 != nil {
+// 		log.Errorf("Error Decode JSON(%v):%v", resp.Body, err2)
+// 		return "00:00:00:00:00:00"
+// 	} else if response.Mac == "" {
+// 		return "00:00:00:00:00:00"
+
+// 	} else {
+// 		return response.Mac
+
+// 	}
+// }
+
 type arrayFlags []string
 
 func (i *arrayFlags) String() string {
@@ -425,12 +453,19 @@ type Config struct {
 	ProcessingDirection string     `yaml:"ProcessingDirection" toml:"direct" env:"DIRECT" env-default:"both"`
 	FlowAddr            string     `yaml:"FlowAddr" toml:"flowaddr" env:"FLOW_ADDR" env-default:"0.0.0.0:2055"`
 	NameFileToLog       string     `yaml:"FileToLog" toml:"log" env:"FLOW_LOG"`
-	// inSource               string     `yaml:"inSource" toml:"insource" env:"INSOURCE"`
-	addrMacFromSyslog string `yaml:"addrMacFromSyslog" toml:"addrmacfromsyslog" env:"ADDR_M4S"`
-	outMethod         string `yaml:"outMethod" toml:"outmethod" env:"OUT_METHOD"`
-	outDestination    string `yaml:"outDestination" toml:"outdestination" env:"OUT_DESTINATION"`
-	// configFilename         string
-	receiveBufferSizeBytes int `yaml:"receiveBufferSizeBytes" toml:"receiveBufferSizeBytes" env:"GONFLUX_BUFSIZE"`
+	addrMacFromSyslog   string     `yaml:"addrMacFromSyslog" toml:"addrmacfromsyslog" env:"ADDR_M4S"`
+	outMethod           string     `yaml:"outMethod" toml:"outmethod" env:"OUT_METHOD"`
+	outDestination      string     `yaml:"outDestination" toml:"outdestination" env:"OUT_DESTINATION"`
+	BindAddr            string     `yaml:"BindAddr" toml:"bindaddr" env:"ADDR_M4M" envdefault:":3030"`
+	MTAddr              string     `yaml:"MTAddr" toml:"mtaddr" env:"ADDR_MT"`
+	MTUser              string     `yaml:"MTUser" toml:"mtuser" env:"USER_MT"`
+	MTPass              string     `yaml:"MTPass" toml:"mtpass" env:"PASS_MT"`
+	GMT                 string     `yaml:"GMT" toml:"gmt" env:"GMT"`
+	// properties             string
+	Interval               string
+	receiveBufferSizeBytes int  `yaml:"receiveBufferSizeBytes" toml:"receiveBufferSizeBytes" env:"GONFLUX_BUFSIZE"`
+	useTLS                 bool `yaml:"tls" toml:"tls" env:"TLS"`
+	// async                  bool `yaml:"async" toml:"async" env:"ASYNC_MT"`
 }
 
 var (
@@ -438,12 +473,238 @@ var (
 	// SubNets, IgnorList arrayFlags
 )
 
-func main() {
+func (data *transport) GetInfo(request *request) ResponseType {
+	var response ResponseType
+
+	timeInt, err := strconv.ParseInt(request.Time, 10, 64)
+	if err != nil {
+		log.Errorf("Error parsing timeStamp(%v) from request:%v", timeInt, err)
+		// response.Mac = "00:00:00:00:00:00"
+		// return response
+		//При невернозаданном времени убираем 30 секунд из текущего времени, чтобы была возможность идентифицировать IP адрес
+		timeInt = time.Now().Add(-30 * time.Second).Unix()
+	}
+	request.timeInt = timeInt
+	data.RLock()
+	ipStruct, ok := data.ipToMac[request.IP]
+	data.RUnlock()
+	if ok && timeInt < ipStruct.timeoutInt {
+		log.Tracef("IP:%v to MAC:%v, hostname:%v, comment:%v", ipStruct.ip, ipStruct.mac, ipStruct.hostName, ipStruct.comment)
+		response.Mac = ipStruct.mac
+		response.IP = ipStruct.ip
+		response.Hostname = ipStruct.hostName
+		response.Comment = ipStruct.comment
+	} else {
+		log.Tracef("IP:%v not find, requests from Mikrotik:%v", ipStruct.ip, cfg.MTAddr)
+		data.renewOneMac <- request.IP
+		data.RLock()
+		ipStruct, ok = data.ipToMac[request.IP]
+		data.RUnlock()
+		if ok {
+			log.Tracef("IP:%v added with MAC:%v, hostname:%v, comment:%v", ipStruct.ip, ipStruct.mac, ipStruct.hostName, ipStruct.comment)
+			response.Mac = ipStruct.mac
+			response.IP = ipStruct.ip
+			response.Hostname = ipStruct.hostName
+			response.Comment = ipStruct.comment
+		}
+	}
+
+	return response
+}
+
+/*
+Jun 22 21:39:13 192.168.65.1 dhcp,info dhcp_lan deassigned 192.168.65.149 from 04:D3:B5:FC:E8:09
+Jun 22 21:40:16 192.168.65.1 dhcp,info dhcp_lan assigned 192.168.65.202 to E8:6F:38:88:92:29
+*/
+
+func NewTransport(cfg *Config) *transport {
+	return &transport{
+		// mapTable: make(map[string][]lineOfLog),
+		ipToMac:     make(map[string]LineOfData),
+		renewOneMac: make(chan string, 100),
+		GMT:         cfg.GMT,
+	}
+}
+
+func (data *transport) getDataFromMT(c *routeros.Client) {
+	var ip string
+	go func() {
+		ip = <-data.renewOneMac
+		reply, err := c.Run("/ip/dhcp-server/lease/print", "?status=bound", "?disabled=false")
+		if err != nil {
+			log.Error(err)
+		}
+		fmt.Print(reply)
+		var lineOfData LineOfData
+		for _, re := range reply.Re {
+			if re.Map["active-address"] != ip {
+				continue
+			}
+			lineOfData.ip = re.Map["active-address"]
+			lineOfData.mac = re.Map["active-mac-address"]
+			lineOfData.timeout = re.Map["expires-after"]
+			lineOfData.hostName = re.Map["host-name"]
+			lineOfData.comment = re.Map["comment"]
+			//Вычисляем время когда закончится аренда адреса
+			timeStr, err := time.ParseDuration(lineOfData.timeout)
+			if err != nil {
+				timeStr = 10 * time.Second
+			}
+			// Записываем в переменную для дальнейшего быстрого сравнения
+			lineOfData.timeoutInt = time.Now().Add(timeStr).Unix()
+
+			data.RLock()
+			data.ipToMac[lineOfData.ip] = lineOfData
+			data.RUnlock()
+		}
+		if lineOfData.mac == "" {
+			reply, err := c.Run("/ip/arp/print")
+			if err != nil {
+				log.Error(err)
+			}
+			fmt.Print(reply)
+			var lineOfData LineOfData
+			for _, re := range reply.Re {
+				if re.Map["address"] != ip {
+					continue
+				}
+				lineOfData.ip = re.Map["address"]
+				lineOfData.mac = re.Map["mac-address"]
+				lineOfData.timeoutInt = time.Now().Add(1 * time.Minute).Unix()
+
+				data.RLock()
+				data.ipToMac[lineOfData.ip] = lineOfData
+				data.RUnlock()
+			}
+
+		}
+	}()
+
+	for {
+		var lineOfData LineOfData
+		reply, err := c.Run("/ip/arp/print")
+		if err != nil {
+			log.Error(err)
+		}
+		for _, re := range reply.Re {
+			lineOfData.ip = re.Map["address"]
+			lineOfData.mac = re.Map["mac-address"]
+			lineOfData.timeoutInt = time.Now().Add(1 * time.Minute).Unix()
+
+			data.Lock()
+			data.ipToMac[lineOfData.ip] = lineOfData
+			data.Unlock()
+
+		}
+		reply2, err2 := c.Run("/ip/dhcp-server/lease/print", "?status=bound", "?disabled=false")
+		if err2 != nil {
+			log.Error(err)
+		}
+		for _, re := range reply2.Re {
+			lineOfData.ip = re.Map["active-address"]
+			lineOfData.mac = re.Map["active-mac-address"]
+			lineOfData.timeout = re.Map["expires-after"]
+			lineOfData.hostName = re.Map["host-name"]
+			lineOfData.comment = re.Map["comment"]
+			//Вычисляем время когда закончится аренда адреса
+			timeStr, err := time.ParseDuration(lineOfData.timeout)
+			if err != nil {
+				timeStr = 10 * time.Second
+			}
+			// Записываем в переменную для дальнейшего быстрого сравнения
+			lineOfData.timeoutInt = time.Now().Add(timeStr).Unix()
+
+			data.Lock()
+			data.ipToMac[lineOfData.ip] = lineOfData
+			data.Unlock()
+
+		}
+		var interval time.Duration
+		interval, err = time.ParseDuration(cfg.Interval)
+		if err != nil {
+			interval = 10 * time.Minute
+		}
+		time.Sleep(interval)
+
+	}
+}
+
+func handleIndex() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w,
+			`<html>
+			<head>
+			<title>go-macfrommikrotik</title>
+			</head>
+			<body>
+			Более подробно на https://github.com/Rid-lin/go-macfrommikrotik
+			</body>
+			</html>
+			`)
+	}
+}
+
+func (data *transport) getmacHandler() http.HandlerFunc {
 	var (
-		conn           *net.UDPConn
-		err            error
-		configFilename string = "config.toml"
+		request  request
+		Response ResponseType
 	)
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		request.Time = r.URL.Query().Get("time")
+		request.IP = r.URL.Query().Get("ip")
+		Response = data.GetInfo(&request)
+		log.Debugf(" | Request:'%v','%v' response:'%v'", request.Time, request.IP, Response.Mac)
+		responseJSON, err := json.Marshal(Response)
+		if err != nil {
+			log.Errorf("Error Marshaling mac'%v'to JSON:'%v'", Response.Mac, err)
+		}
+		// fmt.Fprint(w, mac)
+		_, err2 := w.Write(responseJSON)
+		if err2 != nil {
+			log.Errorf("Error send response:%v", err2)
+		}
+	}
+}
+
+type request struct {
+	Time,
+	IP string
+	timeInt int64
+}
+
+type ResponseType struct {
+	IP       string `JSON:"IP"`
+	Mac      string `JSON:"Mac"`
+	Hostname string `JSON:"Hostname"`
+	Comment  string `JSON:"Comment"`
+}
+
+type LineOfData struct {
+	ip,
+	mac,
+	timeout,
+	hostName,
+	comment string
+	timeoutInt int64
+}
+
+type transport struct {
+	ipToMac map[string]LineOfData
+	// mapTable map[string][]lineOfLog
+	GMT         string
+	renewOneMac chan string
+	sync.RWMutex
+}
+
+func dial(cfg *Config) (*routeros.Client, error) {
+	if cfg.useTLS {
+		return routeros.DialTLS(cfg.MTAddr, cfg.MTUser, cfg.MTPass, nil)
+	}
+	return routeros.Dial(cfg.MTAddr, cfg.MTUser, cfg.MTPass)
+}
+
+func newConfig(configFilename string) *Config {
 	/* Parse command-line arguments */
 	flag.StringVar(&cfg.addrMacFromSyslog, "port", "localhost:3030", "Address for service mac-address determining")
 	flag.StringVar(&cfg.outMethod, "method", "stdout", "Output method: stdout, udp or squid")
@@ -458,10 +719,8 @@ func main() {
 
 	flag.Parse()
 
-	cache.cache = make(map[string]cacheRecord)
-
 	var config_source string
-	err = cleanenv.ReadConfig(configFilename, &cfg)
+	err := cleanenv.ReadConfig(configFilename, &cfg)
 	if err != nil {
 		log.Warningf("No config file(%v) found: %v", configFilename, err)
 		config_source = "ENV/CFG"
@@ -489,17 +748,53 @@ func main() {
 		cfg.ProcessingDirection,
 		cfg.NameFileToLog)
 
+	return &cfg
+}
+
+func main() {
+	var (
+		conn           *net.UDPConn
+		err            error
+		configFilename string = "config.toml"
+	)
+
+	cfg := newConfig(configFilename)
+
 	filetDestination, err = os.OpenFile(cfg.NameFileToLog, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		filetDestination.Close()
 		log.Fatalf("Error, the '%v' file could not be created (there are not enough premissions or it is busy with another program): %v", cfg.NameFileToLog, err)
 	}
 
+	cache.cache = make(map[string]cacheRecord)
+
 	/*Creating a channel to intercept the program end signal*/
 	exitChan := getExitSignalsChannel()
 
+	c, err := dial(cfg)
+	if err != nil {
+		log.Errorf("Error open Syslog file:%v", err)
+	}
+	defer c.Close()
+
+	data := NewTransport(cfg)
+	go data.getDataFromMT(c)
+
+	http.HandleFunc("/", handleIndex())
+	http.HandleFunc("/getmac", data.getmacHandler())
+
+	log.Infof("MacFromMikrotik-server listen %v", cfg.BindAddr)
+
+	go func() {
+		err := http.ListenAndServe(cfg.BindAddr, nil)
+		if err != nil {
+			log.Error("http-server returned error:", err)
+		}
+	}()
+
 	go func() {
 		<-exitChan
+		c.Close()
 		filetDestination.Close()
 		conn.Close()
 		log.Println("Shutting down")
@@ -528,7 +823,7 @@ func main() {
 	case "udp":
 		go pipeOutputToUDPSocket(outputChannel, cfg.outDestination)
 	case "squid":
-		go pipeOutputToStdoutForSquid(outputChannel, filetDestination, &cfg)
+		go data.pipeOutputToStdoutForSquid(outputChannel, filetDestination, cfg)
 	default:
 		log.Fatalf("Unknown schema: %v\n", cfg.outMethod)
 
@@ -561,7 +856,7 @@ func main() {
 
 						stream := bytes.NewBuffer(buf[:rlen])
 
-						go handlePacket(stream, remote, outputChannel, &cfg)
+						go handlePacket(stream, remote, outputChannel, cfg)
 					}
 				}
 			}
