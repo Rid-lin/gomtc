@@ -527,58 +527,58 @@ func NewTransport(cfg *Config) *transport {
 }
 
 func (data *transport) getDataFromMT(c *routeros.Client) {
-	var ip string
-	go func() {
-		ip = <-data.renewOneMac
-		reply, err := c.Run("/ip/dhcp-server/lease/print", "?status=bound", "?disabled=false")
-		if err != nil {
-			log.Error(err)
-		}
-		fmt.Print(reply)
-		var lineOfData LineOfData
-		for _, re := range reply.Re {
-			if re.Map["active-address"] != ip {
-				continue
-			}
-			lineOfData.ip = re.Map["active-address"]
-			lineOfData.mac = re.Map["active-mac-address"]
-			lineOfData.timeout = re.Map["expires-after"]
-			lineOfData.hostName = re.Map["host-name"]
-			lineOfData.comment = re.Map["comment"]
-			//Вычисляем время когда закончится аренда адреса
-			timeStr, err := time.ParseDuration(lineOfData.timeout)
-			if err != nil {
-				timeStr = 10 * time.Second
-			}
-			// Записываем в переменную для дальнейшего быстрого сравнения
-			lineOfData.timeoutInt = time.Now().Add(timeStr).Unix()
+	// var ip string
+	// go func() {
+	// 	ip = <-data.renewOneMac
+	// 	reply, err := c.Run("/ip/dhcp-server/lease/print", "?status=bound", "?disabled=false")
+	// 	if err != nil {
+	// 		log.Error(err)
+	// 	}
+	// 	log.Trace(reply)
+	// 	var lineOfData LineOfData
+	// 	for _, re := range reply.Re {
+	// 		if re.Map["active-address"] != ip {
+	// 			continue
+	// 		}
+	// 		lineOfData.ip = re.Map["active-address"]
+	// 		lineOfData.mac = re.Map["active-mac-address"]
+	// 		lineOfData.timeout = re.Map["expires-after"]
+	// 		lineOfData.hostName = re.Map["host-name"]
+	// 		lineOfData.comment = re.Map["comment"]
+	// 		//Вычисляем время когда закончится аренда адреса
+	// 		timeStr, err := time.ParseDuration(lineOfData.timeout)
+	// 		if err != nil {
+	// 			timeStr = 10 * time.Second
+	// 		}
+	// 		// Записываем в переменную для дальнейшего быстрого сравнения
+	// 		lineOfData.timeoutInt = time.Now().Add(timeStr).Unix()
 
-			data.RLock()
-			data.ipToMac[lineOfData.ip] = lineOfData
-			data.RUnlock()
-		}
-		if lineOfData.mac == "" {
-			reply, err := c.Run("/ip/arp/print")
-			if err != nil {
-				log.Error(err)
-			}
-			fmt.Print(reply)
-			var lineOfData LineOfData
-			for _, re := range reply.Re {
-				if re.Map["address"] != ip {
-					continue
-				}
-				lineOfData.ip = re.Map["address"]
-				lineOfData.mac = re.Map["mac-address"]
-				lineOfData.timeoutInt = time.Now().Add(1 * time.Minute).Unix()
+	// 		data.RLock()
+	// 		data.ipToMac[lineOfData.ip] = lineOfData
+	// 		data.RUnlock()
+	// 	}
+	// 	if lineOfData.mac == "" {
+	// 		reply, err := c.Run("/ip/arp/print")
+	// 		if err != nil {
+	// 			log.Error(err)
+	// 		}
+	// 		log.Debug(reply)
+	// 		var lineOfData LineOfData
+	// 		for _, re := range reply.Re {
+	// 			if re.Map["address"] != ip {
+	// 				continue
+	// 			}
+	// 			lineOfData.ip = re.Map["address"]
+	// 			lineOfData.mac = re.Map["mac-address"]
+	// 			lineOfData.timeoutInt = time.Now().Add(1 * time.Minute).Unix()
 
-				data.RLock()
-				data.ipToMac[lineOfData.ip] = lineOfData
-				data.RUnlock()
-			}
+	// 			data.RLock()
+	// 			data.ipToMac[lineOfData.ip] = lineOfData
+	// 			data.RUnlock()
+	// 		}
 
-		}
-	}()
+	// 	}
+	// }()
 
 	for {
 		var lineOfData LineOfData
@@ -716,6 +716,15 @@ func newConfig(configFilename string) *Config {
 	flag.Var(&cfg.IgnorList, "ignorlist", "List of ignored words/parameters per string")
 	flag.StringVar(&cfg.ProcessingDirection, "direct", "both", "")
 	flag.StringVar(&cfg.NameFileToLog, "log", "", "The file where logs will be written in the format of squid logs")
+	flag.StringVar(&cfg.GMT, "gmt", "+0500", "GMT offset time")
+	flag.StringVar(&cfg.MTAddr, "mtaddr", "", "The address of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken")
+	flag.StringVar(&cfg.MTUser, "u", "", "User of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken")
+	flag.StringVar(&cfg.MTPass, "p", "", "The password of the user of the Mikrotik router, from which the data on the comparison of the mac-address and IP-address is taken")
+	flag.StringVar(&cfg.BindAddr, "m4maddr", "localhost:3030", "Listen address for ")
+	// flag.StringVar(&cfg.properties, "properties", "name,rx-byte,tx-byte,rx-packet,tx-packet", "Properties")
+	flag.StringVar(&cfg.Interval, "interval", "10", "Interval to getting info from Mikrotik")
+	// flag.BoolVar(&cfg.async, "async", false, "Use async code")
+	flag.BoolVar(&cfg.useTLS, "tls", false, "Use TLS")
 
 	flag.Parse()
 
@@ -773,7 +782,7 @@ func main() {
 
 	c, err := dial(cfg)
 	if err != nil {
-		log.Errorf("Error open Syslog file:%v", err)
+		log.Errorf("Error connect to %v:%v", cfg.MTAddr, err)
 	}
 	defer c.Close()
 
