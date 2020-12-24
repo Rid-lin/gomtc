@@ -12,7 +12,7 @@
             "program": "${fileDirname}",
             "env": {},
             "args": [
-                "-method=squid",
+                // "-method=squid",
                 // "-method=stdout",
                 // "-method=udp",
                 // "-out=192.168.65.126:8089",
@@ -31,6 +31,12 @@
                 // "-ignorlist=/123 ",
                 "-ignorlist=ff02::",
                 "-port=192.168.65.70:3030",
+                "-log=access.log",
+                "-mtaddr=192.168.65.1:8728",
+                "-u=getmac",
+                "-p=getmac_password",
+                "-loglevel=trace",
+
             ]
         }
     ]
