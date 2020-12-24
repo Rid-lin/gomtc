@@ -24,7 +24,6 @@ type Config struct {
 	LogLevel               string     `yaml:"LogLevel" toml:"loglevel" env:"LOG_LEVEL"`
 	FlowAddr               string     `yaml:"FlowAddr" toml:"flowaddr" env:"FLOW_ADDR" env-default:"0.0.0.0:2055"`
 	NameFileToLog          string     `yaml:"FileToLog" toml:"log" env:"FLOW_LOG"`
-	addrMacFromSyslog      string     `yaml:"addrMacFromSyslog" toml:"addrmacfromsyslog" env:"ADDR_M4S"`
 	BindAddr               string     `yaml:"BindAddr" toml:"bindaddr" env:"ADDR_M4M" envdefault:":3030"`
 	MTAddr                 string     `yaml:"MTAddr" toml:"mtaddr" env:"ADDR_MT"`
 	MTUser                 string     `yaml:"MTUser" toml:"mtuser" env:"USER_MT"`
@@ -41,7 +40,6 @@ var (
 
 func newConfig(configFilename string) *Config {
 	/* Parse command-line arguments */
-	flag.StringVar(&cfg.addrMacFromSyslog, "port", "localhost:3030", "Address for service mac-address determining")
 	flag.IntVar(&cfg.receiveBufferSizeBytes, "buffer", 212992, "Size of RxQueue, i.e. value for SO_RCVBUF in bytes")
 	flag.StringVar(&cfg.FlowAddr, "addr", "0.0.0.0:2055", "Address and port to listen NetFlow packets")
 	flag.StringVar(&cfg.LogLevel, "loglevel", "info", "Log level")
@@ -52,7 +50,7 @@ func newConfig(configFilename string) *Config {
 	flag.StringVar(&cfg.MTAddr, "mtaddr", "", "The address of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken")
 	flag.StringVar(&cfg.MTUser, "u", "", "User of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken")
 	flag.StringVar(&cfg.MTPass, "p", "", "The password of the user of the Mikrotik router, from which the data on the comparison of the mac-address and IP-address is taken")
-	flag.StringVar(&cfg.BindAddr, "m4maddr", "localhost:3030", "Listen address for ")
+	flag.StringVar(&cfg.BindAddr, "m4maddr", ":3030", "Listen address for HTTP-server")
 	flag.StringVar(&cfg.Interval, "interval", "10m", "Interval to getting info from Mikrotik")
 	flag.BoolVar(&cfg.useTLS, "tls", false, "Using TLS to connect to a router")
 
@@ -74,15 +72,9 @@ func newConfig(configFilename string) *Config {
 	}
 	log.SetLevel(lvl)
 
-	log.Debugf("Config read from %s: addrMacFromSyslog=(%s),  receiveBufferSizeBytes=(%d), FlowAddr=(%s), LogLevel=(%s), SubNets=(%v), IgnorList=(%v), NameFileToLog=(%s), ",
+	log.Debugf("Config read from %s: %#v",
 		config_source,
-		cfg.addrMacFromSyslog,
-		cfg.receiveBufferSizeBytes,
-		cfg.FlowAddr,
-		cfg.LogLevel,
-		cfg.SubNets,
-		cfg.IgnorList,
-		cfg.NameFileToLog)
+		cfg)
 
 	return &cfg
 }

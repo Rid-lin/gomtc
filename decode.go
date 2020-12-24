@@ -87,10 +87,6 @@ func decodeRecord(header *header, binRecord *binaryRecord, remoteAddr *net.UDPAd
 		Duration:    uint16((binRecord.LastInt - binRecord.FirstInt) / 1000),
 	}
 
-	// LookupAddr
-	// decodedRecord.SrcHostName = lookUpWithCache(decodedRecord.Ipv4SrcAddr)
-	// decodedRecord.DstHostName = lookMacUpWithCache(header.UnixSec, decodedRecord.Ipv4DstAddr, cfg.addrMacFromSyslog)
-
 	// decode sampling info
 	decodedRecord.SamplingAlgorithm = uint8(0x3 & (decodedRecord.SamplingInterval >> 14))
 	decodedRecord.SamplingInterval = 0x3fff & decodedRecord.SamplingInterval

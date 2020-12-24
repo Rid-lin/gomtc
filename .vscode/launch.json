@@ -30,12 +30,11 @@
                 // "-ignorlist=:123 ",
                 // "-ignorlist=/123 ",
                 "-ignorlist=ff02::",
-                "-port=192.168.65.70:3030",
                 "-log=access.log",
                 "-mtaddr=192.168.65.1:8728",
                 "-u=getmac",
                 "-p=getmac_password",
-                "-loglevel=trace",
+                "-loglevel=debug",
 
             ]
         }
