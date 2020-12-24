@@ -180,7 +180,9 @@ func (data *transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) s
 			binRecord.L4DstPort)                // dstport
 
 	} else if !ok && ok2 {
-		dstmac := lookMacUpWithCache(header.UnixSec, intToIPv4Addr(binRecord.Ipv4SrcAddrInt).String(), cfg.addrMacFromSyslog)
+		dstmac := data.GetInfo(&request{
+			IP:   intToIPv4Addr(binRecord.Ipv4SrcAddrInt).String(),
+			Time: fmt.Sprint(header.UnixSec)}).Mac
 		message = fmt.Sprintf("%v.000 %6v %v %v/- %v HEAD %v:%v %v FIRSTUP_PARENT/%v packet_netflow_inverse/%v/:%v ",
 			header.UnixSec,                                   // time
 			binRecord.LastInt-binRecord.FirstInt,             //delay
@@ -260,7 +262,7 @@ func filtredMessage(message string, IgnorList arrayFlags) string {
 
 type cacheRecord struct {
 	Hostname string
-	timeout  time.Time
+	// timeout  time.Time
 }
 
 type Cache struct {
@@ -276,21 +278,21 @@ var (
 	filetDestination *os.File
 )
 
-func lookMacUpWithCache(timeInt uint32, ipAddr, addrMacFromSyslog string) string {
-	var hostname string
-	cache.RLock()
-	hostnameFromCache := cache.cache[ipAddr]
-	cache.RUnlock()
-	if (hostnameFromCache == cacheRecord{} || time.Now().After(hostnameFromCache.timeout)) {
-		hostname = getMac(timeInt, ipAddr, addrMacFromSyslog)
-		cache.Lock()
-		cache.cache[ipAddr] = cacheRecord{hostname, time.Now().Add(1 * time.Minute)}
-		cache.Unlock()
-	} else {
-		hostname = hostnameFromCache.Hostname
-	}
-	return hostname
-}
+// func lookMacUpWithCache(timeInt uint32, ipAddr, addrMacFromSyslog string) string {
+// 	var hostname string
+// 	cache.RLock()
+// 	hostnameFromCache := cache.cache[ipAddr]
+// 	cache.RUnlock()
+// 	if (hostnameFromCache == cacheRecord{} || time.Now().After(hostnameFromCache.timeout)) {
+// 		hostname = getMac(timeInt, ipAddr, addrMacFromSyslog)
+// 		cache.Lock()
+// 		cache.cache[ipAddr] = cacheRecord{hostname, time.Now().Add(1 * time.Minute)}
+// 		cache.Unlock()
+// 	} else {
+// 		hostname = hostnameFromCache.Hostname
+// 	}
+// 	return hostname
+// }
 
 func formatLineProtocolForUDP(record decodedRecord) []byte {
 	return []byte(fmt.Sprintf("netflow,host=%s,srcAddr=%s,dstAddr=%s,srcHostName=%s,dstHostName=%s,protocol=%d,srcPort=%d,dstPort=%d,input=%d,output=%d inBytes=%d,inPackets=%d,duration=%d %d",
@@ -383,33 +385,33 @@ func getExitSignalsChannel() chan os.Signal {
 
 // }
 
-type Response struct {
-	Mac string `JSON:"Mac"`
-}
+// type Response struct {
+// 	Mac string `JSON:"Mac"`
+// }
 
-func getMac(timeInt uint32, ip, addrMacFromSyslog string) string {
-	time := fmt.Sprint(timeInt)
-	URL := fmt.Sprintf("%v/getmac?ip=%v&time=%v", addrMacFromSyslog, ip, time)
-	client := http.Client{}
-	resp, err := client.Get(URL)
-	if err != nil {
-		log.Warning(err)
-		return "00:00:00:00:00:00"
-	}
-	var response Response
-	// var result map[string]interface{}
-	err2 := json.NewDecoder(resp.Body).Decode(&response)
-	if err2 != nil {
-		log.Errorf("Error Decode JSON(%v):%v", resp.Body, err2)
-		return "00:00:00:00:00:00"
-	} else if response.Mac == "" {
-		return "00:00:00:00:00:00"
+// func getMac(timeInt uint32, ip, addrMacFromSyslog string) string {
+// 	time := fmt.Sprint(timeInt)
+// 	URL := fmt.Sprintf("%v/getmac?ip=%v&time=%v", addrMacFromSyslog, ip, time)
+// 	client := http.Client{}
+// 	resp, err := client.Get(URL)
+// 	if err != nil {
+// 		log.Warning(err)
+// 		return "00:00:00:00:00:00"
+// 	}
+// 	var response Response
+// 	// var result map[string]interface{}
+// 	err2 := json.NewDecoder(resp.Body).Decode(&response)
+// 	if err2 != nil {
+// 		log.Errorf("Error Decode JSON(%v):%v", resp.Body, err2)
+// 		return "00:00:00:00:00:00"
+// 	} else if response.Mac == "" {
+// 		return "00:00:00:00:00:00"
 
-	} else {
-		return response.Mac
+// 	} else {
+// 		return response.Mac
 
-	}
-}
+// 	}
+// }
 
 // func getMac(timeInt uint32, ip, addrMacFromSyslog string) string {
 // 	time := fmt.Sprint(timeInt)
