@@ -1,6 +1,7 @@
 package main
 
 import (
+	"runtime"
 	"strconv"
 	"sync"
 	"time"
@@ -28,10 +29,26 @@ func (data *transport) GetInfo(request *request) ResponseType {
 		response.IP = ipStruct.ip
 		response.Hostname = ipStruct.hostName
 		response.Comment = ipStruct.comment
+	} else if ok {
+		// TODO убрать
+		log.Tracef("IP:%v to MAC:%v, hostname:%v, comment:%v", ipStruct.ip, ipStruct.mac, ipStruct.hostName, ipStruct.comment)
+		response.Mac = ipStruct.mac
+		response.IP = ipStruct.ip
+		response.Hostname = ipStruct.hostName
+		response.Comment = ipStruct.comment
+	} else if !ok {
+		// TODO Сделать чтобы информация о мак-адресе загружалась из роутера
+		log.Tracef("IP:'%v' not find in table lease of router:'%v'", ipStruct.ip, cfg.MTAddr)
+		response.Mac = request.IP
+		response.IP = request.IP
 	} else {
 		log.Tracef("IP:'%v' not find in table lease of router:'%v'", ipStruct.ip, cfg.MTAddr)
-		response.Mac = ipStruct.ip
-		response.IP = ipStruct.ip
+		response.Mac = request.IP
+		response.IP = request.IP
+	}
+
+	if response.Mac == "" {
+		runtime.Breakpoint()
 	}
 
 	return response
