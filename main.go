@@ -346,7 +346,8 @@ func (data *transport) GetInfo(request *request) ResponseType {
 		response.Comment = ipStruct.comment
 	} else {
 		log.Tracef("IP:'%v' not find in table lease of router:'%v'", ipStruct.ip, cfg.MTAddr)
-
+		response.Mac = ipStruct.ip
+		response.IP = ipStruct.ip
 	}
 
 	return response
