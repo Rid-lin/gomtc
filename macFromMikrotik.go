@@ -1,7 +1,6 @@
 package main
 
 import (
-	"runtime"
 	"strconv"
 	"sync"
 	"time"
@@ -45,10 +44,6 @@ func (data *transport) GetInfo(request *request) ResponseType {
 		log.Tracef("IP:'%v' not find in table lease of router:'%v'", ipStruct.ip, cfg.MTAddr)
 		response.Mac = request.IP
 		response.IP = request.IP
-	}
-
-	if response.Mac == "" {
-		runtime.Breakpoint()
 	}
 
 	return response
