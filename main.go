@@ -265,7 +265,7 @@ type cacheRecord struct {
 
 type Cache struct {
 	cache map[string]cacheRecord
-	sync.Mutex
+	sync.RWMutex
 }
 
 var (
@@ -278,9 +278,9 @@ var (
 
 func lookMacUpWithCache(timeInt uint32, ipAddr, addrMacFromSyslog string) string {
 	var hostname string
-	cache.Lock()
+	cache.RLock()
 	hostnameFromCache := cache.cache[ipAddr]
-	cache.Unlock()
+	cache.RUnlock()
 	if (hostnameFromCache == cacheRecord{} || time.Now().After(hostnameFromCache.timeout)) {
 		hostname = getMac(timeInt, ipAddr, addrMacFromSyslog)
 		cache.Lock()
