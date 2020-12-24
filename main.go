@@ -505,7 +505,7 @@ func newConfig(configFilename string) *Config {
 	flag.StringVar(&cfg.MTUser, "u", "", "User of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken")
 	flag.StringVar(&cfg.MTPass, "p", "", "The password of the user of the Mikrotik router, from which the data on the comparison of the mac-address and IP-address is taken")
 	flag.StringVar(&cfg.BindAddr, "m4maddr", "localhost:3030", "Listen address for ")
-	flag.StringVar(&cfg.Interval, "interval", "10", "Interval to getting info from Mikrotik in minute")
+	flag.StringVar(&cfg.Interval, "interval", "10m", "Interval to getting info from Mikrotik")
 	flag.BoolVar(&cfg.useTLS, "tls", false, "Using TLS to connect to a router")
 
 	flag.Parse()
