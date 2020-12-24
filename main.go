@@ -238,8 +238,11 @@ func (data *transport) pipeOutputToStdoutForSquid(outputChannel chan decodedReco
 	var record decodedRecord
 	for {
 		record = <-outputChannel
+		log.Tracef("Get from outputChannel:%v", record)
 		message := data.decodeRecordToSquid(&record, cfg)
+		log.Tracef("Decoded record (%v) to message (%v)", record, message)
 		message = filtredMessage(message, cfg.IgnorList)
+		log.Tracef("Filtred message to (%v)", message)
 		if message == "" {
 			continue
 		}
@@ -354,6 +357,7 @@ func handlePacket(buf *bytes.Buffer, remoteAddr *net.UDPAddr, outputChannel chan
 			}
 
 			decodedRecord := decodeRecord(&header, &record, remoteAddr, cfg)
+			log.Tracef("Send to outputChannel:%v", decodedRecord)
 			outputChannel <- decodedRecord
 		}
 	}
@@ -497,18 +501,18 @@ func (data *transport) GetInfo(request *request) ResponseType {
 		response.Hostname = ipStruct.hostName
 		response.Comment = ipStruct.comment
 	} else {
-		log.Tracef("IP:%v not find, requests from Mikrotik:%v", ipStruct.ip, cfg.MTAddr)
-		data.renewOneMac <- request.IP
-		data.RLock()
-		ipStruct, ok = data.ipToMac[request.IP]
-		data.RUnlock()
-		if ok {
-			log.Tracef("IP:%v added with MAC:%v, hostname:%v, comment:%v", ipStruct.ip, ipStruct.mac, ipStruct.hostName, ipStruct.comment)
-			response.Mac = ipStruct.mac
-			response.IP = ipStruct.ip
-			response.Hostname = ipStruct.hostName
-			response.Comment = ipStruct.comment
-		}
+		log.Tracef("IP:'%v' not find in table lease of router:'%v'", ipStruct.ip, cfg.MTAddr)
+		// data.renewOneMac <- request.IP
+		// data.RLock()
+		// ipStruct, ok = data.ipToMac[request.IP]
+		// data.RUnlock()
+		// if ok {
+		// 	log.Tracef("IP:%v added with MAC:%v, hostname:%v, comment:%v", ipStruct.ip, ipStruct.mac, ipStruct.hostName, ipStruct.comment)
+		// 	response.Mac = ipStruct.mac
+		// 	response.IP = ipStruct.ip
+		// 	response.Hostname = ipStruct.hostName
+		// 	response.Comment = ipStruct.comment
+		// }
 	}
 
 	return response
