@@ -265,7 +265,7 @@ type cacheRecord struct {
 
 type Cache struct {
 	cache map[string]cacheRecord
-	sync.RWMutex
+	sync.Mutex
 }
 
 var (
@@ -447,24 +447,24 @@ func (i *arrayFlags) Set(value string) error {
 }
 
 type Config struct {
-	SubNets             arrayFlags `yaml:"SubNets" toml:"subnets" env:"SUBNETS"`
-	IgnorList           arrayFlags `yaml:"IgnorList" toml:"ignorlist" env:"IGNORLIST"`
-	LogLevel            string     `yaml:"LogLevel" toml:"loglevel" env:"LOG_LEVEL"`
-	ProcessingDirection string     `yaml:"ProcessingDirection" toml:"direct" env:"DIRECT" env-default:"both"`
-	FlowAddr            string     `yaml:"FlowAddr" toml:"flowaddr" env:"FLOW_ADDR" env-default:"0.0.0.0:2055"`
-	NameFileToLog       string     `yaml:"FileToLog" toml:"log" env:"FLOW_LOG"`
-	addrMacFromSyslog   string     `yaml:"addrMacFromSyslog" toml:"addrmacfromsyslog" env:"ADDR_M4S"`
-	outMethod           string     `yaml:"outMethod" toml:"outmethod" env:"OUT_METHOD"`
-	outDestination      string     `yaml:"outDestination" toml:"outdestination" env:"OUT_DESTINATION"`
-	BindAddr            string     `yaml:"BindAddr" toml:"bindaddr" env:"ADDR_M4M" envdefault:":3030"`
-	MTAddr              string     `yaml:"MTAddr" toml:"mtaddr" env:"ADDR_MT"`
-	MTUser              string     `yaml:"MTUser" toml:"mtuser" env:"USER_MT"`
-	MTPass              string     `yaml:"MTPass" toml:"mtpass" env:"PASS_MT"`
-	GMT                 string     `yaml:"GMT" toml:"gmt" env:"GMT"`
-	// properties             string
+	SubNets                arrayFlags `yaml:"SubNets" toml:"subnets" env:"SUBNETS"`
+	IgnorList              arrayFlags `yaml:"IgnorList" toml:"ignorlist" env:"IGNORLIST"`
+	LogLevel               string     `yaml:"LogLevel" toml:"loglevel" env:"LOG_LEVEL"`
+	ProcessingDirection    string     `yaml:"ProcessingDirection" toml:"direct" env:"DIRECT" env-default:"both"`
+	FlowAddr               string     `yaml:"FlowAddr" toml:"flowaddr" env:"FLOW_ADDR" env-default:"0.0.0.0:2055"`
+	NameFileToLog          string     `yaml:"FileToLog" toml:"log" env:"FLOW_LOG"`
+	addrMacFromSyslog      string     `yaml:"addrMacFromSyslog" toml:"addrmacfromsyslog" env:"ADDR_M4S"`
+	outMethod              string     `yaml:"outMethod" toml:"outmethod" env:"OUT_METHOD"`
+	outDestination         string     `yaml:"outDestination" toml:"outdestination" env:"OUT_DESTINATION"`
+	BindAddr               string     `yaml:"BindAddr" toml:"bindaddr" env:"ADDR_M4M" envdefault:":3030"`
+	MTAddr                 string     `yaml:"MTAddr" toml:"mtaddr" env:"ADDR_MT"`
+	MTUser                 string     `yaml:"MTUser" toml:"mtuser" env:"USER_MT"`
+	MTPass                 string     `yaml:"MTPass" toml:"mtpass" env:"PASS_MT"`
+	GMT                    string     `yaml:"GMT" toml:"gmt" env:"GMT"`
 	Interval               string
 	receiveBufferSizeBytes int  `yaml:"receiveBufferSizeBytes" toml:"receiveBufferSizeBytes" env:"GONFLUX_BUFSIZE"`
 	useTLS                 bool `yaml:"tls" toml:"tls" env:"TLS"`
+	// properties             string
 	// async                  bool `yaml:"async" toml:"async" env:"ASYNC_MT"`
 }
 
