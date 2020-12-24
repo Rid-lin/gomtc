@@ -242,7 +242,7 @@ func (data *transport) pipeOutputToStdoutForSquid(outputChannel chan decodedReco
 			continue
 		}
 		log.Tracef("Added to log:%v", message)
-		if _, err := filetDestination.WriteString(message); err != nil {
+		if _, err := filetDestination.WriteString(message + "\n"); err != nil {
 			log.Errorf("Error writing data buffer:%v", err)
 		}
 	}
