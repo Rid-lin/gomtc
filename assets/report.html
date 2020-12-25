@@ -1,0 +1,36 @@
+{{ define "report" }} Название отчета{{.NameOfReport}}
+<br>
+<div>
+    <form action="/flow" method="get" id="report">
+        <label for="date_from">Начальная дата: </label>
+        <input type="date" id="date_from" name="date_from" value="{{.Today}}" />
+        <label for="date_to">Конечная дата: </label>
+        <input type="date" id="date_to" name="date_to" value="{{.Today}}" />
+        <input type="submit" text="Отправить" />
+    </form>
+</div>
+<hr> таблица с данными
+<table>
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Пользователь</th>
+            <th>Логин</th>
+            <th>IP-адрес</th>
+            <th>Объём в Мб</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range $k, $v := .DisplayTable}}
+        <tr>
+            <th>{{$k}}</th>
+            <th>{{$v.Aliase}}</th>
+            <th>{{$v.Login}}</th>
+            <th>{{$v.IP}}</th>
+            <th>{{$v.Size}}</th>
+        </tr>
+        {{end}}
+    </tbody>
+
+</table>
+{{ end }}
