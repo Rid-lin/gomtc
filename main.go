@@ -38,11 +38,8 @@ func main() {
 	data := NewTransport(cfg)
 	go data.getDataFromMT(c)
 
-	http.HandleFunc("/", handleIndex)
-	http.HandleFunc("/report", data.handleReport)
-	http.HandleFunc("/flow", data.handleFlow)
+	http.HandleFunc("/", handleIndex())
 	http.HandleFunc("/getmac", data.getmacHandler())
-	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
 
 	log.Infof("MacFromMikrotik-server listen %v", cfg.BindAddr)
 
