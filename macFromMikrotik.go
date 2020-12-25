@@ -45,6 +45,9 @@ func (data *transport) GetInfo(request *request) ResponseType {
 		response.Mac = request.IP
 		response.IP = request.IP
 	}
+	if response.Mac == "" {
+		response.Mac = request.IP
+	}
 
 	return response
 }
