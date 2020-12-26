@@ -1,0 +1,63 @@
+{{ define "report" }} Название отчета{{.NameOfReport}}
+<br>
+<div>
+    <form action="/flow" method="get" id="report">
+        <label for="date_from">Начальная дата: </label>
+        <input type="date" id="date_from" name="date_from" value="{{.Today}}" />
+        <label for="date_to">Конечная дата: </label>
+        <input type="date" id="date_to" name="date_to" value="{{.Today}}" />
+        <input type="submit" text="Отправить" />
+    </form>
+</div>
+<hr> таблица с данными
+<table>
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Пользователь</th>
+            <th>Логин</th>
+            <th>IP-адрес</th>
+            <th>Объём в Мб</th>
+            <th>00</th>
+            <th>01</th>
+            <th>02</th>
+            <th>03</th>
+            <th>04</th>
+            <th>05</th>
+            <th>06</th>
+            <th>07</th>
+            <th>08</th>
+            <th>09</th>
+            <th>10</th>
+            <th>11</th>
+            <th>12</th>
+            <th>13</th>
+            <th>14</th>
+            <th>15</th>
+            <th>16</th>
+            <th>17</th>
+            <th>18</th>
+            <th>19</th>
+            <th>20</th>
+            <th>21</th>
+            <th>22</th>
+            <th>23</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range $k, $v := .}}
+        <tr>
+            <th>{{$k}}</th>
+            <th>{{$v.Aliase}}</th>
+            <th>{{$v.Login}}</th>
+            <th>{{$v.IP}}</th>
+            <th>{{$v.Size}}</th>
+            {{range $value := $v.HourSize}}
+            <th>{{$value.Size}}</th>
+            {{end}}
+        </tr>
+        {{end}}
+    </tbody>
+
+</table>
+{{ end }}

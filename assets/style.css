@@ -1,0 +1,239 @@
+* {
+    padding: 0;
+    margin: 0;
+}
+
+
+/* header {
+    padding: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 99;
+    background-color: rgb(233, 224, 213);
+}
+
+header ul {
+    display: inline-block;
+    list-style-type: none;
+    font-size: larger;
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+} */
+
+
+/* header ul li {
+    border-radius: 5px;
+    display: inline; */
+
+
+/* Отображать как строчный элемент */
+
+
+/* margin-right: 5px; */
+
+
+/* Отступ слева */
+
+
+/* padding: 0.7rem; */
+
+
+/* } */
+
+body {
+    height: 100%;
+    /* margin: 1rem; */
+}
+
+.news ul li {
+    margin: 0.5rem 1rem 0.5rem 3rem;
+}
+
+
+/* .body {
+    padding: 1rem;
+    display: grid;
+    margin: auto;
+    grid-template-columns: 1fr 3fr;
+    grid-gap: 10px;
+    justify-content: space-between;
+} */
+
+
+/* .section {
+    display: flex;
+    justify-content: space-between;
+    overflow-x: auto;
+    width: 500px;
+    margin: 50px auto;
+    scroll-snap-type: x mandatory;
+} */
+
+footer {
+    padding: 1rem;
+    display: grid;
+    margin: auto;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 10px;
+    justify-items: center;
+    justify-content: space-between;
+    position: sticky;
+    bottom: 0;
+    z-index: 99;
+    /* background-color: rgb(233, 224, 213); */
+    background-color: blanchedalmond;
+}
+
+
+/* задаем цвет фона для контейнера header. */
+
+header {
+    min-width: 716px;
+    width: 100%;
+    padding-left: 2%;
+    /* background-color: beige; */
+    background-color: blanchedalmond;
+    position: sticky;
+    top: 0;
+    z-index: 99;
+}
+
+
+/* убираем отступы и поля, а также list-style для "ul", 
+ * и добавляем "position:relative" */
+
+header ul {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    position: relative;
+}
+
+
+/* применяем inline-block позиционирование к элементам навигации */
+
+header ul li {
+    margin: 0px -7px 0 0;
+    display: inline-block;
+    background-color: blanchedalmond;
+}
+
+
+/* стилизуем ссылки */
+
+header a {
+    display: block;
+    padding: 0 10px;
+    font-size: 1.3rem;
+    line-height: 2rem;
+    text-decoration: none;
+}
+
+
+/* изменяем цвет фона при наведении курсора */
+
+header a:hover {
+    background-color: beige;
+    /* background-color: blanchedalmond; */
+}
+
+
+/* скрываем выпадающие списки по умолчанию
+			 * и задаем абсолютное позиционирование */
+
+header ul ul {
+    display: none;
+    position: absolute;
+    top: 100%;
+}
+
+
+/* отображаем выпадающий список при наведении */
+
+header ul li:hover>ul {
+    display: inherit;
+}
+
+
+/* первый уровень выпадающего списка */
+
+header ul ul li {
+    min-width: 175px;
+    float: none;
+    display: list-item;
+    position: relative;
+}
+
+
+/* второй, третий и последующие уровни 
+			 * смещаем 2 и 3 уровни влево 
+			 * на значение длины первого уровня.
+			*/
+
+header ul ul ul {
+    position: absolute;
+    top: 0;
+    left: 100%;
+}
+
+
+/* измените ' +' на любой другой символ, если нужно
+    */
+
+header li>a:after {
+    content: ' >';
+}
+
+header li>a:only-child:after {
+    content: '';
+}
+
+table {
+    border-spacing: 4px;
+    padding: 2px;
+}
+
+table,
+td {
+    border: 1px solid #333;
+    /* background-color: beige; */
+}
+
+thead,
+tfoot {
+    /* border: 1px solid #333; */
+    background-color: blanchedalmond;
+    /* background-color: #333; */
+    color: darkblue;
+}
+
+html body div.body_report table {
+    text-align: center;
+}
+
+html body div.body_report table tbody {
+    font-size: small;
+}
+
+html body div.body_report table tbody tr:nth-child(odd) {
+    background-color: rgb(231, 225, 202);
+}
+
+html body div.body_report table tbody tr:nth-child(even) {
+    background-color: beige;
+}
+
+.body_report table tbody tr th:nth-child(5) {
+    background-color: rgb(252, 210, 186);
+}
+
+html body div.body_report table tbody tr:nth-child(even) {
+    background-color: beige;
+}
+
+html body div.body_report title {
+    padding: 0 2% 0 2%;
+}
+
+html body div.body_report div {
+    padding: 0 2% 0 2%;
+}

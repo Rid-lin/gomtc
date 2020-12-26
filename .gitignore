@@ -15,4 +15,9 @@ build/*
 
 *.log
 .vscode/*
+<<<<<<< HEAD
 SQL/*
+=======
+.vscode/launch.json
+SQL/*
+>>>>>>> feature_interface

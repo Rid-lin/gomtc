@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -18,6 +19,16 @@ func getExitSignalsChannel() chan os.Signal {
 		// syscall.SIGHUP, // "terminal is disconnected"
 	)
 	return c
+
+}
+
+func (t *transport) Exit() {
+	<-t.exitChan
+	t.c.Close()
+	t.filetDestination.Close()
+	t.conn.Close()
+	log.Println("Shutting down")
+	os.Exit(0)
 
 }
 
