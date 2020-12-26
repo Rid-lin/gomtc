@@ -31,6 +31,7 @@ type Config struct {
 	GMT                    string     `yaml:"GMT" toml:"gmt" env:"GMT"`
 	Interval               string
 	SQLArddr               string `yaml:"SQLArddr" toml:"sqlarddr" env:"SQL_ADDR"`
+	AssetsPath             string `yaml:"AssetsPath" toml:"assetspath" env:"ASSETS_PATH"`
 	receiveBufferSizeBytes int    `yaml:"receiveBufferSizeBytes" toml:"receiveBufferSizeBytes" env:"GONFLUX_BUFSIZE"`
 	useTLS                 bool   `yaml:"tls" toml:"tls" env:"TLS"`
 }
@@ -52,6 +53,7 @@ func newConfig(configFilename string) *Config {
 	flag.StringVar(&cfg.MTUser, "u", "", "User of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken")
 	flag.StringVar(&cfg.MTPass, "p", "", "The password of the user of the Mikrotik router, from which the data on the comparison of the mac-address and IP-address is taken")
 	flag.StringVar(&cfg.BindAddr, "m4maddr", ":3030", "Listen address for HTTP-server")
+	flag.StringVar(&cfg.AssetsPath, "assetspath", "./assets", "The path to the assets folder where the template files are located")
 	flag.StringVar(&cfg.SQLArddr, "sqladdr", "", "string to connect DB (e.g. username:password@protocol(address)/dbname?param=value) More details in https://github.com/go-sql-driver/mysql#dsn-data-source-name")
 	flag.StringVar(&cfg.Interval, "interval", "10m", "Interval to getting info from Mikrotik")
 	flag.BoolVar(&cfg.useTLS, "tls", false, "Using TLS to connect to a router")

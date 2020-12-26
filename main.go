@@ -29,7 +29,7 @@ func main() {
 	http.HandleFunc("/report", data.handleReport)
 	http.HandleFunc("/flow", data.handleFlow)
 	http.HandleFunc("/getmac", data.getmacHandler())
-	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
+	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(cfg.AssetsPath))))
 
 	log.Infof("MacFromMikrotik-server listen %v", cfg.BindAddr)
 

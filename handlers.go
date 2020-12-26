@@ -62,7 +62,7 @@ type Dysplaydata struct {
 // }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
-	indextmpl, err := template.ParseFiles("assets/index.html", "assets/header.html", "assets/news.html", "assets/footer.html")
+	indextmpl, err := template.ParseFiles(cfg.AssetsPath+"/index.html", cfg.AssetsPath+"/header.html", cfg.AssetsPath+"/news.html", cfg.AssetsPath+"/footer.html")
 	if err != nil {
 		fmt.Fprint(w, err.Error())
 		return
@@ -75,7 +75,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 
 func (data *transport) handleReport(w http.ResponseWriter, r *http.Request) {
 
-	indextmpl, err := template.ParseFiles("assets/index.html", "assets/header.html", "assets/menu.html", "assets/right.html", "assets/footer.html")
+	indextmpl, err := template.ParseFiles(cfg.AssetsPath+"/index.html", cfg.AssetsPath+"/header.html", cfg.AssetsPath+"/menu.html", cfg.AssetsPath+"/right.html", cfg.AssetsPath+"/footer.html")
 	if err != nil {
 		fmt.Fprint(w, err.Error())
 		return
@@ -224,7 +224,7 @@ func (data *transport) handleFlow(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Starting template processing to display the page in the browser
-	indextmpl, err := template.ParseFiles("assets/flow.html", "assets/header.html", "assets/menu.html", "assets/report.html", "assets/footer.html")
+	indextmpl, err := template.ParseFiles(cfg.AssetsPath+"/flow.html", cfg.AssetsPath+"/header.html", cfg.AssetsPath+"/menu.html", cfg.AssetsPath+"/report.html", cfg.AssetsPath+"/footer.html")
 	if err != nil {
 		fmt.Fprint(w, err.Error())
 		return
