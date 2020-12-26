@@ -15,13 +15,5 @@ build/*
 
 *.log
 .vscode/*
-<<<<<<< HEAD
 SQL/*
-=======
-<<<<<<< HEAD
-SQL/*
-=======
-.vscode/launch.json
-SQL/*
->>>>>>> feature_interface
->>>>>>> develop
+bin/*
