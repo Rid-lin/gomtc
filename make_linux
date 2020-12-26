@@ -1,0 +1,29 @@
+APP?=gonflux
+GOOS?=linux
+
+PROJECTNAME?=$(shell basename $(PWD))
+COMMIT?=$(shell git rev-parse --short HEAD)
+VERSION?=$(shell git describe --tags)
+BUILD_TIME?=$(shell date -u '+%Y-%m-%d_%H:%M:%S')
+
+.PHONY: rebuild
+rebuild: clean
+	CGO_ENABLED=0 GOOS=${GOOS} go build -v -a -mod vendor \
+		-ldflags "-w -s -X main.Version=$(VERSION) -X main.commit=${COMMIT} -X main.buildTime=${BUILD_TIME}" \
+		-o bin/${GOOS}/${APP} 
+
+.PHONY: build
+build: clean
+	CGO_ENABLED=0 GOOS=${GOOS}   go build -v -mod vendor \
+		-ldflags "-w -s -X main.Version=$(VERSION) -X main.commit=${COMMIT} -X main.buildTime=${BUILD_TIME}" \
+		-o bin/${GOOS}/${APP} 
+
+.PHONY: clean
+clean:
+	$(shell rm -f bin/${GOOS}/${APP})
+
+.PHONY: vendor
+vendor: 
+	go mod tidy &&\
+	go mod download &&\
+	go mod vendor
