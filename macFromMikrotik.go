@@ -1,11 +1,15 @@
 package main
 
 import (
+	"database/sql"
+	"net"
+	"os"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/go-routeros/routeros"
+	_ "github.com/go-sql-driver/mysql"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -58,17 +62,46 @@ Jun 22 21:40:16 192.168.65.1 dhcp,info dhcp_lan assigned 192.168.65.202 to E8:6F
 */
 
 func NewTransport(cfg *Config) *transport {
+	db, err := sql.Open("mysql", cfg.SQLArddr)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Open doesn't open a connection. Validate DSN data:
+	err = db.Ping()
+	if err != nil {
+		log.Fatal(err) // proper error handling instead of panic in your app
+	}
+	// defer db.Close()
+
+	c, err := dial(cfg)
+	if err != nil {
+		log.Errorf("Error connect to %v:%v", cfg.MTAddr, err)
+	}
+	// defer c.Close()
+
+	filetDestination, err = os.OpenFile(cfg.NameFileToLog, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		filetDestination.Close()
+		log.Fatalf("Error, the '%v' file could not be created (there are not enough premissions or it is busy with another program): %v", cfg.NameFileToLog, err)
+	}
+
 	return &transport{
-		ipToMac:     make(map[string]LineOfData),
-		renewOneMac: make(chan string, 100),
-		GMT:         cfg.GMT,
+		ipToMac:          make(map[string]LineOfData),
+		renewOneMac:      make(chan string, 100),
+		GMT:              cfg.GMT,
+		exitChan:         getExitSignalsChannel(),
+		db:               db,
+		c:                c,
+		filetDestination: filetDestination,
 	}
 }
 
-func (data *transport) getDataFromMT(c *routeros.Client) {
+func (data *transport) getDataFromMT() {
 	for {
 		var lineOfData LineOfData
-		reply, err := c.Run("/ip/arp/print")
+		reply, err := data.c.Run("/ip/arp/print")
 		if err != nil {
 			log.Error(err)
 		}
@@ -82,7 +115,7 @@ func (data *transport) getDataFromMT(c *routeros.Client) {
 			data.Unlock()
 
 		}
-		reply2, err2 := c.Run("/ip/dhcp-server/lease/print", "?status=bound", "?disabled=false")
+		reply2, err2 := data.c.Run("/ip/dhcp-server/lease/print", "?status=bound", "?disabled=false")
 		if err2 != nil {
 			log.Error(err)
 		}
@@ -128,20 +161,16 @@ type ResponseType struct {
 	Comment  string `JSON:"Comment"`
 }
 
-type LineOfData struct {
-	ip,
-	mac,
-	timeout,
-	hostName,
-	comment string
-	timeoutInt int64
-}
-
 type transport struct {
 	ipToMac map[string]LineOfData
 	// mapTable map[string][]lineOfLog
-	GMT         string
-	renewOneMac chan string
+	GMT              string
+	filetDestination *os.File
+	conn             *net.UDPConn
+	c                *routeros.Client
+	renewOneMac      chan string
+	exitChan         chan os.Signal
+	db               *sql.DB
 	sync.RWMutex
 }
 
