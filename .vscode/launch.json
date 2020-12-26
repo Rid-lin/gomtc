@@ -12,29 +12,20 @@
             "program": "${fileDirname}",
             "env": {},
             "args": [
-                // "-method=squid",
-                // "-method=stdout",
-                // "-method=udp",
-                // "-out=192.168.65.126:8089",
                 "-subnet=192.168.0.0/24",
                 "-subnet=192.168.13.0/24",
                 "-subnet=192.168.65.0/24",
                 "-subnet=10.61.152.0/24",
                 "-ignorlist=10.61.152.2",
-                // "-ignorlist=UDP_PACKET",
-                // "-ignorlist=:53 ",
                 "-ignorlist=:3128",
-                // "-ignorlist=:3128 ",
-                // "-ignorlist=/3128 ",
                 "-ignorlist=10.50.4.62:53",
-                // "-ignorlist=:123 ",
-                // "-ignorlist=/123 ",
                 "-ignorlist=ff02::",
                 "-log=access.log",
                 "-mtaddr=192.168.65.1:8728",
                 "-u=getmac",
                 "-p=getmac_password",
                 "-loglevel=debug",
+                "-sqladdr=user_name:password@/squidreport", //username:password@protocol(address)/dbname?param=value
 
             ]
         }
