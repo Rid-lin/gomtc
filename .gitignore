@@ -15,5 +15,6 @@ build/*
 
 *.log
 .vscode/*
+.vscode/launch.json
 SQL/*
 bin/*
