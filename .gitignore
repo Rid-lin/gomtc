@@ -14,11 +14,6 @@ build/*
 *.out
 
 *.log
-<<<<<<< HEAD
-bin/*
-SQL/*
-=======
 .vscode/*
 SQL/*
 bin/*
->>>>>>> goflow
