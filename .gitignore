@@ -5,6 +5,7 @@
 *.so
 *.dylib
 __debug_bin
+build/*
 
 # Test binary, build with `go test -c`
 *.test
@@ -13,5 +14,11 @@ __debug_bin
 *.out
 
 *.log
+<<<<<<< HEAD
 bin/*
 SQL/*
+=======
+.vscode/*
+SQL/*
+bin/*
+>>>>>>> goflow

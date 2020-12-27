@@ -1,89 +1,100 @@
-# Minimalist Netflow v5 to influxdb UDP collector written in Go 
+# Minimalist Netflow v5 to squid-log collector written in Go
 
-Forked by https://github.com/strzinek/gonflux
-Broker listens on specified UDP port (2055 by default), accepting Netflow traffic, and collecting records with selected metadata formatted in line protocol to UDP listener of [influxdb](https://github.com/influxdata/influxdb).
+The broker listens on UDP port (default 2055), accepts Netflow traffic, and by default collects records with selected metadata formatted into squid log. Login information replaces the Mac address of the device that receives from the router mikrotik.
 
-Project includes dockerfile for building runtime application as [docker](https://www.docker.com) container and also [Gitlab CI](https://about.gitlab.com/product/continuous-integration) definition file both for pushing build to docker registry and also for deploying to production docker server.
-
-To enable UDP listener for influxdb, either modify `influxd.conf` file and add:
-
-```
-[[udp]]
-enabled = true
-bind-address = ":8089"
-database = "db_for_netflow"
-```
-
-or set following environment variables:
-
-```
-INFLUXDB_UDP_ENABLED
-INFLUXDB_UDP_BIND_ADDRESS
-INFLUXDB_UDP_DATABASE
-```
-
-Netflow data in influxdb can then be analyzed for example with help of [Grafana](https://grafana.com).
-
-**BEWARE!!!**
-
-The cardinality of general Netflow data is quite high, so to use influxdb effectively for it, I suggest using several retention policies and downsampling the measurements.
-
-PLAN FIRST! ;-)
+To build the report, it uses the [screensquid](https://sourceforge.net/projects/screen-squid/) database and its part (fetch.pl) for parsing and loading the squid log into the database
 
 ## Usage
 
-```
-gonflux -method udp -out influxdb.local:8089
-```
+Clone repository
 
-Supported command line parameters:
+`git clone https://github.com/Rid-lin/gonsquid.git`
+
+`cd gonsquid`
+
+Copy folder assets to /usr/share/gonsquid/
+
+`cp /assets /usr/share/gonsquid/`
+
+Build programm:
+
+`make -f make_linux`
+
+Move binary file
+
+`mv ./bin/linux/gonsquid /usr/local/bin/`
+
+Edit file /usr/share/gonsquid/assets/gonsquid.service
+
+`nano /usr/share/gonsquid/assets/gonsquid.service`
+
+E.g.
+
+`/usr/local/bin/gonsquid -subnet=10.0.0.0/8 -subnet=192.168.0.0/16 -ignorlist=10.0.0.2 -ignorlist=:3128 -ignorlist=8.8.8.8:53 -ignorlist=ff02:: -loglevel=debug -log=/var/log/gonsquid/access.log -mtaddr=192.168.1.1:8728 -u=mikrotik_user -p=mikrotik_user_password -sqladdr=mysql_user_name:mysql_password@/screensquid -assetspath=/usr/share/gonsquid/assets`
+
+and move to /lib/systemd/system
+
+`mv /usr/share/gonsquid/assets/gonsquid.service /lib/systemd/system`
+
+Make sure the log folder exists, If not then
+
+`mkdir -p /var/log/gonsquid/`
+
+Configuring sistemd to automatically start the program
+
+`systemctl daemon-reload`
+
+`systemctl start gonsquid`
+
+`systemctl enable gonsquid`
+
+Edit the file "fetch.pl" in accordance with the comments and recommendations.
+
+Add a task to cron (start every 5 minutes)
+
+`crontab -e`
+
+`*/5 * * * * /var/www/screensquid/fetch.pl > /dev/null 2>&1`
+
+## Supported command line parameters
+
 ```
+Usage of gonsquid.exe:
+  -addr string
+        Address and port to listen NetFlow packets (default "0.0.0.0:2055")
+  -assetspath string
+        The path to the assets folder where the template files are located (default "./assets")
   -buffer int
         Size of RxQueue, i.e. value for SO_RCVBUF in bytes (default 212992)
-  -in string
-        Address and port to listen for NetFlow packets (default "0.0.0.0:2055")
-  -method string
-        Output method: stdout, udp (default "stdout")
-  -out string
-        Address and port of influxdb to send decoded data
-```
-
-Or with docker container: 
-
-```
-docker run --name=gonflux -t --restart=always -p 2055:2055/udp -e METHOD='udp' -e OUT='influxdb.local:8089' -d strzinek/gonflux
+  -gmt string
+        GMT offset time (default "+0500")
+  -ignorlist value
+        List of lines that will be excluded from the final log
+  -interval string
+        Interval to getting info from Mikrotik (default "10m")
+  -log string
+        The file where logs will be written in the format of squid logs
+  -loglevel string
+        Log level (default "info")
+  -m4maddr string
+        Listen address for HTTP-server (default ":3030")
+  -mtaddr string
+        The address of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken
+  -p string
+        The password of the user of the Mikrotik router, from which the data on the comparison of the mac-address and IP-address is taken
+  -sqladdr string
+        string to connect DB (e.g. username:password@protocol(address)/dbname?param=value) More details in https://github.com/go-sql-driver/mysql#dsn-data-source-name
+  -subnet value
+        List of subnets traffic between which will not be counted
+  -tls
+        Using TLS to connect to a router
+  -u string
+        User of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken
 ```
 
 ## Credits
 
 This project was created with help of:
 
-*  https://github.com/chemidy/smallest-secured-golang-docker-image
-*  https://github.com/yunazuno/nfcollect
-
-## Licence
-**MIT**
-
-Copyright (c) 2019 Pavel Strzinek
-
-Permission is hereby granted, free of charge, to any person
-obtaining a copy of this software and associated documentation
-files (the "Software"), to deal in the Software without
-restriction, including without limitation the rights to use,
-copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the
-Software is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-OTHER DEALINGS IN THE SOFTWARE.
-
+* https://github.com/strzinek/gonflux
+* https://sourceforge.net/projects/screen-squid/

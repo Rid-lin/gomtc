@@ -8,6 +8,7 @@ GOARCH := amd64
 TAG := $(VERSION)_$(GOOS)_$(GOARCH)
 PLATFORMS=darwin linux windows
 ARCHITECTURES=386 amd64
+UPX := $(shell /mnt/c/apps/upx.exe)
 
 # Use linker flags to provide version/build settings
 LDFLAGS=-ldflags "-w -s -X=main.Version=$(VERSION) -X=main.Build=$(BUILD)"
@@ -21,32 +22,43 @@ K := $(foreach exec,$(EXECUTABLES),\
 
 build: buildwithoutdebug pack
 
+.PHONY: buildfordebug
 buildfordebug:
-	@go build -o build/$(PROJECTNAME)_$(TAG).exe -v ./
+	@go build -o build/$(PROJECTNAME)_$(VERSION)_$(GOOS)_$(GOARCH).exe -v ./
 
+.PHONY: buildwithoutdebug
 buildwithoutdebug:
-	@go build $(LDFLAGS) -o build/$(PROJECTNAME)_$(TAG).exe -v ./
+	@go build $(LDFLAGS) -o build/$(PROJECTNAME)_$(VERSION)_$(GOOS)_$(GOARCH).exe -v ./
 
+.PHONY: buildwodebug_linux
 buildwodebug_linux:
-	@set GOOS=linux&& go build $(LDFLAGS) -o build/$(PROJECTNAME)_$(TAG) -v ./
+	$(shell export GOOS=linux; go build $(LDFLAGS) -o build/$(PROJECTNAME)_$(VERSION)_$(GOOS)_$(GOARCH) -v ./)
 
+.PHONY: buildwithoutdebug_linux
 buildwithoutdebug_linux:
 	@set GOARCH=$(GOARCH)&&set GOOS=$(GOOS)
 	@go build $(LDFLAGS) -o build/$(PROJECTNAME)_$(VERSION)_$(GOOS)_$(GOARCH) -v ./
 
+.PHONY: prebuild_all
 prebuild_all:
 	$(foreach GOOS, $(PLATFORMS),\
 	$(foreach GOARCH, $(ARCHITECTURES), $(shell export GOOS=$(GOOS); export GOARCH=$(GOARCH); go build -v $(LDFLAGS) -o build/$(PROJECTNAME)_$(VERSION)_$(GOOS)_$(GOARCH))))
 
+
+.PHONY: build_all
 build_all: prebuild_all pack
 
-run: build
-	build/$(PROJECTNAME)_$(TAG).exe
-	
-.DUFAULT_GOAL := build
 
+.PHONY: run
+run: build
+	build/$(PROJECTNAME)_$(VERSION)_$(GOOS)_$(GOARCH).exe
+	
+.DUFAULT_GOAL := prebuild_all
+
+
+.PHONY: pack
 pack:
-	upx --ultra-brute build/$(PROJECTNAME)*
+	$(UPX) --ultra-brute build/$(PROJECTNAME)*
 
 mod_init:
 	go mod init github.com/$(USERNAME)/$(PROJECTNAME)
