@@ -18,3 +18,5 @@ build/*
 .vscode/launch.json
 SQL/*
 bin/*
+config.toml
+gonsquid.service

@@ -138,9 +138,9 @@ func (data *transport) handleFlow(w http.ResponseWriter, r *http.Request) {
     LEFT OUTER JOIN scsq_alias sa ON sa.tableid=tmp.login and sa.typeid=0
     INNER JOIN scsq_logins as scsq_log on scsq_log.id=tmp.login
     INNER JOIN scsq_ipaddress as scsq_ip on scsq_ip.id=tmp.ipaddress
-  	    GROUP BY scsq_log.name,
-        scsq_ip.name
-    ORDER BY s DESC;`))
+	GROUP BY scsq_log.name,
+	scsq_ip.name
+    	ORDER BY s DESC;`))
 	if err != nil {
 		log.Error(err)
 	}
@@ -178,12 +178,8 @@ func (data *transport) handleFlow(w http.ResponseWriter, r *http.Request) {
 		log.Error(err)
 	}
 	defer rows.Close()
-	// TrafficOneHoursLogins := make(map[KeyForLineOfTraffic]float32)
-	// TrafficOneHoursLogins := TrafficOneHoursLoginsType{}
-	TrafficByHoursLogins := TrafficOneHoursLoginsType{}
 
-	// TrafficByHoursLogins := make(map[]float32, 24)
-	// TrafficByHoursLogins := make([]map[string]interface{}, 1, 1)
+	TrafficByHoursLogins := TrafficOneHoursLoginsType{}
 	var (
 		idLogin, sizeHour, hour int
 		login                   string
@@ -200,8 +196,6 @@ func (data *transport) handleFlow(w http.ResponseWriter, r *http.Request) {
 			Hour:    hour,
 		}
 		TrafficByHoursLogins[*key] = math.Round((float64(sizeHour)/(1024.*1024.))*100) / 100
-
-		// TrafficByHoursLogins[hour] = float32(TrafficOneHoursLogins[*key])
 	}
 
 	for index := range ReportData {
