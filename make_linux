@@ -1,7 +1,7 @@
-APP?=gonflux
+# APP?=gonsquid
 GOOS?=linux
 
-PROJECTNAME?=$(shell basename $(PWD))
+APP?=$(shell basename $(PWD))
 COMMIT?=$(shell git rev-parse --short HEAD)
 VERSION?=$(shell git describe --tags)
 BUILD_TIME?=$(shell date -u '+%Y-%m-%d_%H:%M:%S')

@@ -10,12 +10,10 @@ import (
 
 func main() {
 	var (
-		// conn           *net.UDPConn
-		err            error
-		configFilename string = "config.toml"
+		err error
 	)
 
-	cfg := newConfig(configFilename)
+	cfg := newConfig()
 
 	cache.cache = make(map[string]cacheRecord)
 

@@ -1,0 +1,18 @@
+[Unit]
+  Description=Netflow to squid-log file translator
+  After=network.target
+ 
+[Service]
+  ExecStart=/usr/local/bin/gonsquid --subnet=10.0.0.0/8 -subnet=192.168.0.0/16 -ignorlist=10.0.0.2 -ignorlist=:3128 -ignorlist=8.8.8.8:53 -ignorlist=ff02:: -loglevel=debug -log=/var/log/flow/access.log -mtaddr=192.168.1.1:8728 -u=mikrotik_user -p=mikrotik_user_password -sqladdr=mysql_user_name:mysql_password@/screensquid -assetspath=/usr/share/gonsquid/assets
+  ExecStop=/bin/kill -HUP $MAINPID
+  Type=idle
+  KillMode=process
+  Restart=on-failure
+
+  SyslogIdentifier=gonsquid
+  SyslogFacility=daemon
+  User=proxy
+  Group=proxy
+ 
+[Install]
+  WantedBy=multiuser.target

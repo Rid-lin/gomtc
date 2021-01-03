@@ -1,21 +1,24 @@
-APP?=gonsquid.exe
-GOOS?=windows
+# APP?=gonsquid
+GOOS?=linux
+GOARCH?=ppc64
 
+PWD?=$(shell pwd)
+APP?=$(shell basename $(PWD))
 COMMIT?=$(shell git rev-parse --short HEAD)
 VERSION?=$(shell git describe --tags)
 BUILD_TIME?=$(shell date -u '+%Y-%m-%d_%H:%M:%S')
 
 .PHONY: rebuild
 rebuild: clean
-	CGO_ENABLED=0 GOOS=${GOOS} go build -v -a -mod vendor \
+	CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH} go build -v -a -mod vendor \
 		-ldflags "-w -s -X main.Version=$(VERSION) -X main.commit=${COMMIT} -X main.buildTime=${BUILD_TIME}" \
-		-o bin/${GOOS}/${APP} 
+		-o bin/${GOOS}/${APP}_${GOARCH}
 
 .PHONY: build
 build: clean
-	CGO_ENABLED=0 GOOS=${GOOS}   go build -v -mod vendor \
+	CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH}   go build -v -mod vendor \
 		-ldflags "-w -s -X main.Version=$(VERSION) -X main.commit=${COMMIT} -X main.buildTime=${BUILD_TIME}" \
-		-o bin/${GOOS}/${APP} 
+		-o bin/${GOOS}/${APP}_${GOARCH}
 
 .PHONY: clean
 clean:

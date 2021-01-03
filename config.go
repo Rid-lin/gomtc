@@ -21,6 +21,7 @@ func (i *arrayFlags) Set(value string) error {
 type Config struct {
 	SubNets                arrayFlags `yaml:"SubNets" toml:"subnets" env:"SUBNETS"`
 	IgnorList              arrayFlags `yaml:"IgnorList" toml:"ignorlist" env:"IGNORLIST"`
+	ConfigFilename         string     `yaml:"ConfigFilename" toml:"configfilename" env:"GONSQUID_CONFIG"`
 	LogLevel               string     `yaml:"LogLevel" toml:"loglevel" env:"LOG_LEVEL"`
 	FlowAddr               string     `yaml:"FlowAddr" toml:"flowaddr" env:"FLOW_ADDR" env-default:"0.0.0.0:2055"`
 	NameFileToLog          string     `yaml:"FileToLog" toml:"log" env:"FLOW_LOG"`
@@ -40,7 +41,7 @@ var (
 	cfg Config
 )
 
-func newConfig(configFilename string) *Config {
+func newConfig() *Config {
 	/* Parse command-line arguments */
 	flag.IntVar(&cfg.receiveBufferSizeBytes, "buffer", 212992, "Size of RxQueue, i.e. value for SO_RCVBUF in bytes")
 	flag.StringVar(&cfg.FlowAddr, "addr", "0.0.0.0:2055", "Address and port to listen NetFlow packets")
@@ -56,14 +57,15 @@ func newConfig(configFilename string) *Config {
 	flag.StringVar(&cfg.AssetsPath, "assetspath", "./assets", "The path to the assets folder where the template files are located")
 	flag.StringVar(&cfg.SQLArddr, "sqladdr", "", "string to connect DB (e.g. username:password@protocol(address)/dbname?param=value) More details in https://github.com/go-sql-driver/mysql#dsn-data-source-name")
 	flag.StringVar(&cfg.Interval, "interval", "10m", "Interval to getting info from Mikrotik")
+	flag.StringVar(&cfg.ConfigFilename, "config", "config.toml", "Path to config file")
 	flag.BoolVar(&cfg.useTLS, "tls", false, "Using TLS to connect to a router")
 
 	flag.Parse()
 
 	var config_source string
-	err := cleanenv.ReadConfig(configFilename, &cfg)
+	err := cleanenv.ReadConfig(cfg.ConfigFilename, &cfg)
 	if err != nil {
-		log.Warningf("No config file(%v) found: %v", configFilename, err)
+		log.Warningf("No config file(%v) found: %v", cfg.ConfigFilename, err)
 		config_source = "ENV/CFG"
 	} else {
 		config_source = "CLI"
