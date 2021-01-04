@@ -138,9 +138,8 @@ func (data *transport) handleFlow(w http.ResponseWriter, r *http.Request) {
     LEFT OUTER JOIN scsq_alias sa ON sa.tableid=tmp.login and sa.typeid=0
     INNER JOIN scsq_logins as scsq_log on scsq_log.id=tmp.login
     INNER JOIN scsq_ipaddress as scsq_ip on scsq_ip.id=tmp.ipaddress
-	GROUP BY scsq_log.name,
-	scsq_ip.name
-    	ORDER BY s DESC;`))
+	GROUP BY sa.name, scsq_log.name
+	ORDER BY s DESC;`))
 	if err != nil {
 		log.Error(err)
 	}
