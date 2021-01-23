@@ -1,8 +1,8 @@
 {{ define "flow" }} {{ template "header" }}
 <div class="body_report">
-    <title>
+    <div>
         {{.TitleReport}}
-    </title>
+    </div>
     <br>
     <div>
         <form action="/flow" method="get" id="report">
@@ -10,6 +10,7 @@
             <input type="date" id="date_from" name="date_from" value="{{.DateFrom}}" />
             <label for="date_to">Конечная дата: </label>
             <input type="date" id="date_to" name="date_to" value="{{.DateTo}}" />
+            <input id="requset" type="hidden" value="true" />
             <input type="submit" text="Отправить" />
         </form>
     </div>
@@ -51,11 +52,12 @@
         <tbody>
             {{range $k, $v := .ArrayDysplay}}
             <tr>
-                <th>{{$k}}</th>
-                <th>{{$v.Alias}}</th>
-                <th>{{$v.Login}}</th>
-                <th>{{$v.IP}}</th>
-                <th>{{$v.Size}}</th>
+                <th>a{{$k}}</th>
+                <th><a href="/edit#alias?type=alias&entity={{$v.Alias}}" target="_blank">{{$v.Alias}}</a></th>
+                <th><a href="/edit#login?type=login&entity={{$v.Login}}" target="_blank">{{$v.Login}}</a></th>
+                <th><a href="/edit#ip?type=ip&entity={{$v.IP}}" target="_blank">{{$v.IP}}</a></th>
+                <th>
+                    <a href="/edit#quota?type=quota&entity={{$v.Alias}}" target="_blank">{{$v.Size}}</a></th>
                 {{range $value := $v.HourSize}}
                 <th>{{$value}}</th>
                 {{end}}
