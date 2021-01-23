@@ -30,7 +30,7 @@ Edit file /usr/share/gonsquid/assets/gonsquid.service
 
 E.g.
 
-`/usr/local/bin/gonsquid -subnet=10.0.0.0/8 -subnet=192.168.0.0/16 -ignorlist=10.0.0.2 -ignorlist=:3128 -ignorlist=8.8.8.8:53 -ignorlist=ff02:: -loglevel=debug -log=/var/log/gonsquid/access.log -mtaddr=192.168.1.1:8728 -u=mikrotik_user -p=mikrotik_user_password -sqladdr=mysql_user_name:mysql_password@/screensquid -assetspath=/usr/share/gonsquid/assets`
+`/usr/local/bin/gonsquid -subnet=10.0.0.0/8 -subnet=192.168.0.0/16 -ignorlist=10.0.0.2 -ignorlist=:3128 -ignorlist=8.8.8.8:53 -ignorlist=ff02:: -loglevel=debug -log=/var/log/gonsquid/access.log -mtaddr=192.168.1.1:8728 -u=mikrotik_user -p=mikrotik_user_password -sqladdr=mysql_user_name:mysql_password@/screensquid`
 
 and move to /lib/systemd/system
 
@@ -62,8 +62,6 @@ Add a task to cron (start every 5 minutes)
 Usage of gonsquid.exe:
   -addr string
         Address and port to listen NetFlow packets (default "0.0.0.0:2055")
-  -assetspath string
-        The path to the assets folder where the template files are located (default "./assets")
   -buffer int
         Size of RxQueue, i.e. value for SO_RCVBUF in bytes (default 212992)
   -gmt string
@@ -77,7 +75,7 @@ Usage of gonsquid.exe:
   -loglevel string
         Log level (default "info")
   -m4maddr string
-        Listen address for HTTP-server (default ":3030")
+        Listen address for response mac-address from mikrotik (default ":3030")
   -mtaddr string
         The address of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken
   -p string
