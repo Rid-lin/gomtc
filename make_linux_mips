@@ -12,17 +12,19 @@ BUILD_TIME?=$(shell date -u '+%Y-%m-%d_%H:%M:%S')
 rebuild: clean
 	CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH} go build -v -a -mod vendor \
 		-ldflags "-w -s -X main.Version=$(VERSION) -X main.commit=${COMMIT} -X main.buildTime=${BUILD_TIME}" \
-		-o bin/${GOOS}/${APP}_${GOARCH}
+		-o bin/${GOOS}/${GOARCH}/${APP}
+	upx --ultra-brute bin/${GOOS}/${GOARCH}/${APP}
 
 .PHONY: build
 build: clean
 	CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH}   go build -v -mod vendor \
 		-ldflags "-w -s -X main.Version=$(VERSION) -X main.commit=${COMMIT} -X main.buildTime=${BUILD_TIME}" \
-		-o bin/${GOOS}/${APP}_${GOARCH}
+		-o bin/${GOOS}/${GOARCH}/${APP}
+	upx --ultra-brute bin/${GOOS}/${GOARCH}/${APP}
 
 .PHONY: clean
 clean:
-	$(shell rm -f bin/${GOOS}/${APP})
+	$(shell rm -f bin/${GOOS}/${GOARCH}/${APP})
 
 .PHONY: vendor
 vendor: 

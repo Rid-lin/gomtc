@@ -19,22 +19,21 @@ func (i *arrayFlags) Set(value string) error {
 }
 
 type Config struct {
-	SubNets                arrayFlags `yaml:"SubNets" toml:"subnets" env:"SUBNETS"`
-	IgnorList              arrayFlags `yaml:"IgnorList" toml:"ignorlist" env:"IGNORLIST"`
+	SubNets                arrayFlags `yaml:"SubNets" toml:"subnets" env:"GONSQUID_SUBNETS"`
+	IgnorList              arrayFlags `yaml:"IgnorList" toml:"ignorlist" env:"GONSQUID_IGNOR_LIST"`
 	ConfigFilename         string     `yaml:"ConfigFilename" toml:"configfilename" env:"GONSQUID_CONFIG"`
-	LogLevel               string     `yaml:"LogLevel" toml:"loglevel" env:"LOG_LEVEL"`
-	FlowAddr               string     `yaml:"FlowAddr" toml:"flowaddr" env:"FLOW_ADDR" env-default:"0.0.0.0:2055"`
-	NameFileToLog          string     `yaml:"FileToLog" toml:"log" env:"FLOW_LOG"`
-	BindAddr               string     `yaml:"BindAddr" toml:"bindaddr" env:"ADDR_M4M" envdefault:":3030"`
-	MTAddr                 string     `yaml:"MTAddr" toml:"mtaddr" env:"ADDR_MT"`
-	MTUser                 string     `yaml:"MTUser" toml:"mtuser" env:"USER_MT"`
-	MTPass                 string     `yaml:"MTPass" toml:"mtpass" env:"PASS_MT"`
-	GMT                    string     `yaml:"GMT" toml:"gmt" env:"GMT"`
+	LogLevel               string     `yaml:"LogLevel" toml:"loglevel" env:"GONSQUID_LOG_LEVEL"`
+	FlowAddr               string     `yaml:"FlowAddr" toml:"flowaddr" env:"GONSQUID_FLOW_ADDR" env-default:"0.0.0.0:2055"`
+	NameFileToLog          string     `yaml:"FileToLog" toml:"log" env:"GONSQUID_FLOW_LOG"`
+	BindAddr               string     `yaml:"BindAddr" toml:"bindaddr" env:"GONSQUID_ADDR_M4M" envdefault:":3030"`
+	MTAddr                 string     `yaml:"MTAddr" toml:"mtaddr" env:"GONSQUID_ADDR_MT"`
+	MTUser                 string     `yaml:"MTUser" toml:"mtuser" env:"GONSQUID_USER_MT"`
+	MTPass                 string     `yaml:"MTPass" toml:"mtpass" env:"GONSQUID_PASS_MT"`
+	GMT                    string     `yaml:"GMT" toml:"gmt" env:"GONSQUID_GMT"`
 	Interval               string
-	SQLArddr               string `yaml:"SQLArddr" toml:"sqlarddr" env:"SQL_ADDR"`
-	AssetsPath             string `yaml:"AssetsPath" toml:"assetspath" env:"ASSETS_PATH"`
-	receiveBufferSizeBytes int    `yaml:"receiveBufferSizeBytes" toml:"receiveBufferSizeBytes" env:"GONFLUX_BUFSIZE"`
-	useTLS                 bool   `yaml:"tls" toml:"tls" env:"TLS"`
+	SQLArddr               string `yaml:"SQLArddr" toml:"sqlarddr" env:"GONSQUID_SQL_ADDR"`
+	receiveBufferSizeBytes int    `yaml:"receiveBufferSizeBytes" toml:"receiveBufferSizeBytes" env:"GONSQUID_BUFSIZE"`
+	useTLS                 bool   `yaml:"tls" toml:"tls" env:"GONSQUID_TLS"`
 }
 
 var (
@@ -53,8 +52,7 @@ func newConfig() *Config {
 	flag.StringVar(&cfg.MTAddr, "mtaddr", "", "The address of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken")
 	flag.StringVar(&cfg.MTUser, "u", "", "User of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken")
 	flag.StringVar(&cfg.MTPass, "p", "", "The password of the user of the Mikrotik router, from which the data on the comparison of the mac-address and IP-address is taken")
-	flag.StringVar(&cfg.BindAddr, "m4maddr", ":3030", "Listen address for HTTP-server")
-	flag.StringVar(&cfg.AssetsPath, "assetspath", "./assets", "The path to the assets folder where the template files are located")
+	flag.StringVar(&cfg.BindAddr, "m4maddr", ":3030", "Listen address for response mac-address from mikrotik")
 	flag.StringVar(&cfg.SQLArddr, "sqladdr", "", "string to connect DB (e.g. username:password@protocol(address)/dbname?param=value) More details in https://github.com/go-sql-driver/mysql#dsn-data-source-name")
 	flag.StringVar(&cfg.Interval, "interval", "10m", "Interval to getting info from Mikrotik")
 	flag.StringVar(&cfg.ConfigFilename, "config", "config.toml", "Path to config file")
@@ -73,7 +71,7 @@ func newConfig() *Config {
 
 	lvl, err := log.ParseLevel(cfg.LogLevel)
 	if err != nil {
-		log.Errorf("Error in determining the level of logs (%v). Installed by default = Info", cfg.LogLevel)
+		log.Errorf("Error parse the level of logs (%v). Installed by default = Info", cfg.LogLevel)
 		lvl, _ = log.ParseLevel("info")
 	}
 	log.SetLevel(lvl)
