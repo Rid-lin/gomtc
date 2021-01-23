@@ -24,12 +24,9 @@ func main() {
 	go data.getDataFromMT()
 
 	http.HandleFunc("/", handleIndex)
-	http.HandleFunc("/report", data.handleReport)
-	http.HandleFunc("/flow", data.handleFlow)
 	http.HandleFunc("/getmac", data.getmacHandler())
-	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(cfg.AssetsPath))))
 
-	log.Infof("MacFromMikrotik-server listen %v", cfg.BindAddr)
+	log.Infof("gonsquid listens to:%v", cfg.BindAddr)
 
 	go func() {
 		err := http.ListenAndServe(cfg.BindAddr, nil)
@@ -46,7 +43,7 @@ func main() {
 	go data.pipeOutputToStdoutForSquid(outputChannel, filetDestination, cfg)
 
 	/* Start listening on the specified port */
-	log.Infof("Start listening on %v", cfg.FlowAddr)
+	log.Infof("Start listening to NetFlow stream on %v", cfg.FlowAddr)
 	addr, err := net.ResolveUDPAddr("udp", cfg.FlowAddr)
 	if err != nil {
 		log.Fatalf("Error: %v\n", err)

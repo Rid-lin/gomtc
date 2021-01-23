@@ -21,8 +21,6 @@ func (i *arrayFlags) Set(value string) error {
 type Config struct {
 	SubNets                arrayFlags `yaml:"SubNets" toml:"subnets" env:"GONSQUID_SUBNETS"`
 	IgnorList              arrayFlags `yaml:"IgnorList" toml:"ignorlist" env:"GONSQUID_IGNOR_LIST"`
-	GoodLogins             arrayFlags `yaml:"GoodLogins" toml:"goodlogins" env:"GONSQUID_GOOD_LOGINS"`
-	GoodIPs                arrayFlags `yaml:"GoodIPs" toml:"goodips" env:"GONSQUID_GOOD_IPS"`
 	ConfigFilename         string     `yaml:"ConfigFilename" toml:"configfilename" env:"GONSQUID_CONFIG"`
 	LogLevel               string     `yaml:"LogLevel" toml:"loglevel" env:"GONSQUID_LOG_LEVEL"`
 	FlowAddr               string     `yaml:"FlowAddr" toml:"flowaddr" env:"GONSQUID_FLOW_ADDR" env-default:"0.0.0.0:2055"`
@@ -34,10 +32,8 @@ type Config struct {
 	GMT                    string     `yaml:"GMT" toml:"gmt" env:"GONSQUID_GMT"`
 	Interval               string
 	SQLArddr               string `yaml:"SQLArddr" toml:"sqlarddr" env:"GONSQUID_SQL_ADDR"`
-	AssetsPath             string `yaml:"AssetsPath" toml:"assetspath" env:"GONSQUID_ASSETS_PATH"`
 	receiveBufferSizeBytes int    `yaml:"receiveBufferSizeBytes" toml:"receiveBufferSizeBytes" env:"GONSQUID_BUFSIZE"`
 	useTLS                 bool   `yaml:"tls" toml:"tls" env:"GONSQUID_TLS"`
-	DontShowFriends        bool   `yaml:"firends" toml:"firends" env:"GONSQUID_DNSF"`
 }
 
 var (
@@ -51,16 +47,12 @@ func newConfig() *Config {
 	flag.StringVar(&cfg.LogLevel, "loglevel", "info", "Log level")
 	flag.Var(&cfg.SubNets, "subnet", "List of subnets traffic between which will not be counted")
 	flag.Var(&cfg.IgnorList, "ignorlist", "List of lines that will be excluded from the final log")
-	flag.Var(&cfg.GoodLogins, "goodlogins", "Friends list of logins")
-	flag.Var(&cfg.GoodIPs, "goodips", "Friends list of ip-addresses")
-	flag.BoolVar(&cfg.DontShowFriends, "dontshowfriends", false, "Don't show friends")
 	flag.StringVar(&cfg.NameFileToLog, "log", "", "The file where logs will be written in the format of squid logs")
 	flag.StringVar(&cfg.GMT, "gmt", "+0500", "GMT offset time")
 	flag.StringVar(&cfg.MTAddr, "mtaddr", "", "The address of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken")
 	flag.StringVar(&cfg.MTUser, "u", "", "User of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken")
 	flag.StringVar(&cfg.MTPass, "p", "", "The password of the user of the Mikrotik router, from which the data on the comparison of the mac-address and IP-address is taken")
-	flag.StringVar(&cfg.BindAddr, "m4maddr", ":3030", "Listen address for HTTP-server")
-	flag.StringVar(&cfg.AssetsPath, "assetspath", "./assets", "The path to the assets folder where the template files are located")
+	flag.StringVar(&cfg.BindAddr, "m4maddr", ":3030", "Listen address for response mac-address from mikrotik")
 	flag.StringVar(&cfg.SQLArddr, "sqladdr", "", "string to connect DB (e.g. username:password@protocol(address)/dbname?param=value) More details in https://github.com/go-sql-driver/mysql#dsn-data-source-name")
 	flag.StringVar(&cfg.Interval, "interval", "10m", "Interval to getting info from Mikrotik")
 	flag.StringVar(&cfg.ConfigFilename, "config", "config.toml", "Path to config file")
