@@ -99,6 +99,11 @@ func NewTransport(cfg *Config) *transport {
 }
 
 func (data *transport) getDataFromMT() {
+	defer func() {
+		if e := recover(); e != nil {
+			log.Errorf("Error while trying to get data from the router:%v", e)
+		}
+	}()
 	for {
 		var lineOfData LineOfData
 		reply, err := data.c.Run("/ip/arp/print")
