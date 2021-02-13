@@ -31,9 +31,8 @@ type Config struct {
 	MTPass                 string     `yaml:"MTPass" toml:"mtpass" env:"GONSQUID_PASS_MT"`
 	GMT                    string     `yaml:"GMT" toml:"gmt" env:"GONSQUID_GMT"`
 	Interval               string
-	SQLArddr               string `yaml:"SQLArddr" toml:"sqlarddr" env:"GONSQUID_SQL_ADDR"`
-	receiveBufferSizeBytes int    `yaml:"receiveBufferSizeBytes" toml:"receiveBufferSizeBytes" env:"GONSQUID_BUFSIZE"`
-	useTLS                 bool   `yaml:"tls" toml:"tls" env:"GONSQUID_TLS"`
+	receiveBufferSizeBytes int  `yaml:"receiveBufferSizeBytes" toml:"receiveBufferSizeBytes" env:"GONSQUID_BUFSIZE"`
+	useTLS                 bool `yaml:"tls" toml:"tls" env:"GONSQUID_TLS"`
 }
 
 var (
@@ -53,7 +52,6 @@ func newConfig() *Config {
 	flag.StringVar(&cfg.MTUser, "u", "", "User of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken")
 	flag.StringVar(&cfg.MTPass, "p", "", "The password of the user of the Mikrotik router, from which the data on the comparison of the mac-address and IP-address is taken")
 	flag.StringVar(&cfg.BindAddr, "m4maddr", ":3030", "Listen address for response mac-address from mikrotik")
-	flag.StringVar(&cfg.SQLArddr, "sqladdr", "", "string to connect DB (e.g. username:password@protocol(address)/dbname?param=value) More details in https://github.com/go-sql-driver/mysql#dsn-data-source-name")
 	flag.StringVar(&cfg.Interval, "interval", "10m", "Interval to getting info from Mikrotik")
 	flag.StringVar(&cfg.ConfigFilename, "config", "config.toml", "Path to config file")
 	flag.BoolVar(&cfg.useTLS, "tls", false, "Using TLS to connect to a router")

@@ -4,9 +4,6 @@ github.com/BurntSushi/toml
 ## explicit
 github.com/go-routeros/routeros
 github.com/go-routeros/routeros/proto
-# github.com/go-sql-driver/mysql v1.5.0
-## explicit
-github.com/go-sql-driver/mysql
 # github.com/ilyakaznacheev/cleanenv v1.2.5
 ## explicit
 github.com/ilyakaznacheev/cleanenv
