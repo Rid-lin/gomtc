@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"net"
 	"os"
 	"strconv"
@@ -9,7 +8,6 @@ import (
 	"time"
 
 	"github.com/go-routeros/routeros"
-	_ "github.com/go-sql-driver/mysql"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -19,7 +17,7 @@ func (data *transport) GetInfo(request *request) ResponseType {
 	timeInt, err := strconv.ParseInt(request.Time, 10, 64)
 	if err != nil {
 		log.Errorf("Error parsing timeStamp(%v) from request:%v", timeInt, err)
-		//При невернозаданном времени убираем 30 секунд из текущего времени, чтобы была возможность идентифицировать IP адрес
+		//With an incorrect time, removes 30 seconds from the current time to be able to identify the IP address
 		timeInt = time.Now().Add(-30 * time.Second).Unix()
 	}
 	request.timeInt = timeInt
@@ -33,14 +31,14 @@ func (data *transport) GetInfo(request *request) ResponseType {
 		response.Hostname = ipStruct.hostName
 		response.Comment = ipStruct.comment
 	} else if ok {
-		// TODO убрать
+		// TODO remove
 		log.Tracef("IP:%v to MAC:%v, hostname:%v, comment:%v", ipStruct.ip, ipStruct.mac, ipStruct.hostName, ipStruct.comment)
 		response.Mac = ipStruct.mac
 		response.IP = ipStruct.ip
 		response.Hostname = ipStruct.hostName
 		response.Comment = ipStruct.comment
 	} else if !ok {
-		// TODO Сделать чтобы информация о мак-адресе загружалась из роутера
+		// TODO Make information about the mac-address loaded from the router
 		log.Tracef("IP:'%v' not find in table lease of router:'%v'", ipStruct.ip, cfg.MTAddr)
 		response.Mac = request.IP
 		response.IP = request.IP
@@ -62,18 +60,6 @@ Jun 22 21:40:16 192.168.65.1 dhcp,info dhcp_lan assigned 192.168.65.202 to E8:6F
 */
 
 func NewTransport(cfg *Config) *transport {
-	db, err := sql.Open("mysql", cfg.SQLArddr)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Open doesn't open a connection. Validate DSN data:
-	err = db.Ping()
-	if err != nil {
-		log.Fatal(err) // proper error handling instead of panic in your app
-	}
-	// defer db.Close()
 
 	c, err := dial(cfg)
 	if err != nil {
@@ -92,7 +78,6 @@ func NewTransport(cfg *Config) *transport {
 		renewOneMac:      make(chan string, 100),
 		GMT:              cfg.GMT,
 		exitChan:         getExitSignalsChannel(),
-		db:               db,
 		c:                c,
 		filetDestination: filetDestination,
 	}
@@ -130,12 +115,13 @@ func (data *transport) getDataFromMT() {
 			lineOfData.timeout = re.Map["expires-after"]
 			lineOfData.hostName = re.Map["host-name"]
 			lineOfData.comment = re.Map["comment"]
-			//Вычисляем время когда закончится аренда адреса
+
+			//Calculating the time when the lease of the address ends
 			timeStr, err := time.ParseDuration(lineOfData.timeout)
 			if err != nil {
 				timeStr = 10 * time.Second
 			}
-			// Записываем в переменную для дальнейшего быстрого сравнения
+			// Writes to a variable for further quick comparison
 			lineOfData.timeoutInt = time.Now().Add(timeStr).Unix()
 
 			data.Lock()
@@ -167,15 +153,13 @@ type ResponseType struct {
 }
 
 type transport struct {
-	ipToMac map[string]LineOfData
-	// mapTable map[string][]lineOfLog
+	ipToMac          map[string]LineOfData
 	GMT              string
 	filetDestination *os.File
 	conn             *net.UDPConn
 	c                *routeros.Client
 	renewOneMac      chan string
 	exitChan         chan os.Signal
-	db               *sql.DB
 	sync.RWMutex
 }
 

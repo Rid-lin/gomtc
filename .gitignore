@@ -20,3 +20,4 @@ SQL/*
 bin/*
 config.toml
 gonsquid.service
+db/*
