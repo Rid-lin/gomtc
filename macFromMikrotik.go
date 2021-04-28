@@ -67,19 +67,26 @@ func NewTransport(cfg *Config) *transport {
 	}
 	// defer c.Close()
 
-	filetDestination, err = os.OpenFile(cfg.NameFileToLog, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	fileDestination, err = os.OpenFile(cfg.NameFileToLog, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		filetDestination.Close()
+		fileDestination.Close()
+		log.Fatalf("Error, the '%v' file could not be created (there are not enough premissions or it is busy with another program): %v", cfg.NameFileToLog, err)
+	}
+
+	csvFiletDestination, err = os.OpenFile(cfg.NameFileToLog+".csv", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fileDestination.Close()
 		log.Fatalf("Error, the '%v' file could not be created (there are not enough premissions or it is busy with another program): %v", cfg.NameFileToLog, err)
 	}
 
 	return &transport{
-		ipToMac:          make(map[string]LineOfData),
-		renewOneMac:      make(chan string, 100),
-		GMT:              cfg.GMT,
-		exitChan:         getExitSignalsChannel(),
-		c:                c,
-		filetDestination: filetDestination,
+		ipToMac:             make(map[string]LineOfData),
+		renewOneMac:         make(chan string, 100),
+		GMT:                 cfg.GMT,
+		exitChan:            getExitSignalsChannel(),
+		c:                   c,
+		fileDestination:     fileDestination,
+		csvFiletDestination: csvFiletDestination,
 	}
 }
 
@@ -153,13 +160,14 @@ type ResponseType struct {
 }
 
 type transport struct {
-	ipToMac          map[string]LineOfData
-	GMT              string
-	filetDestination *os.File
-	conn             *net.UDPConn
-	c                *routeros.Client
-	renewOneMac      chan string
-	exitChan         chan os.Signal
+	ipToMac             map[string]LineOfData
+	GMT                 string
+	fileDestination     *os.File
+	csvFiletDestination *os.File
+	conn                *net.UDPConn
+	c                   *routeros.Client
+	renewOneMac         chan string
+	exitChan            chan os.Signal
 	sync.RWMutex
 }
 
