@@ -25,7 +25,7 @@ func getExitSignalsChannel() chan os.Signal {
 func (t *transport) Exit() {
 	<-t.exitChan
 	t.c.Close()
-	t.filetDestination.Close()
+	t.fileDestination.Close()
 	t.conn.Close()
 	log.Println("Shutting down")
 	os.Exit(0)

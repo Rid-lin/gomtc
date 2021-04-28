@@ -94,7 +94,7 @@ func decodeRecord(header *header, binRecord *binaryRecord, remoteAddr *net.UDPAd
 	return decodedRecord
 }
 
-func (data *transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) string {
+func (data *transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) (string, string) {
 	binRecord := record.binaryRecord
 	header := record.header
 	remoteAddr := record.Host
@@ -105,7 +105,7 @@ func (data *transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) s
 	// srcmac = srcmac[2:8]
 	// dstmac = dstmac[2:8]
 
-	var protocol, message string
+	var protocol, message, message2 string
 
 	switch fmt.Sprintf("%v", binRecord.Protocol) {
 	case "6":
@@ -138,6 +138,18 @@ func (data *transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) s
 			remoteAddr,                         // routerIP
 			net.HardwareAddr(srcmacB).String(), // srcmac
 			binRecord.L4DstPort)                // dstport
+		message2 = fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,non_inverse",
+			header.UnixSec,                       // time
+			binRecord.LastInt-binRecord.FirstInt, // delay
+			binRecord.InBytes,                    // size
+			protocol,                             // protocol
+			remoteAddr,                           // routerIP
+			intToIPv4Addr(binRecord.Ipv4DstAddrInt).String(), // dst ip
+			binRecord.L4DstPort, // dstport
+			dstmac,              // dstmac
+			intToIPv4Addr(binRecord.Ipv4SrcAddrInt).String(), // src ip
+			binRecord.L4SrcPort, // src port
+		)
 
 	} else if !ok && ok2 {
 		dstmac := data.GetInfo(&request{
@@ -155,9 +167,21 @@ func (data *transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) s
 			remoteAddr,                         // routerIP
 			net.HardwareAddr(srcmacB).String(), // srcmac
 			binRecord.L4DstPort)                // dstport
+		message2 = fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,inverse",
+			header.UnixSec,                       // time
+			binRecord.LastInt-binRecord.FirstInt, //delay
+			binRecord.InBytes,                    // size
+			protocol,                             // protocol
+			remoteAddr,                           // routerIP
+			intToIPv4Addr(binRecord.Ipv4SrcAddrInt).String(), //src ip - Local (reverses dst ip)
+			binRecord.L4SrcPort, // src port (reverses dst port)
+			dstmac,              // dstmac (reverses src mac)
+			intToIPv4Addr(binRecord.Ipv4DstAddrInt).String(), // dst ip - Inet  (reverses src ip)
+			binRecord.L4DstPort, // dstport  (reverses src port)
+		)
 
 	}
-	return message
+	return message, message2
 }
 
 func (cfg *Config) CheckEntryInSubNet(ipv4addr net.IP) bool {
@@ -185,21 +209,26 @@ func checkIP(subnet string, ipv4addr net.IP) (bool, error) {
 	return netA.Contains(ipv4addr), nil
 }
 
-func (data *transport) pipeOutputToStdoutForSquid(outputChannel chan decodedRecord, filetDestination *os.File, cfg *Config) {
+func (data *transport) pipeOutputToStdoutForSquid(outputChannel chan decodedRecord, cfg *Config) {
 	var record decodedRecord
 	for {
 		record = <-outputChannel
 		log.Tracef("Get from outputChannel:%v", record)
-		message := data.decodeRecordToSquid(&record, cfg)
+		message, csvMessage := data.decodeRecordToSquid(&record, cfg)
 		log.Tracef("Decoded record (%v) to message (%v)", record, message)
 		message = filtredMessage(message, cfg.IgnorList)
-		log.Tracef("Filtred message to (%v)", message)
 		if message == "" {
 			continue
 		}
-		log.Tracef("Added to log:%v", message)
-		if _, err := filetDestination.WriteString(message + "\n"); err != nil {
+		if _, err := data.fileDestination.WriteString(message + "\n"); err != nil {
 			log.Errorf("Error writing data buffer:%v", err)
+		} else {
+			log.Tracef("Added to log:%v", message)
+		}
+		if _, err := data.csvFiletDestination.WriteString(csvMessage + "\n"); err != nil {
+			log.Errorf("Error writing data buffer:%v", err)
+		} else {
+			log.Tracef("Added to log:%v", message)
 		}
 	}
 }
@@ -229,7 +258,8 @@ var (
 	// cache      = map[string]cacheRecord{}
 	// cacheMutex = sync.RWMutex{}
 	// writer           *bufio.Writer
-	filetDestination *os.File
+	fileDestination     *os.File
+	csvFiletDestination *os.File
 )
 
 func handlePacket(buf *bytes.Buffer, remoteAddr *net.UDPAddr, outputChannel chan decodedRecord, cfg *Config) {

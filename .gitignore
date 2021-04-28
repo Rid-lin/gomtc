@@ -21,3 +21,4 @@ bin/*
 config.toml
 gonsquid.service
 db/*
+*_old

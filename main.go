@@ -40,7 +40,7 @@ func main() {
 	/* Create output pipe */
 	outputChannel := make(chan decodedRecord, 100)
 
-	go data.pipeOutputToStdoutForSquid(outputChannel, filetDestination, cfg)
+	go data.pipeOutputToStdoutForSquid(outputChannel, cfg)
 
 	/* Start listening on the specified port */
 	log.Infof("Start listening to NetFlow stream on %v", cfg.FlowAddr)
