@@ -12,13 +12,10 @@ github.com/joho/godotenv
 # github.com/sirupsen/logrus v1.7.0
 ## explicit
 github.com/sirupsen/logrus
-# golang.org/x/sys v0.0.0-20201223074533-0d417f636930
-## explicit
-golang.org/x/sys/internal/unsafeheader
+# golang.org/x/sys v0.0.0-20191026070338-33540a1f6037
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# gopkg.in/yaml.v2 v2.4.0
-## explicit
+# gopkg.in/yaml.v2 v2.2.2
 gopkg.in/yaml.v2
 # olympos.io/encoding/edn v0.0.0-20200308123125-93e3b8dd0e24
 olympos.io/encoding/edn

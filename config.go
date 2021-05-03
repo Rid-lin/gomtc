@@ -25,7 +25,7 @@ type Config struct {
 	LogLevel               string     `yaml:"LogLevel" toml:"loglevel" env:"GONSQUID_LOG_LEVEL"`
 	FlowAddr               string     `yaml:"FlowAddr" toml:"flowaddr" env:"GONSQUID_FLOW_ADDR" env-default:"0.0.0.0:2055"`
 	NameFileToLog          string     `yaml:"FileToLog" toml:"log" env:"GONSQUID_FLOW_LOG"`
-	BindAddr               string     `yaml:"BindAddr" toml:"bindaddr" env:"GONSQUID_ADDR_M4M" envdefault:":3030"`
+	BindAddr               string     `yaml:"BindAddr" toml:"bindaddr" env:"GONSQUID_ADDR_M4M" env-default:":3030"`
 	MTAddr                 string     `yaml:"MTAddr" toml:"mtaddr" env:"GONSQUID_ADDR_MT"`
 	MTUser                 string     `yaml:"MTUser" toml:"mtuser" env:"GONSQUID_USER_MT"`
 	MTPass                 string     `yaml:"MTPass" toml:"mtpass" env:"GONSQUID_PASS_MT"`
@@ -33,6 +33,7 @@ type Config struct {
 	Interval               string
 	receiveBufferSizeBytes int  `yaml:"receiveBufferSizeBytes" toml:"receiveBufferSizeBytes" env:"GONSQUID_BUFSIZE"`
 	useTLS                 bool `yaml:"tls" toml:"tls" env:"GONSQUID_TLS"`
+	csv                    bool `yaml:"csv" toml:"csv" env:"GONSQUID_CSV"`
 }
 
 var (
@@ -55,6 +56,7 @@ func newConfig() *Config {
 	flag.StringVar(&cfg.Interval, "interval", "10m", "Interval to getting info from Mikrotik")
 	flag.StringVar(&cfg.ConfigFilename, "config", "config.toml", "Path to config file")
 	flag.BoolVar(&cfg.useTLS, "tls", false, "Using TLS to connect to a router")
+	flag.BoolVar(&cfg.csv, "csv", false, "Output to csv")
 
 	flag.Parse()
 

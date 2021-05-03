@@ -64,6 +64,7 @@ type decodedRecord struct {
 }
 
 func intToIPv4Addr(intAddr uint32) net.IP {
+
 	return net.IPv4(
 		byte(intAddr>>24),
 		byte(intAddr>>16),
@@ -123,10 +124,10 @@ func (data *transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) (
 	ok2 := cfg.CheckEntryInSubNet(intToIPv4Addr(binRecord.Ipv4SrcAddrInt))
 
 	if ok && !ok2 {
-		dstmac := data.GetInfo(&request{
+		response := data.GetInfo(&request{
 			IP:   intToIPv4Addr(binRecord.Ipv4DstAddrInt).String(),
-			Time: fmt.Sprint(header.UnixSec)}).Mac
-		message = fmt.Sprintf("%v.000 %6v %v %v/- %v HEAD %v:%v %v FIRSTUP_PARENT/%v packet_netflow/%v/:%v ",
+			Time: fmt.Sprint(header.UnixSec)})
+		message = fmt.Sprintf("%v.000 %6v %v %v/- %v HEAD %v:%v %v FIRSTUP_PARENT/%v packet_netflow/%v/:%v %v %v",
 			header.UnixSec,                                   // time
 			binRecord.LastInt-binRecord.FirstInt,             //delay
 			intToIPv4Addr(binRecord.Ipv4DstAddrInt).String(), // dst ip
@@ -134,11 +135,14 @@ func (data *transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) (
 			binRecord.InBytes, // size
 			intToIPv4Addr(binRecord.Ipv4SrcAddrInt).String(), //src ip
 			binRecord.L4SrcPort,                // src port
-			dstmac,                             // dstmac
+			response.Mac,                       // dstmac
 			remoteAddr,                         // routerIP
 			net.HardwareAddr(srcmacB).String(), // srcmac
-			binRecord.L4DstPort)                // dstport
-		message2 = fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,non_inverse",
+			binRecord.L4DstPort,                // dstport
+			response.Hostname,
+			response.Comment,
+		)
+		message2 = fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,non_inverse,%v",
 			header.UnixSec,                       // time
 			binRecord.LastInt-binRecord.FirstInt, // delay
 			binRecord.InBytes,                    // size
@@ -146,16 +150,18 @@ func (data *transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) (
 			remoteAddr,                           // routerIP
 			intToIPv4Addr(binRecord.Ipv4DstAddrInt).String(), // dst ip
 			binRecord.L4DstPort, // dstport
-			dstmac,              // dstmac
+			response.Mac,        // dstmac
+			response.Hostname,
 			intToIPv4Addr(binRecord.Ipv4SrcAddrInt).String(), // src ip
 			binRecord.L4SrcPort, // src port
+			response.Comment,
 		)
 
 	} else if !ok && ok2 {
-		dstmac := data.GetInfo(&request{
+		response := data.GetInfo(&request{
 			IP:   intToIPv4Addr(binRecord.Ipv4SrcAddrInt).String(),
-			Time: fmt.Sprint(header.UnixSec)}).Mac
-		message = fmt.Sprintf("%v.000 %6v %v %v/- %v HEAD %v:%v %v FIRSTUP_PARENT/%v packet_netflow_inverse/%v/:%v ",
+			Time: fmt.Sprint(header.UnixSec)})
+		message = fmt.Sprintf("%v.000 %6v %v %v/- %v HEAD %v:%v %v FIRSTUP_PARENT/%v packet_netflow_inverse/%v/:%v %v %v",
 			header.UnixSec,                                   // time
 			binRecord.LastInt-binRecord.FirstInt,             //delay
 			intToIPv4Addr(binRecord.Ipv4SrcAddrInt).String(), //src ip - Local
@@ -163,11 +169,14 @@ func (data *transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) (
 			binRecord.InBytes, // size
 			intToIPv4Addr(binRecord.Ipv4DstAddrInt).String(), // dst ip - Inet
 			binRecord.L4SrcPort,                // src port
-			dstmac,                             // dstmac
+			response.Mac,                       // dstmac
 			remoteAddr,                         // routerIP
 			net.HardwareAddr(srcmacB).String(), // srcmac
-			binRecord.L4DstPort)                // dstport
-		message2 = fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,inverse",
+			binRecord.L4DstPort,                // dstport
+			response.Hostname,
+			response.Comment,
+		)
+		message2 = fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,inverse,%v",
 			header.UnixSec,                       // time
 			binRecord.LastInt-binRecord.FirstInt, //delay
 			binRecord.InBytes,                    // size
@@ -175,9 +184,11 @@ func (data *transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) (
 			remoteAddr,                           // routerIP
 			intToIPv4Addr(binRecord.Ipv4SrcAddrInt).String(), //src ip - Local (reverses dst ip)
 			binRecord.L4SrcPort, // src port (reverses dst port)
-			dstmac,              // dstmac (reverses src mac)
+			response.Mac,        // dstmac (reverses src mac)
+			response.Hostname,
 			intToIPv4Addr(binRecord.Ipv4DstAddrInt).String(), // dst ip - Inet  (reverses src ip)
 			binRecord.L4DstPort, // dstport  (reverses src port)
+			response.Comment,
 		)
 
 	}
@@ -225,10 +236,12 @@ func (data *transport) pipeOutputToStdoutForSquid(outputChannel chan decodedReco
 		} else {
 			log.Tracef("Added to log:%v", message)
 		}
-		if _, err := data.csvFiletDestination.WriteString(csvMessage + "\n"); err != nil {
-			log.Errorf("Error writing data buffer:%v", err)
-		} else {
-			log.Tracef("Added to log:%v", message)
+		if cfg.csv {
+			if _, err := data.csvFiletDestination.WriteString(csvMessage + "\n"); err != nil {
+				log.Errorf("Error writing data buffer:%v", err)
+			} else {
+				log.Tracef("Added to CSV:%v", message)
+			}
 		}
 	}
 }
