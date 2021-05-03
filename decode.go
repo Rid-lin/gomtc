@@ -95,7 +95,7 @@ func decodeRecord(header *header, binRecord *binaryRecord, remoteAddr *net.UDPAd
 	return decodedRecord
 }
 
-func (data *transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) (string, string) {
+func (data *Transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) (string, string) {
 	binRecord := record.binaryRecord
 	header := record.header
 	remoteAddr := record.Host
@@ -220,7 +220,7 @@ func checkIP(subnet string, ipv4addr net.IP) (bool, error) {
 	return netA.Contains(ipv4addr), nil
 }
 
-func (data *transport) pipeOutputToStdoutForSquid(outputChannel chan decodedRecord, cfg *Config) {
+func (data *Transport) pipeOutputToStdoutForSquid(outputChannel chan decodedRecord, cfg *Config) {
 	var record decodedRecord
 	for {
 		record = <-outputChannel

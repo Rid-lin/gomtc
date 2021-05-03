@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -9,12 +10,15 @@ import (
 )
 
 type LineOfData struct {
+	id,
 	ip,
 	mac,
 	timeout,
 	hostName,
-	comment string
-	timeoutInt int64
+	comment,
+	disable string
+	addressLists []string
+	timeoutInt   int64
 }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
@@ -30,7 +34,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 			`)
 }
 
-func (data *transport) getmacHandler() http.HandlerFunc {
+func (data *Transport) handlerGetMac() http.HandlerFunc {
 	var (
 		request  request
 		Response ResponseType
@@ -49,5 +53,47 @@ func (data *transport) getmacHandler() http.HandlerFunc {
 		if err2 != nil {
 			log.Errorf("Error send response:%v", err2)
 		}
+	}
+}
+
+func (data *Transport) handlerSetStatusDevices(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("Content-Type") != "application/json" {
+		errorResponse(w, "Content Type is not application/json", http.StatusUnsupportedMediaType)
+		return
+	}
+
+	result := map[string]bool{}
+	var unmarshalErr *json.UnmarshalTypeError
+
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	err := decoder.Decode(&result)
+	if err != nil {
+		if errors.As(err, &unmarshalErr) {
+			errorResponse(w, "Bad Request. Wrong Type provided for field "+unmarshalErr.Field, http.StatusBadRequest)
+		} else {
+			errorResponse(w, "Bad Request "+err.Error(), http.StatusBadRequest)
+		}
+		return
+	}
+	data.syncStatusDevices(result)
+	// TODO тут должна быть функция которая передаёт на МТ информацию о раз/блокировке усройств
+
+	errorResponse(w, "Recived", http.StatusOK)
+	log.Println(result)
+}
+
+func errorResponse(w http.ResponseWriter, message string, httpStatusCode int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(httpStatusCode)
+	resp := make(map[string]string)
+	resp["message"] = message
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		log.Error(err)
+	}
+	_, err = w.Write(jsonResp)
+	if err != nil {
+		log.Error(err)
 	}
 }

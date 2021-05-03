@@ -22,11 +22,11 @@ func getExitSignalsChannel() chan os.Signal {
 
 }
 
-func (t *transport) Exit() {
-	<-t.exitChan
-	t.c.Close()
-	t.fileDestination.Close()
-	t.conn.Close()
+func (transport *Transport) Exit() {
+	<-transport.exitChan
+	transport.clientROS.Close()
+	transport.fileDestination.Close()
+	transport.conn.Close()
 	log.Println("Shutting down")
 	os.Exit(0)
 

@@ -29,7 +29,7 @@ type Config struct {
 	MTAddr                 string     `yaml:"MTAddr" toml:"mtaddr" env:"GONSQUID_ADDR_MT"`
 	MTUser                 string     `yaml:"MTUser" toml:"mtuser" env:"GONSQUID_USER_MT"`
 	MTPass                 string     `yaml:"MTPass" toml:"mtpass" env:"GONSQUID_PASS_MT"`
-	GMT                    string     `yaml:"GMT" toml:"gmt" env:"GONSQUID_GMT"`
+	loc                    string     `yaml:"loc" toml:"loc" env:"GONSQUID_LOC"`
 	Interval               string
 	receiveBufferSizeBytes int  `yaml:"receiveBufferSizeBytes" toml:"receiveBufferSizeBytes" env:"GONSQUID_BUFSIZE"`
 	useTLS                 bool `yaml:"tls" toml:"tls" env:"GONSQUID_TLS"`
@@ -48,7 +48,7 @@ func newConfig() *Config {
 	flag.Var(&cfg.SubNets, "subnet", "List of subnets traffic between which will not be counted")
 	flag.Var(&cfg.IgnorList, "ignorlist", "List of lines that will be excluded from the final log")
 	flag.StringVar(&cfg.NameFileToLog, "log", "", "The file where logs will be written in the format of squid logs")
-	flag.StringVar(&cfg.GMT, "gmt", "+0500", "GMT offset time")
+	flag.StringVar(&cfg.loc, "loc", "Asia/Yekaterinburg", "Location for time")
 	flag.StringVar(&cfg.MTAddr, "mtaddr", "", "The address of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken")
 	flag.StringVar(&cfg.MTUser, "u", "", "User of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken")
 	flag.StringVar(&cfg.MTPass, "p", "", "The password of the user of the Mikrotik router, from which the data on the comparison of the mac-address and IP-address is taken")

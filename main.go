@@ -21,10 +21,11 @@ func main() {
 	/*Creating a channel to intercept the program end signal*/
 	// exitChan := getExitSignalsChannel()
 
-	go data.getDataFromMT()
+	go data.loopGetDataFromMT()
 
 	http.HandleFunc("/", handleIndex)
-	http.HandleFunc("/getmac", data.getmacHandler())
+	http.HandleFunc("/getmac", data.handlerGetMac())
+	http.HandleFunc("/setstatusdevices", data.handlerSetStatusDevices)
 
 	log.Infof("gonsquid listens to:%v", cfg.BindAddr)
 
