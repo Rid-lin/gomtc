@@ -1,6 +1,6 @@
 # github.com/BurntSushi/toml v0.3.1
 github.com/BurntSushi/toml
-# github.com/go-routeros/routeros v0.0.0-20190905230431-4e69e5fc3b22
+# github.com/go-routeros/routeros v0.0.0-20210123142807-2a44d57c6730
 ## explicit
 github.com/go-routeros/routeros
 github.com/go-routeros/routeros/proto
@@ -9,7 +9,7 @@ github.com/go-routeros/routeros/proto
 github.com/ilyakaznacheev/cleanenv
 # github.com/joho/godotenv v1.3.0
 github.com/joho/godotenv
-# github.com/sirupsen/logrus v1.7.0
+# github.com/sirupsen/logrus v1.8.1
 ## explicit
 github.com/sirupsen/logrus
 # golang.org/x/sys v0.0.0-20191026070338-33540a1f6037
