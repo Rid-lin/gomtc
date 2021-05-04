@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net"
 	"os"
 	"strconv"
@@ -235,7 +236,9 @@ func (data *Transport) setStatusDevice(number string, status bool) error {
 	reply, err := data.clientROS.Run("/ip/dhcp-server/lease/set", "=disabled="+statusMtT, "=numbers="+number)
 	if err != nil {
 		return err
+	} else if reply.Done.Word != "!done" {
+		return fmt.Errorf("%v", reply.Done.Word)
 	}
-	log.Print(reply, number)
+	log.Tracef("Response from Mikrotik(numbers):%v(%v)", reply, number)
 	return nil
 }
