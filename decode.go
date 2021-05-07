@@ -236,7 +236,7 @@ func (data *Transport) pipeOutputToStdoutForSquid(outputChannel chan decodedReco
 		} else {
 			log.Tracef("Added to log:%v", message)
 		}
-		if cfg.csv {
+		if cfg.CSV {
 			if _, err := data.csvFiletDestination.WriteString(csvMessage + "\n"); err != nil {
 				log.Errorf("Error writing data buffer:%v", err)
 			} else {

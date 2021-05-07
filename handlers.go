@@ -9,16 +9,38 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type Quota struct {
+	Quotahourly,
+	Quotadaily,
+	Quotamonthly uint64
+}
+
+type User struct {
+	Name,
+	Position,
+	Company string
+}
+
 type LineOfData struct {
-	id,
-	ip,
-	mac,
+	Id,
+	Ip,
+	Mac,
 	timeout,
-	hostName,
-	comment,
+	HostName,
+	Comment,
 	disable string
 	addressLists []string
 	timeoutInt   int64
+	Quota
+	User
+}
+
+func logreq(f func(w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("path: %s", r.URL.Path)
+
+		f(w, r)
+	})
 }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
@@ -77,10 +99,17 @@ func (data *Transport) handlerSetStatusDevices(w http.ResponseWriter, r *http.Re
 		return
 	}
 	data.syncStatusDevices(result)
-	// TODO тут должна быть функция которая передаёт на МТ информацию о раз/блокировке усройств
 
 	errorResponse(w, "Recived", http.StatusOK)
 	log.Println(result)
+}
+
+func (data *Transport) handlerGetStatusDevices(w http.ResponseWriter, r *http.Request) {
+	json_data, err := json.Marshal(data.ipToMac)
+	if err != nil {
+		log.Errorf("Error witn Marshaling to JSON status of all devices:(%v)", err)
+	}
+	fmt.Fprint(w, string(json_data))
 }
 
 func errorResponse(w http.ResponseWriter, message string, httpStatusCode int) {
