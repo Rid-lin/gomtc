@@ -21,10 +21,16 @@ func main() {
 	/*Creating a channel to intercept the program end signal*/
 	// exitChan := getExitSignalsChannel()
 
-	go data.getDataFromMT()
+	data.Quotahourly = uint64(cfg.DefaultQuotaHourly * cfg.SizeOneMegabyte)
+	data.Quotadaily = uint64(cfg.DefaultQuotaDaily * cfg.SizeOneMegabyte)
+	data.Quotamonthly = uint64(cfg.DefaultQuotaMonthly * cfg.SizeOneMegabyte)
 
-	http.HandleFunc("/", handleIndex)
-	http.HandleFunc("/getmac", data.getmacHandler())
+	go data.loopGetDataFromMT()
+
+	http.HandleFunc("/", logreq(handleIndex))
+	http.HandleFunc("/getmac", logreq(data.handlerGetMac()))
+	http.HandleFunc("/setstatusdevices", logreq(data.handlerSetStatusDevices))
+	http.HandleFunc("/getstatusdevices", logreq(data.handlerGetStatusDevices))
 
 	log.Infof("gonsquid listens to:%v", cfg.BindAddr)
 
@@ -54,7 +60,7 @@ func main() {
 		if err != nil {
 			log.Errorln(err)
 		} else {
-			err = data.conn.SetReadBuffer(cfg.receiveBufferSizeBytes)
+			err = data.conn.SetReadBuffer(cfg.ReceiveBufferSizeBytes)
 			if err != nil {
 				log.Errorln(err)
 			} else {
