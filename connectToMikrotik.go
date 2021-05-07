@@ -61,9 +61,9 @@ func NewTransport(cfg *Config) *Transport {
 		}
 	}
 
-	Location, err := time.LoadLocation(cfg.loc)
+	Location, err := time.LoadLocation(cfg.Loc)
 	if err != nil {
-		log.Errorf("Error loading Location(%v):%v", cfg.loc, err)
+		log.Errorf("Error loading Location(%v):%v", cfg.Loc, err)
 		Location = time.UTC
 	}
 

@@ -246,7 +246,7 @@ func (data *Transport) pipeOutputToStdoutForSquid(outputChannel chan decodedReco
 	}
 }
 
-func filtredMessage(message string, IgnorList arrayFlags) string {
+func filtredMessage(message string, IgnorList []string) string {
 	for _, ignorStr := range cfg.IgnorList {
 		if strings.Contains(message, ignorStr) {
 			log.Tracef("Line of log :%v contains ignorstr:%v, skipping...", message, ignorStr)
