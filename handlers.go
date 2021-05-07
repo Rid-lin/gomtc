@@ -105,7 +105,19 @@ func (data *Transport) handlerSetStatusDevices(w http.ResponseWriter, r *http.Re
 }
 
 func (data *Transport) handlerGetStatusDevices(w http.ResponseWriter, r *http.Request) {
-	json_data, err := json.Marshal(data.ipToMac)
+	defaultLine := LineOfData{}
+
+	data.RLock()
+	dataToDSend := data.ipToMac
+
+	defaultLine.Quotahourly = data.Quotahourly
+	defaultLine.Quotadaily = data.Quotadaily
+	defaultLine.Quotamonthly = data.Quotamonthly
+	data.RUnlock()
+
+	dataToDSend["default"] = defaultLine
+
+	json_data, err := json.Marshal(dataToDSend)
 	if err != nil {
 		log.Errorf("Error witn Marshaling to JSON status of all devices:(%v)", err)
 	}
