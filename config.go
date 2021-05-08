@@ -1,39 +1,36 @@
 package main
 
 import (
-	"flag"
+	"time"
 
-	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/cristalhq/aconfig"
+	"github.com/cristalhq/aconfig/aconfigtoml"
+
 	log "github.com/sirupsen/logrus"
 )
 
-type arrayFlags []string
-
-func (i *arrayFlags) String() string {
-	return "List of strings"
-}
-
-func (i *arrayFlags) Set(value string) error {
-	*i = append(*i, value)
-	return nil
-}
-
 type Config struct {
-	SubNets                arrayFlags `yaml:"SubNets" toml:"subnets" env:"GONSQUID_SUBNETS"`
-	IgnorList              arrayFlags `yaml:"IgnorList" toml:"ignorlist" env:"GONSQUID_IGNOR_LIST"`
-	ConfigFilename         string     `yaml:"ConfigFilename" toml:"configfilename" env:"GONSQUID_CONFIG"`
-	LogLevel               string     `yaml:"LogLevel" toml:"loglevel" env:"GONSQUID_LOG_LEVEL"`
-	FlowAddr               string     `yaml:"FlowAddr" toml:"flowaddr" env:"GONSQUID_FLOW_ADDR" env-default:"0.0.0.0:2055"`
-	NameFileToLog          string     `yaml:"FileToLog" toml:"log" env:"GONSQUID_FLOW_LOG"`
-	BindAddr               string     `yaml:"BindAddr" toml:"bindaddr" env:"GONSQUID_ADDR_M4M" env-default:":3030"`
-	MTAddr                 string     `yaml:"MTAddr" toml:"mtaddr" env:"GONSQUID_ADDR_MT"`
-	MTUser                 string     `yaml:"MTUser" toml:"mtuser" env:"GONSQUID_USER_MT"`
-	MTPass                 string     `yaml:"MTPass" toml:"mtpass" env:"GONSQUID_PASS_MT"`
-	GMT                    string     `yaml:"GMT" toml:"gmt" env:"GONSQUID_GMT"`
-	Interval               string
-	receiveBufferSizeBytes int  `yaml:"receiveBufferSizeBytes" toml:"receiveBufferSizeBytes" env:"GONSQUID_BUFSIZE"`
-	useTLS                 bool `yaml:"tls" toml:"tls" env:"GONSQUID_TLS"`
-	csv                    bool `yaml:"csv" toml:"csv" env:"GONSQUID_CSV"`
+	// ConfigFilename         string   `default:"" usage:`
+	SubNets                []string `default:"" usage:"List of subnets traffic between which will not be counted"`
+	IgnorList              []string `default:"" usage:"List of lines that will be excluded from the final log"`
+	LogLevel               string   `default:"info" usage:"Log level: panic, fatal, error, warn, info, debug, trace"`
+	FlowAddr               string   `default:"0.0.0.0:2055" usage:"Address and port to listen NetFlow packets"`
+	NameFileToLog          string   `default:"" usage:"The file where logs will be written in the format of squid logs"`
+	BindAddr               string   `default:":3030" usage:"Listen address for response mac-address from mikrotik"`
+	MTAddr                 string   `default:"" usage:"The address of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken"`
+	MTUser                 string   `default:"" usage:"User of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken"`
+	MTPass                 string   `default:"" usage:"The password of the user of the Mikrotik router, from which the data on the comparison of the mac-address and IP-address is taken"`
+	Loc                    string   `default:"Asia/Yekaterinburg" usage:"Location for time"`
+	Interval               string   `default:"10m" usage:"Interval to getting info from Mikrotik"`
+	ReceiveBufferSizeBytes int      `default:"" usage:"Size of RxQueue, i.e. value for SO_RCVBUF in bytes"`
+	NumOfTryingConnectToMT int      `default:"10" usage:"The number of attempts to connect to the microtik router"`
+	DefaultQuotaHourly     uint     `default:"0" usage:"Default hourly traffic consumption quota"`
+	DefaultQuotaDaily      uint     `default:"0" usage:"Default daily traffic consumption quota"`
+	DefaultQuotaMonthly    uint     `default:"0" usage:"Default monthly traffic consumption quota"`
+	SizeOneMegabyte        uint     `default:"1048576" usage:"The number of bytes in one megabyte"`
+	UseTLS                 bool     `default:"false" usage:"Using TLS to connect to a router"`
+	CSV                    bool     `default:"false" usage:"Output to csv"`
+	Location               *time.Location
 }
 
 var (
@@ -41,32 +38,27 @@ var (
 )
 
 func newConfig() *Config {
-	/* Parse command-line arguments */
-	flag.IntVar(&cfg.receiveBufferSizeBytes, "buffer", 212992, "Size of RxQueue, i.e. value for SO_RCVBUF in bytes")
-	flag.StringVar(&cfg.FlowAddr, "addr", "0.0.0.0:2055", "Address and port to listen NetFlow packets")
-	flag.StringVar(&cfg.LogLevel, "loglevel", "info", "Log level")
-	flag.Var(&cfg.SubNets, "subnet", "List of subnets traffic between which will not be counted")
-	flag.Var(&cfg.IgnorList, "ignorlist", "List of lines that will be excluded from the final log")
-	flag.StringVar(&cfg.NameFileToLog, "log", "", "The file where logs will be written in the format of squid logs")
-	flag.StringVar(&cfg.GMT, "gmt", "+0500", "GMT offset time")
-	flag.StringVar(&cfg.MTAddr, "mtaddr", "", "The address of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken")
-	flag.StringVar(&cfg.MTUser, "u", "", "User of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken")
-	flag.StringVar(&cfg.MTPass, "p", "", "The password of the user of the Mikrotik router, from which the data on the comparison of the mac-address and IP-address is taken")
-	flag.StringVar(&cfg.BindAddr, "m4maddr", ":3030", "Listen address for response mac-address from mikrotik")
-	flag.StringVar(&cfg.Interval, "interval", "10m", "Interval to getting info from Mikrotik")
-	flag.StringVar(&cfg.ConfigFilename, "config", "config.toml", "Path to config file")
-	flag.BoolVar(&cfg.useTLS, "tls", false, "Using TLS to connect to a router")
-	flag.BoolVar(&cfg.csv, "csv", false, "Output to csv")
 
-	flag.Parse()
+	var cfg Config
+	loader := aconfig.LoaderFor(&cfg, aconfig.Config{
+		// feel free to skip some steps :)
+		// SkipEnv:      true,
+		SkipFiles:          false,
+		AllowUnknownFields: true,
+		SkipDefaults:       false,
+		SkipFlags:          false,
+		EnvPrefix:          "GONSQUID",
+		FlagPrefix:         "",
+		Files:              []string{"/etc/gonsquid/config.toml", "./config.toml", "./config/config.toml"},
+		FileDecoders: map[string]aconfig.FileDecoder{
+			// from `aconfigyaml` submodule
+			// see submodules in repo for more formats
+			".toml": aconfigtoml.New(),
+		},
+	})
 
-	var config_source string
-	err := cleanenv.ReadConfig(cfg.ConfigFilename, &cfg)
-	if err != nil {
-		log.Warningf("No config file(%v) found: %v", cfg.ConfigFilename, err)
-		config_source = "ENV/CFG"
-	} else {
-		config_source = "CLI"
+	if err := loader.Load(); err != nil {
+		panic(err)
 	}
 
 	lvl, err := log.ParseLevel(cfg.LogLevel)
@@ -76,9 +68,13 @@ func newConfig() *Config {
 	}
 	log.SetLevel(lvl)
 
-	log.Debugf("Config read from %s: %#v",
-		config_source,
-		cfg)
+	cfg.Location, err = time.LoadLocation(cfg.Loc)
+	if err != nil {
+		log.Errorf("Error loading Location(%v):%v", cfg.Loc, err)
+		cfg.Location = time.UTC
+	}
+
+	log.Debugf("Config %#v:", cfg)
 
 	return &cfg
 }

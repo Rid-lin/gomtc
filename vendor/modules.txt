@@ -1,21 +1,18 @@
 # github.com/BurntSushi/toml v0.3.1
 github.com/BurntSushi/toml
-# github.com/go-routeros/routeros v0.0.0-20190905230431-4e69e5fc3b22
+# github.com/cristalhq/aconfig v0.13.4
+## explicit
+github.com/cristalhq/aconfig
+# github.com/cristalhq/aconfig/aconfigtoml v0.12.0
+## explicit
+github.com/cristalhq/aconfig/aconfigtoml
+# github.com/go-routeros/routeros v0.0.0-20210123142807-2a44d57c6730
 ## explicit
 github.com/go-routeros/routeros
 github.com/go-routeros/routeros/proto
-# github.com/ilyakaznacheev/cleanenv v1.2.5
-## explicit
-github.com/ilyakaznacheev/cleanenv
-# github.com/joho/godotenv v1.3.0
-github.com/joho/godotenv
-# github.com/sirupsen/logrus v1.7.0
+# github.com/sirupsen/logrus v1.8.1
 ## explicit
 github.com/sirupsen/logrus
 # golang.org/x/sys v0.0.0-20191026070338-33540a1f6037
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# gopkg.in/yaml.v2 v2.2.2
-gopkg.in/yaml.v2
-# olympos.io/encoding/edn v0.0.0-20200308123125-93e3b8dd0e24
-olympos.io/encoding/edn
