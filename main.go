@@ -21,9 +21,9 @@ func main() {
 	/*Creating a channel to intercept the program end signal*/
 	// exitChan := getExitSignalsChannel()
 
-	data.Quotahourly = uint64(cfg.DefaultQuotaHourly * cfg.SizeOneMegabyte)
-	data.Quotadaily = uint64(cfg.DefaultQuotaDaily * cfg.SizeOneMegabyte)
-	data.Quotamonthly = uint64(cfg.DefaultQuotaMonthly * cfg.SizeOneMegabyte)
+	data.HourlyQuota = uint64(cfg.DefaultQuotaHourly * cfg.SizeOneMegabyte)
+	data.DailyQuota = uint64(cfg.DefaultQuotaDaily * cfg.SizeOneMegabyte)
+	data.MonthlyQuota = uint64(cfg.DefaultQuotaMonthly * cfg.SizeOneMegabyte)
 
 	go data.loopGetDataFromMT()
 

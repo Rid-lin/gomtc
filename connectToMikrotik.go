@@ -35,7 +35,7 @@ type Transport struct {
 	clientROS           *routeros.Client
 	renewOneMac         chan string
 	exitChan            chan os.Signal
-	Quota
+	QuotaType
 	sync.RWMutex
 }
 
@@ -115,25 +115,25 @@ func (data *Transport) GetInfo(request *request) ResponseType {
 	ipStruct, ok := data.ipToMac[request.IP]
 	data.RUnlock()
 	if ok && timeInt < ipStruct.timeoutInt {
-		log.Tracef("IP:%v to MAC:%v, hostname:%v, comment:%v", ipStruct.Ip, ipStruct.Mac, ipStruct.HostName, ipStruct.Comment)
+		log.Tracef("IP:%v to MAC:%v, hostname:%v, comment:%v", ipStruct.IP, ipStruct.Mac, ipStruct.HostName, ipStruct.Comment)
 		response.Mac = ipStruct.Mac
-		response.IP = ipStruct.Ip
+		response.IP = ipStruct.IP
 		response.Hostname = ipStruct.HostName
 		response.Comment = ipStruct.Comment
 	} else if ok {
 		// TODO remove
-		log.Tracef("IP:%v to MAC:%v, hostname:%v, comment:%v", ipStruct.Ip, ipStruct.Mac, ipStruct.HostName, ipStruct.Comment)
+		log.Tracef("IP:%v to MAC:%v, hostname:%v, comment:%v", ipStruct.IP, ipStruct.Mac, ipStruct.HostName, ipStruct.Comment)
 		response.Mac = ipStruct.Mac
-		response.IP = ipStruct.Ip
+		response.IP = ipStruct.IP
 		response.Hostname = ipStruct.HostName
 		response.Comment = ipStruct.Comment
 	} else if !ok {
 		// TODO Make information about the mac-address loaded from the router
-		log.Tracef("IP:'%v' not find in table lease of router:'%v'", ipStruct.Ip, cfg.MTAddr)
+		log.Tracef("IP:'%v' not find in table lease of router:'%v'", ipStruct.IP, cfg.MTAddr)
 		response.Mac = request.IP
 		response.IP = request.IP
 	} else {
-		log.Tracef("IP:'%v' not find in table lease of router:'%v'", ipStruct.Ip, cfg.MTAddr)
+		log.Tracef("IP:'%v' not find in table lease of router:'%v'", ipStruct.IP, cfg.MTAddr)
 		response.Mac = request.IP
 		response.IP = request.IP
 	}
@@ -178,9 +178,9 @@ func (data *Transport) loopGetDataFromMT() {
 
 func (data *Transport) getDataFromMT() map[string]LineOfData {
 
-	quotahourly := data.Quotahourly
-	quotadaily := data.Quotadaily
-	quotamonthly := data.Quotamonthly
+	quotahourly := data.HourlyQuota
+	quotadaily := data.DailyQuota
+	quotamonthly := data.MonthlyQuota
 
 	lineOfData := LineOfData{}
 	ipToMac := map[string]LineOfData{}
@@ -189,10 +189,19 @@ func (data *Transport) getDataFromMT() map[string]LineOfData {
 		log.Error(err)
 	}
 	for _, re := range reply.Re {
-		lineOfData.Ip = re.Map["address"]
+		lineOfData.IP = re.Map["address"]
 		lineOfData.Mac = re.Map["mac-address"]
+		if lineOfData.HourlyQuota == 0 {
+			lineOfData.HourlyQuota = quotahourly
+		}
+		if lineOfData.DailyQuota == 0 {
+			lineOfData.DailyQuota = quotadaily
+		}
+		if lineOfData.MonthlyQuota == 0 {
+			lineOfData.MonthlyQuota = quotamonthly
+		}
 		lineOfData.timeoutInt = time.Now().Add(1 * time.Minute).Unix()
-		ipToMac[lineOfData.Ip] = lineOfData
+		ipToMac[lineOfData.IP] = lineOfData
 	}
 	reply2, err2 := data.clientROS.Run("/ip/dhcp-server/lease/print") //, "?status=bound") //, "?disabled=false")
 	if err2 != nil {
@@ -200,20 +209,20 @@ func (data *Transport) getDataFromMT() map[string]LineOfData {
 	}
 	for _, re := range reply2.Re {
 		lineOfData.Id = re.Map[".id"]
-		lineOfData.Ip = re.Map["active-address"]
+		lineOfData.IP = re.Map["active-address"]
 		lineOfData.Mac = re.Map["active-mac-address"]
 		lineOfData.timeout = re.Map["expires-after"]
 		lineOfData.HostName = re.Map["host-name"]
 		lineOfData.Comment = re.Map["comment"]
-		lineOfData.Quotahourly, lineOfData.Quotadaily, lineOfData.Quotamonthly, lineOfData.Name, lineOfData.Position, lineOfData.Company = parseComments(lineOfData.Comment)
-		if lineOfData.Quotahourly == 0 {
-			lineOfData.Quotahourly = quotahourly
+		lineOfData.HourlyQuota, lineOfData.DailyQuota, lineOfData.MonthlyQuota, lineOfData.Name, lineOfData.Position, lineOfData.Company = parseComments(lineOfData.Comment)
+		if lineOfData.HourlyQuota == 0 {
+			lineOfData.HourlyQuota = quotahourly
 		}
-		if lineOfData.Quotadaily == 0 {
-			lineOfData.Quotadaily = quotadaily
+		if lineOfData.DailyQuota == 0 {
+			lineOfData.DailyQuota = quotadaily
 		}
-		if lineOfData.Quotamonthly == 0 {
-			lineOfData.Quotamonthly = quotamonthly
+		if lineOfData.MonthlyQuota == 0 {
+			lineOfData.MonthlyQuota = quotamonthly
 		}
 		lineOfData.disable = re.Map["disabled"]
 		addressLists := re.Map["address-lists"]
@@ -227,7 +236,7 @@ func (data *Transport) getDataFromMT() map[string]LineOfData {
 		// Writes to a variable for further quick comparison
 		lineOfData.timeoutInt = time.Now().Add(timeStr).Unix()
 
-		ipToMac[lineOfData.Ip] = lineOfData
+		ipToMac[lineOfData.IP] = lineOfData
 
 	}
 	return ipToMac
@@ -292,7 +301,7 @@ func (transport *Transport) syncStatusDevices(inputSync map[string]bool) {
 
 	for _, value := range ipToMac {
 		for keySync := range inputSync {
-			if keySync == value.Ip || keySync == value.Mac || keySync == value.HostName {
+			if keySync == value.IP || keySync == value.Mac || keySync == value.HostName {
 				result[value.Id] = inputSync[keySync]
 			}
 		}

@@ -9,30 +9,36 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type Quota struct {
-	Quotahourly,
-	Quotadaily,
-	Quotamonthly uint64
+type QuotaType struct {
+	HourlyQuota  uint64
+	DailyQuota   uint64
+	MonthlyQuota uint64
+	Blocked      bool
 }
 
-type User struct {
+type PersonType struct {
 	Name,
 	Position,
 	Company string
 }
 
 type LineOfData struct {
-	Id,
-	Ip,
-	Mac,
 	timeout,
-	HostName,
 	Comment,
 	disable string
 	addressLists []string
 	timeoutInt   int64
-	Quota
-	User
+	DeviceType
+	QuotaType
+	PersonType
+}
+
+type DeviceType struct {
+	Id       string
+	IP       string
+	Mac      string
+	HostName string
+	Group    string
 }
 
 func logreq(f func(w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
@@ -110,9 +116,9 @@ func (data *Transport) handlerGetStatusDevices(w http.ResponseWriter, r *http.Re
 	data.RLock()
 	dataToDSend := data.ipToMac
 
-	defaultLine.Quotahourly = data.Quotahourly
-	defaultLine.Quotadaily = data.Quotadaily
-	defaultLine.Quotamonthly = data.Quotamonthly
+	defaultLine.HourlyQuota = data.HourlyQuota
+	defaultLine.DailyQuota = data.DailyQuota
+	defaultLine.MonthlyQuota = data.MonthlyQuota
 	data.RUnlock()
 
 	dataToDSend["default"] = defaultLine
