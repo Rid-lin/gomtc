@@ -214,7 +214,7 @@ func (data *Transport) getDataFromMT() map[string]LineOfData {
 		lineOfData.timeout = re.Map["expires-after"]
 		lineOfData.HostName = re.Map["host-name"]
 		lineOfData.Comment = re.Map["comment"]
-		lineOfData.HourlyQuota, lineOfData.DailyQuota, lineOfData.MonthlyQuota, lineOfData.Name, lineOfData.Position, lineOfData.Company = parseComments(lineOfData.Comment)
+		lineOfData.HourlyQuota, lineOfData.DailyQuota, lineOfData.MonthlyQuota, lineOfData.Name, lineOfData.Position, lineOfData.Company, lineOfData.TypeD = parseComments(lineOfData.Comment)
 		if lineOfData.HourlyQuota == 0 {
 			lineOfData.HourlyQuota = quotahourly
 		}
@@ -244,11 +244,27 @@ func (data *Transport) getDataFromMT() map[string]LineOfData {
 
 func parseComments(comment string) (
 	quotahourly, quotadaily, quotamonthly uint64,
-	name, position, company string) {
+	name, position, company, typeD string) {
 	commentArray := strings.Split(comment, "/")
 	for _, value := range commentArray {
 		switch {
-		case strings.Contains(value, "tel") || strings.Contains(value, "nb") || strings.Contains(value, "ws") || strings.Contains(value, "srv"):
+		case strings.Contains(value, "tel"):
+			typeD = "tel"
+			name = parseParamertToStr(value)
+		case strings.Contains(value, "nb"):
+			typeD = "nb"
+			name = parseParamertToStr(value)
+		case strings.Contains(value, "ws"):
+			typeD = "ws"
+			name = parseParamertToStr(value)
+		case strings.Contains(value, "srv"):
+			typeD = "srv"
+			name = parseParamertToStr(value)
+		case strings.Contains(value, "prn"):
+			typeD = "prn"
+			name = parseParamertToStr(value)
+		case strings.Contains(value, "name"):
+			typeD = "other"
 			name = parseParamertToStr(value)
 		case strings.Contains(value, "col"):
 			position = parseParamertToStr(value)

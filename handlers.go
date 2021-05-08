@@ -36,9 +36,10 @@ type LineOfData struct {
 type DeviceType struct {
 	Id       string
 	IP       string
+	TypeD    string
 	Mac      string
 	HostName string
-	Group    string
+	Groups   string
 }
 
 func logreq(f func(w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
