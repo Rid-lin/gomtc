@@ -32,7 +32,7 @@ func main() {
 	http.HandleFunc("/setstatusdevices", logreq(data.handlerSetStatusDevices))
 	http.HandleFunc("/getstatusdevices", logreq(data.handlerGetStatusDevices))
 
-	log.Infof("gonsquid listens to:%v", cfg.BindAddr)
+	log.Infof("gomtc listens to:%v", cfg.BindAddr)
 
 	go func() {
 		err := http.ListenAndServe(cfg.BindAddr, nil)

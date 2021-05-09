@@ -47,9 +47,9 @@ func newConfig() *Config {
 		AllowUnknownFields: true,
 		SkipDefaults:       false,
 		SkipFlags:          false,
-		EnvPrefix:          "GONSQUID",
+		EnvPrefix:          "GOMTC",
 		FlagPrefix:         "",
-		Files:              []string{"/etc/gonsquid/config.toml", "./config.toml", "./config/config.toml"},
+		Files:              []string{"/etc/gomtc/config.toml", "./config.toml", "./config/config.toml"},
 		FileDecoders: map[string]aconfig.FileDecoder{
 			// from `aconfigyaml` submodule
 			// see submodules in repo for more formats

@@ -19,6 +19,6 @@ build/*
 SQL/*
 bin/*
 config.toml
-gonsquid.service
+gomtc.service
 db/*
 *_old

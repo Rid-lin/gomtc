@@ -57,7 +57,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 			<title>go-macfrommikrotik</title>
 			</head>
 			<body>
-			Более подробно на https://github.com/Rid-lin/gonsquid
+			Более подробно на https://github.com/Rid-lin/gomtc
 			</body>
 			</html>
 			`)

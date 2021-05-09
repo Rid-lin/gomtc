@@ -1,6 +1,6 @@
-module github.com/Rid-lin/gonsquid
+module git.vegner.org/vsvegner/gomtc
 
-go 1.15
+go 1.16
 
 require (
 	github.com/cristalhq/aconfig v0.13.4
