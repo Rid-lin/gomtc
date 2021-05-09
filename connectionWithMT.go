@@ -1,82 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"net"
-	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/go-routeros/routeros"
 	log "github.com/sirupsen/logrus"
 )
-
-type request struct {
-	Time,
-	IP string
-	timeInt int64
-}
-
-type ResponseType struct {
-	IP       string `JSON:"IP"`
-	Mac      string `JSON:"Mac"`
-	Hostname string `JSON:"Hostname"`
-	Comment  string `JSON:"Comment"`
-}
-
-type Transport struct {
-	ipToMac             map[string]LineOfData
-	Location            *time.Location
-	fileDestination     *os.File
-	csvFiletDestination *os.File
-	conn                *net.UDPConn
-	clientROS           *routeros.Client
-	renewOneMac         chan string
-	exitChan            chan os.Signal
-	QuotaType
-	sync.RWMutex
-}
-
-func NewTransport(cfg *Config) *Transport {
-
-	c, err := dial(cfg)
-	if err != nil {
-		log.Errorf("Error connect to %v:%v", cfg.MTAddr, err)
-		c = tryingToReconnectToMokrotik(cfg)
-	}
-	// defer c.Close()
-
-	fileDestination, err = os.OpenFile(cfg.NameFileToLog, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		fileDestination.Close()
-		log.Fatalf("Error, the '%v' file could not be created (there are not enough premissions or it is busy with another program): %v", cfg.NameFileToLog, err)
-	}
-	if cfg.CSV {
-		csvFiletDestination, err = os.OpenFile(cfg.NameFileToLog+".csv", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			fileDestination.Close()
-			log.Fatalf("Error, the '%v' file could not be created (there are not enough premissions or it is busy with another program): %v", cfg.NameFileToLog, err)
-		}
-	}
-
-	Location, err := time.LoadLocation(cfg.Loc)
-	if err != nil {
-		log.Errorf("Error loading Location(%v):%v", cfg.Loc, err)
-		Location = time.UTC
-	}
-
-	return &Transport{
-		ipToMac:             make(map[string]LineOfData),
-		renewOneMac:         make(chan string, 100),
-		Location:            Location,
-		exitChan:            getExitSignalsChannel(),
-		clientROS:           c,
-		fileDestination:     fileDestination,
-		csvFiletDestination: csvFiletDestination,
-	}
-}
 
 func dial(cfg *Config) (*routeros.Client, error) {
 	if cfg.UseTLS {
@@ -348,4 +282,40 @@ func (data *Transport) setStatusDevice(number string, status bool) error {
 	}
 	log.Tracef("Response from Mikrotik(numbers):%v(%v)", reply, number)
 	return nil
+}
+
+func (transport *Transport) readsStreamFromMT(cfg *Config) {
+	addr, err := net.ResolveUDPAddr("udp", cfg.FlowAddr)
+	if err != nil {
+		log.Fatalf("Error: %v\n", err)
+	}
+
+	for {
+		transport.conn, err = net.ListenUDP("udp", addr)
+		if err != nil {
+			log.Errorln(err)
+		} else {
+			err = transport.conn.SetReadBuffer(cfg.ReceiveBufferSizeBytes)
+			if err != nil {
+				log.Errorln(err)
+			} else {
+				/* Infinite-loop for reading packets */
+				for {
+					buf := make([]byte, 4096)
+					rlen, remote, err := transport.conn.ReadFromUDP(buf)
+
+					if err != nil {
+						log.Errorf("Error: %v\n", err)
+					} else {
+
+						stream := bytes.NewBuffer(buf[:rlen])
+
+						go handlePacket(stream, remote, transport.outputChannel, cfg)
+					}
+				}
+			}
+		}
+
+	}
+
 }

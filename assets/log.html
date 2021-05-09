@@ -1,0 +1,40 @@
+{{ define "log" }} {{ template "header" }}
+<header>
+    <h2>{{.Header}}</h2>
+    <!-- <span>Список действий</span> -->
+    <!-- <span>Страница сгененрирована за: {{.TimeToGenerate}} </span> -->
+</header>
+<hr>
+<div class="body_log">
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Время начала</th>
+                <th>Время окончания</th>
+                <th>Длительность</th>
+                <th>Прочитано</th>
+                <th>Распознано</th>
+                <th>Добавлено</th>
+                <th>Пропущено</th>
+                <!-- <th>Ошибочных</th> -->
+            </tr>
+        </thead>
+        <tbody>
+            {{range $k, $v := .Logs}}
+            <tr>
+                <th>{{$k}}</th>
+                <th>{{$v.StartTime}}</th>
+                <th>{{$v.EndTime}}</th>
+                <th>{{$v.EndTime.Sub $v.StartTime}}</th>
+                <th>{{$v.LineRead}}</th>
+                <th>{{$v.LineParsed}}</th>
+                <th>{{$v.LineAdded}}</th>
+                <th>{{$v.LineSkiped}}</th>
+            </tr>
+            {{end}}
+        </tbody>
+
+    </table>
+</div>
+{{ template "footer" }} {{ end }}

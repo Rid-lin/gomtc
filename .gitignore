@@ -5,7 +5,7 @@
 *.so
 *.dylib
 __debug_bin
-build/*
+bin/*
 
 # Test binary, build with `go test -c`
 *.test
@@ -13,12 +13,21 @@ build/*
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-*.log
+# Dependency directories (remove the comment below to include it)
+# vendor/
+*.env
+*.toml
+*.yaml
+*.gob
+.vscode/launch.json
+access.log
+create.sql
+logs/*
+*.bak
+config/log.gob*.log
 .vscode/*
 .vscode/launch.json
 SQL/*
-bin/*
 config.toml
-gomtc.service
 db/*
 *_old

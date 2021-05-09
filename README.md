@@ -48,46 +48,10 @@ Configuring sistemd to automatically start the program
 
 `systemctl enable gomtc`
 
-Edit the file "fetch.pl" in accordance with the comments and recommendations.
-
-Add a task to cron (start every 5 minutes)
-
-`crontab -e`
-
-`*/5 * * * * /var/www/screensquid/fetch.pl > /dev/null 2>&1`
 
 ## Supported command line parameters
 
 ```
-Usage of gomtc.exe:
-  -addr string
-        Address and port to listen NetFlow packets (default "0.0.0.0:2055")
-  -buffer int
-        Size of RxQueue, i.e. value for SO_RCVBUF in bytes (default 212992)
-  -gmt string
-        GMT offset time (default "+0500")
-  -ignorlist value
-        List of lines that will be excluded from the final log
-  -interval string
-        Interval to getting info from Mikrotik (default "10m")
-  -log string
-        The file where logs will be written in the format of squid logs
-  -loglevel string
-        Log level (default "info")
-  -m4maddr string
-        Listen address for response mac-address from mikrotik (default ":3030")
-  -mtaddr string
-        The address of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken
-  -p string
-        The password of the user of the Mikrotik router, from which the data on the comparison of the mac-address and IP-address is taken
-  -sqladdr string
-        string to connect DB (e.g. username:password@protocol(address)/dbname?param=value) More details in https://github.com/go-sql-driver/mysql#dsn-data-source-name
-  -subnet value
-        List of subnets traffic between which will not be counted
-  -tls
-        Using TLS to connect to a router
-  -u string
-        User of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken
 ```
 
 ## Credits

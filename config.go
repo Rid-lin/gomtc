@@ -10,7 +10,20 @@ import (
 )
 
 type Config struct {
-	// ConfigFilename         string   `default:"" usage:`
+	dateLayout     string
+	dateTimeLayout string
+	LastDate       int64
+	LastDay        int64
+	LastDayStr     string
+	LastDateStr    string
+
+	Friends                []string `default:"" usage:"List of aliases, IP addresses, friends' logins"`
+	ConfigPath             string   `default:"/etc/gosla" usage:"folder path to all config files"`
+	LogPath                string   `default:"/var/log/gonsquid" usage:"folder path to logs-file"`
+	ListenAddr             string   `default:":3031" usage:"Listen address for HTTP-server"`
+	GonsquidAddr           string   `default:":3030" usage:"Listen address for HTTP-server"`
+	AssetsPath             string   `default:"./assets"  usage:"The path to the assets folder where the template files are located"`
+	Force                  bool     `default:"false" usage:"Force start processing of all log files"`
 	SubNets                []string `default:"" usage:"List of subnets traffic between which will not be counted"`
 	IgnorList              []string `default:"" usage:"List of lines that will be excluded from the final log"`
 	LogLevel               string   `default:"info" usage:"Log level: panic, fatal, error, warn, info, debug, trace"`
@@ -24,13 +37,16 @@ type Config struct {
 	Interval               string   `default:"10m" usage:"Interval to getting info from Mikrotik"`
 	ReceiveBufferSizeBytes int      `default:"" usage:"Size of RxQueue, i.e. value for SO_RCVBUF in bytes"`
 	NumOfTryingConnectToMT int      `default:"10" usage:"The number of attempts to connect to the microtik router"`
-	DefaultQuotaHourly     uint     `default:"0" usage:"Default hourly traffic consumption quota"`
-	DefaultQuotaDaily      uint     `default:"0" usage:"Default daily traffic consumption quota"`
-	DefaultQuotaMonthly    uint     `default:"0" usage:"Default monthly traffic consumption quota"`
-	SizeOneMegabyte        uint     `default:"1048576" usage:"The number of bytes in one megabyte"`
+	DefaultQuotaHourly     uint64   `default:"0" usage:"Default hourly traffic consumption quota"`
+	DefaultQuotaDaily      uint64   `default:"0" usage:"Default daily traffic consumption quota"`
+	DefaultQuotaMonthly    uint64   `default:"0" usage:"Default monthly traffic consumption quota"`
+	SizeOneMegabyte        uint64   `default:"1048576" usage:"The number of bytes in one megabyte"`
 	UseTLS                 bool     `default:"false" usage:"Using TLS to connect to a router"`
 	CSV                    bool     `default:"false" usage:"Output to csv"`
 	Location               *time.Location
+	startTime              time.Time
+	endTime                time.Time
+	Count
 }
 
 var (
@@ -73,6 +89,9 @@ func newConfig() *Config {
 		log.Errorf("Error loading Location(%v):%v", cfg.Loc, err)
 		cfg.Location = time.UTC
 	}
+
+	cfg.dateLayout = "2006-01-02"
+	cfg.dateTimeLayout = "2006-01-02 15:04:05"
 
 	log.Debugf("Config %#v:", cfg)
 
