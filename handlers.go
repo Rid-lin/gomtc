@@ -20,7 +20,6 @@ func (transport *Transport) handleRequest() {
 	http.HandleFunc("/log/", logreq(transport.handleLog))
 	http.HandleFunc("/runparse/", logreq(transport.handleRunParse))
 	http.HandleFunc("/editalias/", logreq(transport.handleEditAlias))
-	http.HandleFunc("/", logreq(handleIndex))
 	http.HandleFunc("/getmac", logreq(transport.handlerGetMac()))
 	http.HandleFunc("/setstatusdevices", logreq(transport.handlerSetStatusDevices))
 	http.HandleFunc("/getstatusdevices", logreq(transport.handlerGetStatusDevices))
@@ -43,19 +42,6 @@ func logreq(f func(w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
 
 		f(w, r)
 	})
-}
-
-func handleIndex(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w,
-		`<html>
-			<head>
-			<title>go-macfrommikrotik</title>
-			</head>
-			<body>
-			Более подробно на https://github.com/Rid-lin/gomtc
-			</body>
-			</html>
-			`)
 }
 
 func (data *Transport) handlerGetMac() http.HandlerFunc {
@@ -110,7 +96,7 @@ func (data *Transport) handlerGetStatusDevices(w http.ResponseWriter, r *http.Re
 	defaultLine := LineOfData{}
 
 	data.RLock()
-	dataToDSend := data.ipToMac
+	dataToDSend := data.infoOfDevices
 
 	defaultLine.HourlyQuota = data.HourlyQuota
 	defaultLine.DailyQuota = data.DailyQuota

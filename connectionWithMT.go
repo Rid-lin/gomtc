@@ -46,7 +46,7 @@ func (data *Transport) GetInfo(request *request) ResponseType {
 	}
 	request.timeInt = timeInt
 	data.RLock()
-	ipStruct, ok := data.ipToMac[request.IP]
+	ipStruct, ok := data.infoOfDevices[request.IP]
 	data.RUnlock()
 	if ok && timeInt < ipStruct.timeoutInt {
 		log.Tracef("IP:%v to MAC:%v, hostname:%v, comment:%v", ipStruct.IP, ipStruct.Mac, ipStruct.HostName, ipStruct.Comment)
@@ -78,21 +78,16 @@ func (data *Transport) GetInfo(request *request) ResponseType {
 	return response
 }
 
-/*
-Jun 22 21:39:13 192.168.65.1 dhcp,info dhcp_lan deassigned 192.168.65.149 from 04:D3:B5:FC:E8:09
-Jun 22 21:40:16 192.168.65.1 dhcp,info dhcp_lan assigned 192.168.65.202 to E8:6F:38:88:92:29
-*/
-
 func (data *Transport) loopGetDataFromMT() {
-	// defer func() {
-	// 	if e := recover(); e != nil {
-	// 		log.Errorf("Error while trying to get data from the router:%v", e)
-	// 	}
-	// }()
+	defer func() {
+		if e := recover(); e != nil {
+			log.Errorf("Error while trying to get data from the router:%v", e)
+		}
+	}()
 	for {
 
 		data.Lock()
-		data.ipToMac = data.getDataFromMT()
+		data.infoOfDevices = getDataFromMT(data.QuotaType, data.clientROS)
 		data.Unlock()
 
 		// ipToMac := data.getDataFromMT()
@@ -110,15 +105,15 @@ func (data *Transport) loopGetDataFromMT() {
 	}
 }
 
-func (data *Transport) getDataFromMT() map[string]LineOfData {
+func getDataFromMT(quota QuotaType, connRos *routeros.Client) map[string]LineOfData {
 
-	quotahourly := data.HourlyQuota
-	quotadaily := data.DailyQuota
-	quotamonthly := data.MonthlyQuota
+	quotahourly := quota.HourlyQuota
+	quotadaily := quota.DailyQuota
+	quotamonthly := quota.MonthlyQuota
 
 	lineOfData := LineOfData{}
 	ipToMac := map[string]LineOfData{}
-	reply, err := data.clientROS.Run("/ip/arp/print")
+	reply, err := connRos.Run("/ip/arp/print")
 	if err != nil {
 		log.Error(err)
 	}
@@ -137,7 +132,7 @@ func (data *Transport) getDataFromMT() map[string]LineOfData {
 		lineOfData.timeoutInt = time.Now().Add(1 * time.Minute).Unix()
 		ipToMac[lineOfData.IP] = lineOfData
 	}
-	reply2, err2 := data.clientROS.Run("/ip/dhcp-server/lease/print") //, "?status=bound") //, "?disabled=false")
+	reply2, err2 := connRos.Run("/ip/dhcp-server/lease/print") //, "?status=bound") //, "?disabled=false")
 	if err2 != nil {
 		log.Error(err2)
 	}
@@ -175,6 +170,72 @@ func (data *Transport) getDataFromMT() map[string]LineOfData {
 	}
 	return ipToMac
 }
+
+// func (data *Transport) getDataFromMT() map[string]LineOfData {
+
+// 	quotahourly := data.HourlyQuota
+// 	quotadaily := data.DailyQuota
+// 	quotamonthly := data.MonthlyQuota
+
+// 	lineOfData := LineOfData{}
+// 	ipToMac := map[string]LineOfData{}
+// 	reply, err := data.clientROS.Run("/ip/arp/print")
+// 	if err != nil {
+// 		log.Error(err)
+// 	}
+// 	for _, re := range reply.Re {
+// 		lineOfData.IP = re.Map["address"]
+// 		lineOfData.Mac = re.Map["mac-address"]
+// 		if lineOfData.HourlyQuota == 0 {
+// 			lineOfData.HourlyQuota = quotahourly
+// 		}
+// 		if lineOfData.DailyQuota == 0 {
+// 			lineOfData.DailyQuota = quotadaily
+// 		}
+// 		if lineOfData.MonthlyQuota == 0 {
+// 			lineOfData.MonthlyQuota = quotamonthly
+// 		}
+// 		lineOfData.timeoutInt = time.Now().Add(1 * time.Minute).Unix()
+// 		ipToMac[lineOfData.IP] = lineOfData
+// 	}
+// 	reply2, err2 := data.clientROS.Run("/ip/dhcp-server/lease/print") //, "?status=bound") //, "?disabled=false")
+// 	if err2 != nil {
+// 		log.Error(err2)
+// 	}
+// 	for _, re := range reply2.Re {
+// 		lineOfData.Id = re.Map[".id"]
+// 		lineOfData.IP = re.Map["active-address"]
+// 		lineOfData.Mac = re.Map["active-mac-address"]
+// 		lineOfData.timeout = re.Map["expires-after"]
+// 		lineOfData.HostName = re.Map["host-name"]
+// 		lineOfData.Comment = re.Map["comment"]
+// 		lineOfData.HourlyQuota, lineOfData.DailyQuota, lineOfData.MonthlyQuota, lineOfData.Name, lineOfData.Position, lineOfData.Company, lineOfData.TypeD = parseComments(lineOfData.Comment)
+// 		if lineOfData.HourlyQuota == 0 {
+// 			lineOfData.HourlyQuota = quotahourly
+// 		}
+// 		if lineOfData.DailyQuota == 0 {
+// 			lineOfData.DailyQuota = quotadaily
+// 		}
+// 		if lineOfData.MonthlyQuota == 0 {
+// 			lineOfData.MonthlyQuota = quotamonthly
+// 		}
+// 		lineOfData.disable = re.Map["disabled"]
+// 		addressLists := re.Map["address-lists"]
+// 		lineOfData.addressLists = strings.Split(addressLists, ",")
+
+// 		//Calculating the time when the lease of the address ends
+// 		timeStr, err := time.ParseDuration(lineOfData.timeout)
+// 		if err != nil {
+// 			timeStr = 10 * time.Second
+// 		}
+// 		// Writes to a variable for further quick comparison
+// 		lineOfData.timeoutInt = time.Now().Add(timeStr).Unix()
+
+// 		ipToMac[lineOfData.IP] = lineOfData
+
+// 	}
+// 	return ipToMac
+// }
 
 func parseComments(comment string) (
 	quotahourly, quotadaily, quotamonthly uint64,
@@ -244,9 +305,9 @@ func parseParamertToUint(inputValue string) (quota uint64) {
 
 func (transport *Transport) syncStatusDevices(inputSync map[string]bool) {
 	result := map[string]bool{}
-	ipToMac := transport.getDataFromMT()
+	ipToMac := getDataFromMT(transport.QuotaType, transport.clientROS)
 	transport.Lock()
-	transport.ipToMac = ipToMac
+	transport.infoOfDevices = ipToMac
 	transport.Unlock()
 
 	for _, value := range ipToMac {

@@ -11,7 +11,7 @@ import (
 )
 
 type Transport struct {
-	ipToMac             map[string]LineOfData
+	infoOfDevices       map[string]LineOfData
 	data                MapOfReports
 	dataChashe          MapOfReports
 	Location            *time.Location
@@ -229,7 +229,7 @@ func NewTransport(cfg *Config) *Transport {
 	return &Transport{
 		data:                map[KeyMapOfReports]ValueMapOfReports{},
 		dataChashe:          map[KeyMapOfReports]ValueMapOfReports{},
-		ipToMac:             make(map[string]LineOfData),
+		infoOfDevices:       make(map[string]LineOfData),
 		Aliases:             make(map[string][]string),
 		Location:            Location,
 		clientROS:           clientROS,
