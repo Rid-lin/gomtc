@@ -1,0 +1,73 @@
+{{ define "indexwf" }} {{ template "header" }}
+<header>
+    <h1>{{.Header}}</h1>
+    <form action="/withfriends" method="get" id="report">
+        <label for="date_from">Дата: </label>
+        <input type="date" id="date_from" name="date_from" value="{{.DateFrom}}" />
+        <input type="submit" value="Загрузить" />
+    </form>
+    {{$s:= (index .ArrayDisplay 0)}}
+    <span>Пользователей превысивших среднее значение трафика по 90 перцентилю ({{$s.Average}} Mb): {{$s.Count}} - в поле Пользователь отмечены другим фоном</span>
+    <span>Пользователей превысивших часовую({{$.DailyQuota}} Mb) или дневную квоту({{$.HourlyQuota}} Mb) - в поле объёма трафика отмечены другим фоном</span>
+    <span>Страница сгененрирована за: {{.TimeToGenerate}} </span>
+    <span>Последнее обновление: {{.LastUpdated}} </span>
+</header>
+<hr>
+<div class="body_report">
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Пользователь</th>
+                <th>Имя устройства</th>
+                <th>Имя</th>
+                <th>Комментарий</th>
+                <th>Байт</th>
+                <th>%</th>
+                <th>00</th>
+                <th>01</th>
+                <th>02</th>
+                <th>03</th>
+                <th>04</th>
+                <th>05</th>
+                <th>06</th>
+                <th>07</th>
+                <th>08</th>
+                <th>09</th>
+                <th>10</th>
+                <th>11</th>
+                <th>12</th>
+                <th>13</th>
+                <th>14</th>
+                <th>15</th>
+                <th>16</th>
+                <th>17</th>
+                <th>18</th>
+                <th>19</th>
+                <th>20</th>
+                <th>21</th>
+                <th>22</th>
+                <th>23</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range $k, $v := .ArrayDisplay}}
+            <tr>
+                <th>{{$k}}</th>
+                <th {{if and (le $s.Average $v.Size) (ne $k 0)}} style="background-color: rgb(252, 210, 186);" {{else}} {{end}}><a href="/editalias?alias={{$v.Alias}}">{{$v.Alias}}</a></th>
+                <th>{{$v.HostName}}</th>
+                <th>{{$v.Name}}</th>
+                <th>{{$v.Comments}}</th>
+                <th {{if $v.Blocked}} style="background-color: rgb(236, 162, 162);" {{else}} {{end}}>
+                    <a href="/editquota?alias={{$v.Alias}}">{{$v.Size}}.Mb</a></th>
+                <th>{{$v.Precent}}.%</th>
+                {{range $value := $v.HourSize}}
+                <th>{{printf "%3.1f" $value }}</th>
+                {{end}}
+            </tr>
+            {{end}}
+        </tbody>
+
+    </table>
+</div>
+{{ template "footer" }} {{ end }}

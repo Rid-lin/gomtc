@@ -1,0 +1,24 @@
+{{ define "header" }}
+
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>squid-log traffic analyzer</title>
+
+    <link href="/assets/style.css" rel="stylesheet">
+</head>
+
+<body>
+    <div>
+        <ul class="menu">
+            <li><a href="\">Трафик по устройствам и часам</a> </li>
+            <li><a href="\log"> Лог работы</a></li>
+            <li><a href="\runparse">Принудительный запуск парсинга</a></li>
+            <!-- <li><input type="checkbox" name="showFriends" id="showFriends"> Показать друзей</li> -->
+        </ul>
+    </div>
+    {{ end }}

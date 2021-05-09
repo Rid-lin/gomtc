@@ -1,0 +1,145 @@
+* {
+    padding: 0;
+    margin: 0;
+    font-weight: lighter;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+body {
+    height: 100%;
+}
+
+footer {
+    padding: 1rem;
+    display: grid;
+    margin: auto;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 10px;
+    justify-items: center;
+    justify-content: space-between;
+    position: sticky;
+    bottom: 0;
+    z-index: 98;
+    /* background-color: rgb(233, 224, 213); */
+    background-color: blanchedalmond;
+}
+
+.menu {
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+    display: grid;
+    margin: 0 auto;
+    width: 98%;
+    padding-left: 2%;
+    background-color: rgb(238, 204, 153);
+    position: sticky;
+    top: 0;
+    z-index: 99;
+    text-align: center;
+    grid-template-columns: repeat(3, 1fr);
+}
+
+html body div ul.menu li {
+    padding: 0.5rem;
+    margin: 0.3rem;
+    border: 2px solid;
+    border-radius: 5px;
+    background-color: #cfd283;
+}
+
+header {
+    display: grid;
+    margin: 0 auto;
+    width: 98%;
+    padding-left: 2%;
+    background-color: blanchedalmond;
+    position: sticky;
+    top: 0;
+    z-index: 98;
+    text-align: center;
+}
+
+hr {
+    margin: 0.5rem;
+}
+
+table {
+    width: 99%;
+    border-spacing: 4px;
+    padding: 2px;
+}
+
+table,
+td {
+    /* border: 1px solid #333; */
+    margin: 0 auto;
+}
+
+table,
+tr {
+    max-height: 1.5rem;
+}
+
+thead,
+tfoot {
+    /* border: 1px solid #333; */
+    background-color: blanchedalmond;
+    /* background-color: #333; */
+    color: darkblue;
+}
+
+html body div.body_report table {
+    text-align: center;
+}
+
+html body div.body_report table tbody {
+    font-size: small;
+}
+
+
+/* html body div.body_report table tbody tr:nth-child(odd) {
+    background-color: rgb(231, 225, 202);
+} */
+
+table tbody tr:nth-child(odd) {
+    background-color: rgb(231, 225, 202);
+}
+
+table tbody tr:nth-child(even) {
+    background-color: beige;
+}
+
+html body div.body_report table tbody tr th:nth-child(3) {
+    text-align: left;
+}
+
+html body div.body_report table tbody tr th:nth-child(4) {
+    text-align: left;
+}
+
+.body_report table tbody tr th:nth-child(7) {
+    min-width: 3rem;
+    /* text-align: right; */
+    background-color: rgb(252, 210, 186);
+}
+
+.body_report table tbody tr th:nth-child(2) {
+    padding: 0 0.3rem 0 0.3rem;
+}
+
+.body_report table tbody tr th {
+    text-align: right;
+    /* min-width: 3rem; */
+}
+
+html body div.body_report table tbody tr:nth-child(even) {
+    background-color: beige;
+}
+
+html body div.body_report title {
+    padding: 0 2% 0 2%;
+}
+
+html body div.body_report div {
+    padding: 0 2% 0 2%;
+}

@@ -7,7 +7,6 @@ import (
 	"net"
 	"os"
 	"strings"
-	"sync"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -220,10 +219,10 @@ func checkIP(subnet string, ipv4addr net.IP) (bool, error) {
 	return netA.Contains(ipv4addr), nil
 }
 
-func (data *Transport) pipeOutputToStdoutForSquid(outputChannel chan decodedRecord, cfg *Config) {
+func (data *Transport) pipeOutputToStdoutForSquid(cfg *Config) {
 	var record decodedRecord
 	for {
-		record = <-outputChannel
+		record = <-data.outputChannel
 		log.Tracef("Get from outputChannel:%v", record)
 		message, csvMessage := data.decodeRecordToSquid(&record, cfg)
 		log.Tracef("Decoded record (%v) to message (%v)", record, message)
@@ -256,18 +255,18 @@ func filtredMessage(message string, IgnorList []string) string {
 	return message
 }
 
-type cacheRecord struct {
-	Hostname string
-	// timeout  time.Time
-}
+// type cacheRecord struct {
+// 	Hostname string
+// 	// timeout  time.Time
+// }
 
-type Cache struct {
-	cache map[string]cacheRecord
-	sync.RWMutex
-}
+// type Cache struct {
+// 	cache map[string]cacheRecord
+// 	sync.RWMutex
+// }
 
 var (
-	cache Cache
+	// cache Cache
 	// cache      = map[string]cacheRecord{}
 	// cacheMutex = sync.RWMutex{}
 	// writer           *bufio.Writer

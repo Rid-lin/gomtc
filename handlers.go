@@ -4,42 +4,36 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"net/http"
+	"net/url"
+	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
 
-type QuotaType struct {
-	HourlyQuota  uint64
-	DailyQuota   uint64
-	MonthlyQuota uint64
-	Blocked      bool
-}
+func (transport *Transport) handleRequest() {
+	http.HandleFunc("/", logreq(transport.handleIndex))
+	http.HandleFunc("/withfriends/", logreq(transport.handleWithFriends))
+	http.HandleFunc("/dayDetail", logreq(transport.handleDayDetail))
+	http.HandleFunc("/log/", logreq(transport.handleLog))
+	http.HandleFunc("/runparse/", logreq(transport.handleRunParse))
+	http.HandleFunc("/editalias/", logreq(transport.handleEditAlias))
+	http.HandleFunc("/getmac", logreq(transport.handlerGetMac()))
+	http.HandleFunc("/setstatusdevices", logreq(transport.handlerSetStatusDevices))
+	http.HandleFunc("/getstatusdevices", logreq(transport.handlerGetStatusDevices))
+	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(cfg.AssetsPath))))
 
-type PersonType struct {
-	Name,
-	Position,
-	Company string
-}
+	log.Infof("gomtc listens to:%v", cfg.BindAddr)
 
-type LineOfData struct {
-	timeout,
-	Comment,
-	disable string
-	addressLists []string
-	timeoutInt   int64
-	DeviceType
-	QuotaType
-	PersonType
-}
+	go func() {
+		err := http.ListenAndServe(cfg.BindAddr, nil)
+		if err != nil {
+			log.Fatal("http-server returned error:", err)
+		}
+	}()
 
-type DeviceType struct {
-	Id       string
-	IP       string
-	TypeD    string
-	Mac      string
-	HostName string
-	Groups   string
 }
 
 func logreq(f func(w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
@@ -48,19 +42,6 @@ func logreq(f func(w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
 
 		f(w, r)
 	})
-}
-
-func handleIndex(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w,
-		`<html>
-			<head>
-			<title>go-macfrommikrotik</title>
-			</head>
-			<body>
-			Более подробно на https://github.com/Rid-lin/gonsquid
-			</body>
-			</html>
-			`)
 }
 
 func (data *Transport) handlerGetMac() http.HandlerFunc {
@@ -115,7 +96,7 @@ func (data *Transport) handlerGetStatusDevices(w http.ResponseWriter, r *http.Re
 	defaultLine := LineOfData{}
 
 	data.RLock()
-	dataToDSend := data.ipToMac
+	dataToDSend := data.infoOfDevices
 
 	defaultLine.HourlyQuota = data.HourlyQuota
 	defaultLine.DailyQuota = data.DailyQuota
@@ -143,5 +124,234 @@ func errorResponse(w http.ResponseWriter, message string, httpStatusCode int) {
 	_, err = w.Write(jsonResp)
 	if err != nil {
 		log.Error(err)
+	}
+}
+
+func parseDataFromURL(r *http.Request) RequestForm {
+
+	var request RequestForm
+
+	request.path = r.URL.Path
+
+	u, err := url.Parse(r.URL.String())
+	if err != nil {
+		log.Error(err)
+	}
+	m, _ := url.ParseQuery(u.RawQuery)
+	// Checking the availability of data from the URL. To show today if there is no data.
+	if len(m["date_from"]) > 0 {
+		request.dateFrom = m["date_from"][0]
+	} else {
+		request.dateFrom = time.Now().Format("2006-01-02")
+	}
+	if len(m["date_to"]) > 0 {
+		request.dateTo = m["date_to"][0]
+	} else {
+		request.dateTo = time.Now().Add(24 * time.Hour).Format("2006-01-02")
+	}
+	if request.dateFrom == "" {
+		request.dateFrom = time.Now().Format("2006-01-02")
+	}
+	if request.dateTo == "" {
+		request.dateTo = time.Now().Add(24 * time.Hour).Format("2006-01-02")
+	}
+	if len(m["report"]) > 0 {
+		request.report = m["report"][0]
+		// } else {
+		// request.report = "index"
+	}
+
+	return request
+}
+
+func (data *Transport) handleIndex(w http.ResponseWriter, r *http.Request) {
+
+	request := parseDataFromURL(r)
+	log.Debug("request=", request)
+
+	path := data.AssetsPath
+	// Starting template processing to display the page in the browser
+	indextmpl, err := template.ParseFiles(
+		path+"/index.html",
+		path+"/header.html",
+		path+"/footer.html")
+	if err != nil {
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	DisplayData := data.reportTrafficHourlyByLogins(request, false)
+
+	err = indextmpl.ExecuteTemplate(w, "index", DisplayData)
+	if err != nil {
+
+		fmt.Fprintf(w, "Что-то пошло не так, произошла ошибка при выполнении запроса. Проверьте налиие логов за запрашиваемый период\n%v", err.Error())
+	}
+}
+
+func (data *Transport) handleWithFriends(w http.ResponseWriter, r *http.Request) {
+
+	request := parseDataFromURL(r)
+	log.Debug("request=", request)
+
+	path := data.AssetsPath
+	// Starting template processing to display the page in the browser
+	indextmpl, err := template.ParseFiles(
+		path+"/indexwf.html",
+		path+"/header.html",
+		path+"/footer.html")
+	if err != nil {
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	DisplayData := data.reportTrafficHourlyByLogins(request, true)
+	DisplayData.SizeOneMegabyte = data.SizeOneMegabyte
+
+	err = indextmpl.ExecuteTemplate(w, "indexwf", DisplayData)
+	if err != nil {
+		if strings.Contains(fmt.Sprint(err), "index out of range") {
+			fmt.Fprintf(w, "Проверьте налиие логов за запрашиваемый период<br> или подождите несколько минут.")
+		} else {
+			fmt.Fprintf(w, "Что-то пошло не так, произошла ошибка при выполнении запроса. <br> %v", err.Error())
+
+		}
+	}
+}
+
+func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
+	// path := r.URL.Path
+	// alias := r.URL.Fragment
+	t.RLock()
+	alias := r.FormValue("alias")
+	nowDay := findOutTheCurrentDay(time.Now().Unix(), t.Location)
+	nowDayStr := time.Unix(nowDay, 0).In(t.Location).Format("2006-01-02")
+	key := KeyMapOfReports{
+		Alias:   alias,
+		DateStr: nowDayStr,
+	}
+
+	lineOfDisplay, ok := t.dataChashe[key]
+	if !ok {
+		lineOfDisplay = ValueMapOfReports{}
+	}
+	t.RUnlock()
+
+	DisplayDataUser := DisplayDataUserType{
+		Header:    "Редактирование пользователя",
+		Copyright: "GoSquidLogAnalyzer <i>© 2020</i> by Vladislav Vegner",
+		Mail:      "mailto:vegner.vs@uttist.ru",
+		LineOfDisplay: LineOfDisplay{
+			Alias: alias,
+			DeviceType: DeviceType{
+				HostName: lineOfDisplay.HostName,
+				TypeD:    lineOfDisplay.TypeD,
+			},
+			PersonType: PersonType{
+				Name:     lineOfDisplay.Name,
+				Position: lineOfDisplay.Position,
+				Company:  lineOfDisplay.Company,
+				Comments: lineOfDisplay.Comments,
+			},
+			QuotaType: QuotaType{
+				HourlyQuota:  lineOfDisplay.HourlyQuota,
+				DailyQuota:   lineOfDisplay.DailyQuota,
+				MonthlyQuota: lineOfDisplay.MonthlyQuota,
+				Blocked:      lineOfDisplay.Blocked,
+			},
+		},
+	}
+
+	AssetsPath := t.AssetsPath
+	// Starting template processing to display the page in the browser
+	indextmpl, err := template.ParseFiles(
+		AssetsPath+"/editalias.html",
+		AssetsPath+"/header.html",
+		AssetsPath+"/footer.html")
+	if err != nil {
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	err = indextmpl.ExecuteTemplate(w, "editalias", DisplayDataUser)
+	if err != nil {
+
+		fmt.Fprintf(w, "Что-то пошло не так, произошла ошибка при выполнении запроса. Проверьте налиие логов за запрашиваемый период\n%v", err.Error())
+	}
+}
+
+func (t *Transport) handleLog(w http.ResponseWriter, r *http.Request) {
+	path := t.AssetsPath
+	// Starting template processing to display the page in the browser
+	indextmpl, err := template.ParseFiles(
+		path+"/log.html",
+		path+"/header.html",
+		path+"/footer.html")
+	if err != nil {
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	DisplayData := &DisplayDataType{
+		Header: "Лог работы",
+		Logs:   t.logs,
+	}
+
+	err = indextmpl.ExecuteTemplate(w, "log", DisplayData)
+	if err != nil {
+
+		fmt.Fprintf(w, "Что-то пошло не так, произошла ошибка при выполнении запроса. <br> %v", err.Error())
+	}
+}
+
+func (t *Transport) handleRunParse(w http.ResponseWriter, r *http.Request) {
+	t.timer.Stop()
+	t.timer.Reset(1 * time.Second)
+
+	http.Redirect(w, r, "/", 302)
+}
+
+// func (data *Transport) handleLog(w http.ResponseWriter, r *http.Request) {
+// 	path := data.AssetsPath
+// 	// Starting template processing to display the page in the browser
+// 	indextmpl, err := template.ParseFiles(
+// 		path+"/log.html",
+// 		path+"/header.html",
+// 		path+"/footer.html")
+// 	if err != nil {
+// 		fmt.Fprint(w, err.Error())
+// 		return
+// 	}
+
+// 	DisplayData := ""
+
+// 	err = indextmpl.ExecuteTemplate(w, "log", DisplayData)
+// 	if err != nil {
+
+// 		fmt.Fprintf(w, "Что-то пошло не так, произошла ошибка при выполнении запроса. Проверьте налиие логов за запрашиваемый период\n%v", err.Error())
+// 	}
+// }
+func (data *Transport) handleDayDetail(w http.ResponseWriter, r *http.Request) {
+
+	request := parseDataFromURL(r)
+	log.Debug("request=", request)
+
+	path := data.AssetsPath
+	// Starting template processing to display the page in the browser
+	indextmpl, err := template.ParseFiles(
+		path+"/dayDetail.html",
+		path+"/header.html",
+		path+"/footer.html")
+	if err != nil {
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	DisplayData := data.reportTrafficHourlyByLogins(request, false)
+
+	err = indextmpl.ExecuteTemplate(w, "dayDetail", DisplayData)
+	if err != nil {
+
+		fmt.Fprintf(w, "Что-то пошло не так, произошла ошибка при выполнении запроса. Проверьте налиие логов за запрашиваемый период\n%v", err.Error())
 	}
 }
