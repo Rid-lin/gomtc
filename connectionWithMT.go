@@ -318,7 +318,7 @@ func isIP(inputStr string) bool {
 func (transport *Transport) findInfoOfDevice(alias string) (InfoOfDeviceType, error) {
 	key := KeyMapOfReports{
 		Alias:   alias,
-		DateStr: time.Now().In(cfg.Location).Format(cfg.dateLayout),
+		DateStr: time.Now().In(transport.Location).Format("2006-01-02"),
 	}
 	device := InfoOfDeviceType{}
 	var err error
