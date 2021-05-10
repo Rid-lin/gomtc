@@ -11,23 +11,19 @@
             Алиас: {{.Alias}}
             <div class="TypeD">
                 Тип устройства
-                <input type="radio" name="TypeD" value="tel"> Телефон
-                <input type="radio" name="TypeD" value="nb"> Ноутбук
-                <input type="radio" name="TypeD" value="ws"> Рабочая станция
-                <input type="radio" name="TypeD" value="ap"> Точка доступа
-                <input type="radio" name="TypeD" value="srv"> Сервер
-                <input type="radio" name="TypeD" value="prn"> Принтер
-                <input type="radio" name="TypeD" value="other"> Другое
+                <input type="radio" name="TypeD" value="tel" {{if eq .TypeD "tel" }} checked="checked" {{end}}> Телефон
+                <input type="radio" name="TypeD" value="nb" {{if eq .TypeD "nb" }} checked="checked" {{end}}> Ноутбук
+                <input type="radio" name="TypeD" value="ws" {{if eq .TypeD "ws" }} checked="checked" {{end}}> Рабочая станция
+                <input type="radio" name="TypeD" value="ap" {{if eq .TypeD "ap" }} checked="checked" {{end}}> Точка доступа
+                <input type="radio" name="TypeD" value="srv" {{if eq .TypeD "srv" }} checked="checked" {{end}}> Сервер
+                <input type="radio" name="TypeD" value="prn" {{if eq .TypeD "prn" }} checked="checked" {{end}}> Принтер
+                <input type="radio" name="TypeD" value="other" {{if or (eq .TypeD "other") (eq .TypeD "") }} checked="checked" {{end}}> Другое
             </div>
             <p> IP Адрес: {{.IP}} </p>
             <p> Мак-Адрес: {{.Mac}} </p>
             <p> Имя устройства: {{.HostName}} </p>
             <p> Группы: {{.Groups}} </p>
-            <p> Отключен: <input type="checkbox" name="disabled" id="disabled" value="{{.Blocked}}" disabled></p>
-            <!-- <br> Адрес <input type="text" name="active-address" id="active-address" title="Адрес" placeholder="Адрес" value="{{.IP}}" disabled> -->
-            <!-- <br> Мак-Адрес <input type="text" name="active-mac-address" id="active-address" title="Мак-Адрес" placeholder="Мак-Адрес" value="{{.Mac}}" disabled> -->
-            <!-- <br> Имя устройства <input type="text" name="HostName" id="host-name" title="HostName" placeholder="Имя устройства" value="{{.HostName}}" disabled> -->
-            <!-- <br> Группы <input type="text" name="AddressLists" id="address-lists" title="AddressLists" placeholder="Группы" value="{{.Groups}}" disabled> -->
+            <p> Отключен: <input type="checkbox" name="disabled" id="disabled" value="{{.Blocked}}" {{if .Blocked}} checked="checked" {{end}}></p>
         </div>
         <div class="user">
             <br>
@@ -35,8 +31,7 @@
             <p> Имя: <input type="text" name="name" id="name" title="Имя" placeholder="Имя" value="{{.Name}}"></p>
             <p>Должность: <input type="text" name="col" id="col" title="Должность" placeholder="Должность" value="{{.Position}}"></p>
             <p>Компания: <input type=" text " name="com " id="com " title="Компания " placeholder="Компания " value="{{.Company}}"></p>
-            <p>Комментарий:
-                <input type="text" name="comment" id="comment" title="Комментарий" placeholder="Комментарий" value="{{.Comments}}"></p>
+            <p>Комментарий: <input type="text" name="comment" id="comment" title="Комментарий" placeholder="Комментарий" value="{{.Comments}}"></p>
         </div>
         <div class=" quota ">
             <br>
