@@ -7,10 +7,10 @@
         <input type="submit" value="Загрузить" />
     </form>
     {{$s:= (index .ArrayDisplay 0)}}
-    <span>Пользователей превысивших среднее значение трафика по 90 перцентилю ({{$s.Average}} Mb): {{$s.Count}} - в поле Пользователь отмечены другим фоном</span>
-    <span>Пользователей превысивших часовую({{$.DailyQuota}} Mb) или дневную квоту({{$.HourlyQuota}} Mb) - в поле объёма трафика отмечены другим фоном</span>
+    <span>Пользователей превысивших среднее значение трафика по 90 перцентилю ({{ FormatSize $s.Average $.SizeOneKilobyte}}): {{$s.Count}} - отмечены другим фоном</span>
+    <span>Пользователей превысивших часовую({{ FormatSize $.HourlyQuota $.SizeOneKilobyte}}) или дневную квоту({{ FormatSize $.DailyQuota $.SizeOneKilobyte}}) - в поле объёма трафика отмечены другим фоном</span>
     <span>Страница сгененрирована за: {{.TimeToGenerate}} </span>
-    <span>Последнее обновление: {{.LastUpdated}} </span>
+    <span>Последнее обновление: {{.LastUpdated}} Последнее обновление MT: {{.LastUpdatedMT}} </span>
 </header>
 <hr>
 <div class="body_report">
@@ -54,15 +54,15 @@
             {{range $k, $v := .ArrayDisplay}}
             <tr>
                 <th>{{$k}}</th>
-                <th {{if and (le $s.Average $v.Size) (ne $k 0)}} style="background-color: rgb(252, 210, 186);" {{else}} {{end}}><a href="/editalias?alias={{$v.Alias}}">{{$v.Alias}}</a></th>
+                <th {{if and (le $s.Average $v.Size) (ne $k 0)}} style="background-color: rgb(252, 210, 186);" {{else}} {{end}}><a href="/editalias?alias={{$v.Alias}}" title="Редактировать пользователя">{{$v.Alias}}</a></th>
                 <th>{{$v.HostName}}</th>
                 <th>{{$v.Name}}</th>
                 <th>{{$v.Comments}}</th>
-                <th {{if $v.Blocked}} style="background-color: rgb(236, 162, 162);" {{else}} {{end}}>
-                    <a href="/editquota?alias={{$v.Alias}}">{{$v.Size}}.Mb</a></th>
+                <th {{if $v.Blocked}} style="background-color: rgb(248, 74, 74);" {{else}} {{end}}>{{ FormatSize $v.Size $.SizeOneKilobyte}}</th>
                 <th>{{$v.Precent}}.%</th>
-                {{range $value := $v.HourSize}}
-                <th>{{printf "%3.1f" $value }}</th>
+                {{range $value := $v.SizeOfHour}}
+                <!-- <th>{{$value}}</th> -->
+                <th>{{ FormatSize $value $.SizeOneKilobyte}}</th>
                 {{end}}
             </tr>
             {{end}}
