@@ -17,19 +17,18 @@ type Config struct {
 	LastDayStr     string
 	LastDateStr    string
 
+	GonsquidAddr string `default:":3030" usage:"Listen address for HTTP-server"`
+
 	Friends                []string `default:"" usage:"List of aliases, IP addresses, friends' logins"`
-	ConfigPath             string   `default:"/etc/gosla" usage:"folder path to all config files"`
-	LogPath                string   `default:"/var/log/gonsquid" usage:"folder path to logs-file"`
+	ConfigPath             string   `default:"/etc/gomtc" usage:"folder path to all config files"`
+	LogPath                string   `default:"/var/log/gomtc" usage:"folder path to logs-file"`
 	ListenAddr             string   `default:":3031" usage:"Listen address for HTTP-server"`
-	GonsquidAddr           string   `default:":3030" usage:"Listen address for HTTP-server"`
-	AssetsPath             string   `default:"./assets"  usage:"The path to the assets folder where the template files are located"`
-	Force                  bool     `default:"false" usage:"Force start processing of all log files"`
+	AssetsPath             string   `default:"/etc/gomtc/assets"  usage:"The path to the assets folder where the template files are located"`
 	SubNets                []string `default:"" usage:"List of subnets traffic between which will not be counted"`
 	IgnorList              []string `default:"" usage:"List of lines that will be excluded from the final log"`
 	LogLevel               string   `default:"info" usage:"Log level: panic, fatal, error, warn, info, debug, trace"`
 	FlowAddr               string   `default:"0.0.0.0:2055" usage:"Address and port to listen NetFlow packets"`
 	NameFileToLog          string   `default:"" usage:"The file where logs will be written in the format of squid logs"`
-	BindAddr               string   `default:":3030" usage:"Listen address for response mac-address from mikrotik"`
 	MTAddr                 string   `default:"" usage:"The address of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken"`
 	MTUser                 string   `default:"" usage:"User of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken"`
 	MTPass                 string   `default:"" usage:"The password of the user of the Mikrotik router, from which the data on the comparison of the mac-address and IP-address is taken"`
@@ -40,7 +39,7 @@ type Config struct {
 	DefaultQuotaHourly     uint64   `default:"0" usage:"Default hourly traffic consumption quota"`
 	DefaultQuotaDaily      uint64   `default:"0" usage:"Default daily traffic consumption quota"`
 	DefaultQuotaMonthly    uint64   `default:"0" usage:"Default monthly traffic consumption quota"`
-	SizeOneMegabyte        uint64   `default:"1048576" usage:"The number of bytes in one megabyte"`
+	SizeOneKilobyte        uint64   `default:"1024" usage:"The number of bytes in one megabyte"`
 	UseTLS                 bool     `default:"false" usage:"Using TLS to connect to a router"`
 	CSV                    bool     `default:"false" usage:"Output to csv"`
 	Location               *time.Location
@@ -65,7 +64,7 @@ func newConfig() *Config {
 		SkipFlags:          false,
 		EnvPrefix:          "GOMTC",
 		FlagPrefix:         "",
-		Files:              []string{"/etc/gomtc/config.toml", "./config.toml", "./config/config.toml"},
+		Files:              []string{"/etc/gomtc/config.toml", "./config/config.toml", "./config.toml"},
 		FileDecoders: map[string]aconfig.FileDecoder{
 			// from `aconfigyaml` submodule
 			// see submodules in repo for more formats
