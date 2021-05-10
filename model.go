@@ -11,9 +11,9 @@ import (
 )
 
 type Transport struct {
-	infoOfDevices       map[string]LineOfData
+	infoOfDevices       map[string]InfoOfDeviceType
 	data                MapOfReports
-	dataChashe          MapOfReports
+	dataCashe           MapOfReports
 	Location            *time.Location
 	fileDestination     *os.File
 	csvFiletDestination *os.File
@@ -21,9 +21,10 @@ type Transport struct {
 	clientROS           *routeros.Client
 	logs                []LogsOfJob
 	lastUpdated         time.Time
+	lastUpdatedMT       time.Time
 	friends             []string
 	AssetsPath          string
-	SizeOneMegabyte     uint64
+	SizeOneKilobyte     uint64
 	timer               *time.Timer
 	renewOneMac         chan string
 	exitChan            chan os.Signal
@@ -43,14 +44,15 @@ type Author struct {
 type request struct {
 	Time,
 	IP string
-	timeInt int64
+	// timeInt int64
 }
 
 type ResponseType struct {
-	IP       string `JSON:"IP"`
-	Mac      string `JSON:"Mac"`
-	Hostname string `JSON:"Hostname"`
-	Comment  string `JSON:"Comment"`
+	// IP       string `JSON:"IP"`
+	// Mac      string `JSON:"Mac"`
+	// Hostname string `JSON:"Hostname"`
+	Comment string `JSON:"Comment"`
+	DeviceType
 }
 
 type QuotaType struct {
@@ -61,18 +63,14 @@ type QuotaType struct {
 }
 
 type DeviceType struct {
-	Id       string
-	IP       string
-	TypeD    string
-	Mac      string
-	HostName string
-	Groups   string
-}
-
-type responseMapType struct {
-	DeviceType
-	PersonType
-	QuotaType
+	Id           string
+	IP           string
+	TypeD        string
+	Mac          string
+	AMac         string
+	HostName     string
+	Groups       string
+	AddressLists []string
 }
 
 type lineOfLogType struct {
@@ -106,14 +104,21 @@ type KeyMapOfReports struct {
 }
 
 type ValueMapOfReports struct {
-	SizeOfHour  [24]uint64
-	Alias       string
-	DateStr     string
-	SizeInBytes uint64
-	Hits        uint32
+	// SizeOfHourU [24]uint64
+	Alias   string
+	DateStr string
+	// SizeU uint64
+	Hits uint32
 	DeviceType
-	QuotaType
 	PersonType
+	QuotaType
+	StatType
+}
+
+type InfoOfDeviceType struct {
+	DeviceType
+	PersonType
+	QuotaType
 }
 
 type PersonType struct {
@@ -121,6 +126,7 @@ type PersonType struct {
 	Name     string
 	Position string
 	Company  string
+	IDUser   string
 }
 
 type Count struct {
@@ -136,35 +142,26 @@ type Count struct {
 	totalLineError uint64
 }
 
-type LineOfData struct {
-	timeout,
-	Comment,
-	disable string
-	addressLists []string
-	timeoutInt   int64
-	DeviceType
-	QuotaType
-	PersonType
-}
-
 type LineOfDisplay struct {
 	Alias string
 	Login string
-	StatType
 	DeviceType
 	PersonType
 	QuotaType
+	StatType
 }
 
 type DisplayDataType struct {
-	ArrayDisplay    []LineOfDisplay
-	Logs            []LogsOfJob
-	Header          string
-	DateFrom        string
-	DateTo          string
-	LastUpdated     string
-	SizeOneMegabyte uint64
-	TimeToGenerate  time.Duration
+	ArrayDisplay     []LineOfDisplay
+	Logs             []LogsOfJob
+	Header           string
+	DateFrom         string
+	DateTo           string
+	LastUpdated      string
+	LastUpdatedMT    string
+	SizeOneKilobyte  uint64
+	SizeOneKilobyteF float64
+	TimeToGenerate   time.Duration
 	Author
 	QuotaType
 }
@@ -184,18 +181,20 @@ type RequestForm struct {
 }
 
 type StatType struct {
-	HourSize           [24]float64
-	HourSizeStr        [24]string
-	Site               string
-	SizeStr            string
-	SizeOfPrecentilStr string
-	PrecentStr         string
-	AverageStr         string
-	Precent            float64
-	Size               float64
-	SizeOfPrecentil    float64
-	Average            float64
-	Count              int32
+	// SizeOfHourF        [24]float64
+	// SizeOfHourStr      [24]string
+	// SizeStr            string
+	// SizeOfPrecentilStr string
+	// PrecentStr         string
+	// AverageStr         string
+	// SizeF              float64
+	SizeOfHour      [24]uint64
+	Site            string
+	Precent         float64
+	SizeOfPrecentil uint64
+	Average         uint64
+	Size            uint64
+	Count           uint32
 }
 
 func NewTransport(cfg *Config) *Transport {
@@ -228,8 +227,8 @@ func NewTransport(cfg *Config) *Transport {
 
 	return &Transport{
 		data:                map[KeyMapOfReports]ValueMapOfReports{},
-		dataChashe:          map[KeyMapOfReports]ValueMapOfReports{},
-		infoOfDevices:       make(map[string]LineOfData),
+		dataCashe:           map[KeyMapOfReports]ValueMapOfReports{},
+		infoOfDevices:       make(map[string]InfoOfDeviceType),
 		Aliases:             make(map[string][]string),
 		Location:            Location,
 		clientROS:           clientROS,
@@ -238,16 +237,16 @@ func NewTransport(cfg *Config) *Transport {
 		logs:                []LogsOfJob{},
 		friends:             cfg.Friends,
 		AssetsPath:          cfg.AssetsPath,
-		SizeOneMegabyte:     cfg.SizeOneMegabyte,
+		SizeOneKilobyte:     cfg.SizeOneKilobyte,
 		parseChan:           make(chan *time.Time),
 		outputChannel:       make(chan decodedRecord, 100),
 		renewOneMac:         make(chan string, 100),
 		newLogChan:          getNewLogSignalsChannel(),
 		exitChan:            getExitSignalsChannel(),
 		QuotaType: QuotaType{
-			HourlyQuota:  cfg.DefaultQuotaHourly * cfg.SizeOneMegabyte,
-			DailyQuota:   cfg.DefaultQuotaDaily * cfg.SizeOneMegabyte,
-			MonthlyQuota: cfg.DefaultQuotaMonthly * cfg.SizeOneMegabyte,
+			HourlyQuota:  cfg.DefaultQuotaHourly * cfg.SizeOneKilobyte * cfg.SizeOneKilobyte,
+			DailyQuota:   cfg.DefaultQuotaDaily * cfg.SizeOneKilobyte * cfg.SizeOneKilobyte,
+			MonthlyQuota: cfg.DefaultQuotaMonthly * cfg.SizeOneKilobyte * cfg.SizeOneKilobyte,
 		},
 		Author: Author{
 			Copyright: "GoSquidLogAnalyzer © 2020-2021 by Vladislav Vegner",
