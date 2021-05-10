@@ -26,7 +26,7 @@ func (t *Transport) writeLog(cfg *Config) {
 	logsOfJob := LogsOfJob{
 		StartTime:       cfg.startTime,
 		EndTime:         cfg.endTime,
-		SizeOneMegabyte: cfg.SizeOneMegabyte,
+		SizeOneKilobyte: cfg.SizeOneKilobyte,
 		Count: Count{
 			LineParsed: cfg.totalLineParsed,
 			LineSkiped: cfg.totalLineSkiped,

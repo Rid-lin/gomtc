@@ -111,7 +111,7 @@ func (t *Transport) ClearDataOfLastDay(cfg *Config) {
 	for key := range data {
 		if key.DateStr == dateStr {
 			delete(data, key)
-			log.Tracef("Item key(%v) data(%v)(%v)(%v)) was deleted", key, data[key].SizeInBytes, data[key].Hits, data[key].SizeOfHour)
+			log.Tracef("Item key(%v) data(%v)(%v)(%v)) was deleted", key, data[key].Size, data[key].Hits, data[key].SizeOfHour)
 		}
 	}
 	t.Lock()
@@ -170,7 +170,7 @@ func (t *Transport) parseFileToMap(info os.FileInfo, cfg *Config) error {
 
 		// Если нет ошибок, то извлекаем файл во временную папку и передаём в след.шаг имя файла
 	} else if errGZip == nil {
-		dir, err := ioutil.TempDir("", "gosla")
+		dir, err := ioutil.TempDir("", "gomtc")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -339,9 +339,11 @@ func (t *Transport) AddLineToMapData(key KeyMapOfReports, value lineOfLogType) {
 	t.Lock()
 	SizeOfHour[value.hour] = value.sizeInBytes
 	valueMapOfReports := ValueMapOfReports{
-		SizeInBytes: value.sizeInBytes,
-		Hits:        1,
-		SizeOfHour:  SizeOfHour,
+		Hits: 1,
+		StatType: StatType{
+			SizeOfHour: SizeOfHour,
+			Size:       value.sizeInBytes,
+		},
 	}
 	t.data[key] = valueMapOfReports
 	t.Unlock()
@@ -353,7 +355,7 @@ func (t *Transport) trafficСounting(key KeyMapOfReports, value *lineOfLogType) 
 	valueMapOfReports := t.data[key]
 	t.RUnlock()
 	// Расчет суммы трафика для дальшейшего отображения
-	valueMapOfReports.SizeInBytes = valueMapOfReports.SizeInBytes + value.sizeInBytes
+	valueMapOfReports.Size = valueMapOfReports.Size + value.sizeInBytes
 	valueMapOfReports.Hits++
 	valueMapOfReports.HostName = value.hostname
 	valueMapOfReports.Comments = value.comment
@@ -403,7 +405,7 @@ func (t *Transport) totalTrafficСounting() {
 		valueTotal := t.data[keyTotal]
 		value := t.data[key]
 
-		valueTotal.SizeInBytes += value.SizeInBytes
+		valueTotal.Size += value.Size
 
 		valueTotal.Hits += value.Hits
 
@@ -432,7 +434,7 @@ func sleepOnInterval(IntervalStr string) {
 
 func (trasnport *Transport) writeToChasheData() {
 	trasnport.Lock()
-	trasnport.dataChashe = MapOfReports{}
-	trasnport.dataChashe = trasnport.data
+	trasnport.dataCashe = MapOfReports{}
+	trasnport.dataCashe = trasnport.data
 	trasnport.Unlock()
 }
