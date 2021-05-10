@@ -87,7 +87,7 @@ func (t *Transport) parseAllFilesAndCountingTraffic(cfg *Config) {
 	if ExTimeInSec == 0 {
 		ExTimeInSec = 1
 	}
-	log.Infof("The parsing is over. Execution time:%.8v Line in second:%v", ExTime, cfg.totalLineParsed/ExTimeInSec)
+	log.Infof("The parsing is over. Execution time:%.3v Line %vin second", ExTime, cfg.totalLineParsed/ExTimeInSec)
 
 	cfg.endTime = time.Now() // Saves the current time to be inserted into the log table
 	t.lastUpdated = time.Now()
