@@ -170,7 +170,8 @@ type DisplayDataUserType struct {
 	Header    string
 	Copyright string
 	Mail      string
-	LineOfDisplay
+	Alias     string
+	InfoOfDeviceType
 }
 
 type RequestForm struct {

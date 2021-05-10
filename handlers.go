@@ -126,46 +126,28 @@ func (data *Transport) handleWithFriends(w http.ResponseWriter, r *http.Request)
 }
 
 func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
-	// path := r.URL.Path
-	// alias := r.URL.Fragment
 	alias := r.FormValue("alias")
-	t.RLock()
-	nowDay := findOutTheCurrentDay(time.Now().Unix(), t.Location)
-	nowDayStr := time.Unix(nowDay, 0).In(t.Location).Format("2006-01-02")
-	key := KeyMapOfReports{
-		Alias:   alias,
-		DateStr: nowDayStr,
-	}
+	// t.RLock()
+	// nowDay := findOutTheCurrentDay(time.Now().Unix(), t.Location)
+	// nowDayStr := time.Unix(nowDay, 0).In(t.Location).Format("2006-01-02")
+	// key := KeyMapOfReports{
+	// 	Alias:   alias,
+	// 	DateStr: nowDayStr,
+	// }
 
-	lineOfDisplay, ok := t.dataCashe[key]
-	if !ok {
-		lineOfDisplay = ValueMapOfReports{}
-	}
-	t.RUnlock()
+	// lineOfDisplay, ok := t.dataCashe[key]
+	// if !ok {
+	// 	lineOfDisplay = ValueMapOfReports{}
+	// }
+	// t.RUnlock()
+	InfoOfDevice := t.aliasToDevice(alias)
 
 	DisplayDataUser := DisplayDataUserType{
-		Header:    "Редактирование пользователя",
-		Copyright: "GoSquidLogAnalyzer <i>© 2020</i> by Vladislav Vegner",
-		Mail:      "mailto:vegner.vs@uttist.ru",
-		LineOfDisplay: LineOfDisplay{
-			Alias: alias,
-			DeviceType: DeviceType{
-				HostName: lineOfDisplay.HostName,
-				TypeD:    lineOfDisplay.TypeD,
-			},
-			PersonType: PersonType{
-				Name:     lineOfDisplay.Name,
-				Position: lineOfDisplay.Position,
-				Company:  lineOfDisplay.Company,
-				Comments: lineOfDisplay.Comments,
-			},
-			QuotaType: QuotaType{
-				HourlyQuota:  lineOfDisplay.HourlyQuota,
-				DailyQuota:   lineOfDisplay.DailyQuota,
-				MonthlyQuota: lineOfDisplay.MonthlyQuota,
-				Blocked:      lineOfDisplay.Blocked,
-			},
-		},
+		Header:           "Редактирование пользователя",
+		Copyright:        "GoSquidLogAnalyzer <i>© 2020</i> by Vladislav Vegner",
+		Mail:             "mailto:vegner.vs@uttist.ru",
+		Alias:            alias,
+		InfoOfDeviceType: InfoOfDevice,
 	}
 
 	AssetsPath := t.AssetsPath
