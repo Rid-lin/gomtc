@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/go-routeros/routeros/proto"
+	"gopkg.in/routeros.v2/proto"
 )
 
 // Reply has all the sentences from a reply.
@@ -25,8 +25,6 @@ func (r *Reply) String() string {
 // readReply reads one reply synchronously. It returns the reply.
 func (c *Client) readReply() (*Reply, error) {
 	r := &Reply{}
-
-	var lastErr error
 	for {
 		sen, err := c.r.ReadSentence()
 		if err != nil {
@@ -34,14 +32,10 @@ func (c *Client) readReply() (*Reply, error) {
 		}
 		done, err := r.processSentence(sen)
 		if err != nil {
-			if done {
-				return nil, err
-			}
-
-			lastErr = err
+			return nil, err
 		}
 		if done {
-			return r, lastErr
+			return r, nil
 		}
 	}
 }
@@ -54,7 +48,7 @@ func (r *Reply) processSentence(sen *proto.Sentence) (bool, error) {
 		r.Done = sen
 		return true, nil
 	case "!trap", "!fatal":
-		return sen.Word == "!fatal", &DeviceError{sen}
+		return true, &DeviceError{sen}
 	case "":
 		// API docs say that empty sentences should be ignored
 	default:

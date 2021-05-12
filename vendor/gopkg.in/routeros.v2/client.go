@@ -12,8 +12,9 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 
-	"github.com/go-routeros/routeros/proto"
+	"gopkg.in/routeros.v2/proto"
 )
 
 // Client is a RouterOS API client.
@@ -48,9 +49,30 @@ func Dial(address, username, password string) (*Client, error) {
 	return newClientAndLogin(conn, username, password)
 }
 
+// Dial connects and logs in to a RouterOS device.
+func DialTimeout(address, username, password string, timeout time.Duration) (*Client, error) {
+	conn, err := net.DialTimeout("tcp", address, timeout)
+	if err != nil {
+		return nil, err
+	}
+	return newClientAndLogin(conn, username, password)
+}
+
 // DialTLS connects and logs in to a RouterOS device using TLS.
 func DialTLS(address, username, password string, tlsConfig *tls.Config) (*Client, error) {
 	conn, err := tls.Dial("tcp", address, tlsConfig)
+	if err != nil {
+		return nil, err
+	}
+	return newClientAndLogin(conn, username, password)
+}
+
+// DialTLSTimeout connects and logs in to a RouterOS device using TLS with timeout.
+func DialTLSTimeout(address, username, password string, tlsConfig *tls.Config, timeout time.Duration) (*Client, error) {
+	dialer := new(net.Dialer)
+	dialer.Timeout = timeout
+
+	conn, err := tls.DialWithDialer(dialer, "tcp", address, tlsConfig)
 	if err != nil {
 		return nil, err
 	}
