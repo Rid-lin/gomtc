@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/go-routeros/routeros"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/routeros.v2"
 )
 
 func dial(cfg *Config) (*routeros.Client, error) {
@@ -44,7 +45,7 @@ func (data *Transport) GetInfo(request *request) ResponseType {
 	if ok {
 		log.Tracef("IP:%v to MAC:%v, hostname:%v, comment:%v", ipStruct.IP, ipStruct.Mac, ipStruct.HostName, ipStruct.Comments)
 		response.DeviceType = ipStruct.DeviceType
-		response.Comment = ipStruct.Comments
+		response.Comments = ipStruct.Comments
 	} else {
 		log.Tracef("IP:'%v' not find in table lease of router:'%v'", ipStruct.IP, cfg.MTAddr)
 		response.Mac = request.IP
@@ -62,6 +63,8 @@ func (data *Transport) loopGetDataFromMT() {
 	defer func() {
 		if e := recover(); e != nil {
 			log.Errorf("Error while trying to get data from the router:%v", e)
+			data.exitChan <- os.Kill
+			panic(e)
 		}
 	}()
 	for {
@@ -78,13 +81,14 @@ func (data *Transport) loopGetDataFromMT() {
 
 func (data *Transport) updateDataFromMT() {
 	data.Lock()
-	data.infoOfDevices = getDataFromMT(data.QuotaType, data.clientROS)
+	BlockAddressList := data.BlockAddressList
+	data.infoOfDevices = getDataFromMT(data.QuotaType, data.clientROS, BlockAddressList)
 	data.lastUpdatedMT = time.Now()
 	log.Tracef("Info Of Devices updated from MT")
 	data.Unlock()
 }
 
-func getDataFromMT(quota QuotaType, connRos *routeros.Client) map[string]InfoOfDeviceType {
+func getDataFromMT(quota QuotaType, connRos *routeros.Client, BlockAddressList string) map[string]InfoOfDeviceType {
 
 	quotahourly := quota.HourlyQuota
 	quotadaily := quota.DailyQuota
@@ -115,20 +119,17 @@ func getDataFromMT(quota QuotaType, connRos *routeros.Client) map[string]InfoOfD
 		lineOfData.IP = re.Map["active-address"]
 		lineOfData.Mac = re.Map["mac-address"]
 		lineOfData.AMac = re.Map["active-mac-address"]
-		// lineOfData.timeout = re.Map["expires-after"]
 		lineOfData.HostName = re.Map["host-name"]
 		lineOfData.Comments = re.Map["comment"]
-		lineOfData.HourlyQuota, lineOfData.DailyQuota, lineOfData.MonthlyQuota, lineOfData.Name, lineOfData.Position, lineOfData.Company, lineOfData.TypeD, lineOfData.IDUser = parseComments(lineOfData.Comments)
+		lineOfData.HourlyQuota, lineOfData.DailyQuota, lineOfData.MonthlyQuota, lineOfData.Name, lineOfData.Position, lineOfData.Company, lineOfData.TypeD, lineOfData.IDUser, lineOfData.Comment, lineOfData.Manual = parseComments(lineOfData.Comments)
 		lineOfData.HourlyQuota = checkNULLQuota(lineOfData.HourlyQuota, quotahourly)
 		lineOfData.DailyQuota = checkNULLQuota(lineOfData.DailyQuota, quotadaily)
 		lineOfData.MonthlyQuota = checkNULLQuota(lineOfData.MonthlyQuota, quotamonthly)
-		disable := re.Map["disabled"]
-		if disable == "yes" {
-			lineOfData.Blocked = true
-		} else {
-			lineOfData.Blocked = false
-		}
+		lineOfData.Disabled = paramertToBool(re.Map["disabled"])
 		lineOfData.Groups = re.Map["address-lists"]
+		if BlockAddressList != "" {
+			lineOfData.Blocked = strings.Contains(lineOfData.Groups, BlockAddressList)
+		}
 		lineOfData.AddressLists = strings.Split(lineOfData.Groups, ",")
 
 		ipToMac[lineOfData.IP] = lineOfData
@@ -139,42 +140,50 @@ func getDataFromMT(quota QuotaType, connRos *routeros.Client) map[string]InfoOfD
 
 func parseComments(comment string) (
 	quotahourly, quotadaily, quotamonthly uint64,
-	name, position, company, typeD, IDUser string) {
+	name, position, company, typeD, IDUser, Comment string, manual bool) {
 	commentArray := strings.Split(comment, "/")
+	var comments string
 	for _, value := range commentArray {
 		switch {
-		case strings.Contains(value, "tel"):
+		case strings.Contains(value, "tel="):
 			typeD = "tel"
 			name = parseParamertToStr(value)
-		case strings.Contains(value, "nb"):
+		case strings.Contains(value, "nb="):
 			typeD = "nb"
 			name = parseParamertToStr(value)
-		case strings.Contains(value, "ws"):
+		case strings.Contains(value, "ws="):
 			typeD = "ws"
 			name = parseParamertToStr(value)
 		case strings.Contains(value, "srv"):
 			typeD = "srv"
 			name = parseParamertToStr(value)
-		case strings.Contains(value, "prn"):
+		case strings.Contains(value, "prn="):
 			typeD = "prn"
 			name = parseParamertToStr(value)
-		case strings.Contains(value, "name"):
+		case strings.Contains(value, "name="):
 			typeD = "other"
 			name = parseParamertToStr(value)
-		case strings.Contains(value, "col"):
+		case strings.Contains(value, "col="):
 			position = parseParamertToStr(value)
-		case strings.Contains(value, "com"):
+		case strings.Contains(value, "com="):
 			company = parseParamertToStr(value)
-		case strings.Contains(value, "id"):
+		case strings.Contains(value, "id="):
 			IDUser = parseParamertToStr(value)
-		case strings.Contains(value, "quotahourly"):
+		case strings.Contains(value, "quotahourly="):
 			quotahourly = parseParamertToUint(value)
-		case strings.Contains(value, "quotadaily"):
+		case strings.Contains(value, "quotadaily="):
 			quotadaily = parseParamertToUint(value)
-		case strings.Contains(value, "quotamonthly"):
+		case strings.Contains(value, "quotamonthly="):
 			quotamonthly = parseParamertToUint(value)
+		case strings.Contains(value, "manual="):
+			manual = parseParamertToBool(value)
+		case strings.Contains(value, "comment="):
+			Comment = parseParamertToStr(value)
+		default:
+			comments = comments + "/" + value
 		}
 	}
+	Comment = Comment + comments
 	return
 
 }
@@ -205,9 +214,34 @@ func parseParamertToUint(inputValue string) (quota uint64) {
 	return
 }
 
+func parseParamertToBool(inputValue string) bool {
+	if strings.Contains(inputValue, "true") || strings.Contains(inputValue, "yes") {
+		return true
+	}
+	return false
+}
+
+func paramertToUint(inputValue string) (quota uint64) {
+	quota, err := strconv.ParseUint(inputValue, 10, 64)
+	if err != nil {
+		log.Errorf("Error parse quota from:(%v) with:(%v)", inputValue, err)
+	}
+	return
+}
+
+func paramertToBool(inputValue string) bool {
+	if inputValue == "true" || inputValue == "yes" {
+		return true
+	}
+	return false
+}
+
 func (transport *Transport) syncStatusDevices(inputSync map[string]bool) {
 	result := map[string]bool{}
-	infoOfDevices := getDataFromMT(transport.QuotaType, transport.clientROS)
+	transport.RLock()
+	BlockAddressList := transport.BlockAddressList
+	transport.RUnlock()
+	infoOfDevices := getDataFromMT(transport.QuotaType, transport.clientROS, BlockAddressList)
 	transport.Lock()
 	transport.infoOfDevices = infoOfDevices
 	transport.Unlock()
@@ -228,6 +262,101 @@ func (transport *Transport) syncStatusDevices(inputSync map[string]bool) {
 	}
 }
 
+func (data *Transport) setDevice(d InfoOfDeviceType) error {
+
+	data.RLock()
+	Quota := data.QuotaType
+	data.RUnlock()
+	var disabled string
+	if d.Disabled {
+		disabled = "yes"
+	} else {
+		disabled = "no"
+	}
+	// .id=*e6ff8;active-address=192.168.65.85;active-client-id=1:e8:d8:d1:47:55:93;active-mac-address=E8:D8:D1:47:55:93;active-server=dhcp_lan;address=pool_admin;address-lists=inet_over_vpn;blocked=false;client-id=1:e8:d8:d1:47:55:93;comment=nb=Admin/quotahourly=500000000/quotadaily=50000000000;dhcp-option=;disabled=false;dynamic=false;expires-after=00:07:53;host-name=root-hp;last-seen=2m7s;mac-address=E8:D8:D1:47:55:93;radius=false;server=dhcp_lan;status=boun
+
+	comment := "/"
+
+	if d.TypeD != "" && d.Name != "" {
+		comment = fmt.Sprintf("%v=%v",
+			d.TypeD,
+			d.Name)
+	} else if d.TypeD == "" && d.Name != "" {
+		comment = fmt.Sprintf("name=%v",
+			d.Name)
+	}
+	if d.Company != "" {
+		comment = fmt.Sprintf("%v/com=%v",
+			comment,
+			d.Company)
+	}
+	if d.Position != "" {
+		comment = fmt.Sprintf("%v/col=%v",
+			comment,
+			d.Position)
+	}
+	if d.HourlyQuota != 0 && d.HourlyQuota != Quota.HourlyQuota {
+		comment = fmt.Sprintf("%v/quotahourly=%v",
+			comment,
+			d.HourlyQuota)
+	}
+	if d.DailyQuota != 0 && d.DailyQuota != Quota.DailyQuota {
+		comment = fmt.Sprintf("%v/quotadaily=%v",
+			comment,
+			d.DailyQuota)
+	}
+	if d.MonthlyQuota != 0 && d.MonthlyQuota != Quota.MonthlyQuota {
+		comment = fmt.Sprintf("%v/quotamonthly=%v",
+			comment,
+			d.MonthlyQuota)
+	}
+	if d.Manual {
+		comment = fmt.Sprintf("%v/manual=%v",
+			comment,
+			d.Manual)
+	}
+	if d.Comment != "" {
+		comment = fmt.Sprintf("%v/comment=%v",
+			comment,
+			d.Comment)
+	}
+	comment = strings.ReplaceAll(comment, "//", "/")
+	if comment == "/" {
+		comment = ""
+	}
+
+	reply, err := data.clientROS.RunArgs([]string{
+		"/ip/dhcp-server/lease/set",
+		"=disabled=" + disabled,
+		"=numbers=" + d.Id,
+		"=address-lists=" + d.Groups,
+		"=comment=" + comment})
+	// reply, err := data.clientROS.Run("/ip/dhcp-server/lease/set", "=disabled="+disabled, "=numbers="+d.Id, "=comment="+comment)
+	if err != nil {
+		return err
+	} else if reply.Done.Word != "!done" {
+		return fmt.Errorf("%v", reply.Done.Word)
+	}
+	log.Tracef("Response from Mikrotik(numbers):%v(%v)", reply, d.Id)
+	return nil
+}
+
+func (data *Transport) setGroupOfDeviceToMT(d InfoOfDeviceType) error {
+
+	reply, err := data.clientROS.RunArgs([]string{
+		"/ip/dhcp-server/lease/set",
+		"=numbers=" + d.Id,
+		"=address-lists=" + d.Groups,
+	})
+	if err != nil {
+		return err
+	} else if reply.Done.Word != "!done" {
+		return fmt.Errorf("%v", reply.Done.Word)
+	}
+	log.Tracef("Response from Mikrotik(numbers):%v(%v)", reply, d.Id)
+	return nil
+}
+
 func (data *Transport) setStatusDevice(number string, status bool) error {
 
 	var statusMtT string
@@ -246,14 +375,13 @@ func (data *Transport) setStatusDevice(number string, status bool) error {
 	log.Tracef("Response from Mikrotik(numbers):%v(%v)", reply, number)
 	return nil
 }
+
 func (data *Transport) getInfoOfDeviceFromMT(alias string) InfoOfDeviceType {
 	var device InfoOfDeviceType
 	var entity string
 
 	data.RLock()
-	quotahourly := data.HourlyQuota
-	quotadaily := data.DailyQuota
-	quotamonthly := data.MonthlyQuota
+	BlockAddressList := data.BlockAddressList
 	data.RUnlock()
 
 	if isMac(alias) {
@@ -278,17 +406,12 @@ func (data *Transport) getInfoOfDeviceFromMT(alias string) InfoOfDeviceType {
 		device.AMac = re.Map["active-mac-address"]
 		device.HostName = re.Map["host-name"]
 		device.Comments = re.Map["comment"]
-		device.HourlyQuota, device.DailyQuota, device.MonthlyQuota, device.Name, device.Position, device.Company, device.TypeD, device.IDUser = parseComments(device.Comments)
-		device.HourlyQuota = checkNULLQuota(device.HourlyQuota, quotahourly)
-		device.DailyQuota = checkNULLQuota(device.DailyQuota, quotadaily)
-		device.MonthlyQuota = checkNULLQuota(device.MonthlyQuota, quotamonthly)
-		disable := re.Map["disabled"]
-		if disable == "yes" {
-			device.Blocked = true
-		} else {
-			device.Blocked = false
-		}
+		device.HourlyQuota, device.DailyQuota, device.MonthlyQuota, device.Name, device.Position, device.Company, device.TypeD, device.IDUser, device.Comment, device.Manual = parseComments(device.Comments)
+		device.ShouldBeBlocked = paramertToBool(re.Map["disabled"])
 		device.Groups = re.Map["address-lists"]
+		if BlockAddressList != "" {
+			device.Blocked = strings.Contains(device.Groups, BlockAddressList)
+		}
 		device.AddressLists = strings.Split(device.Groups, ",")
 	}
 	log.Tracef("Response from Mikrotik(numbers):%v(%v::%v)", reply, device, reply)
@@ -334,6 +457,7 @@ func (transport *Transport) findInfoOfDevice(alias string) (InfoOfDeviceType, er
 				QuotaType:  lineOfReportCashe.QuotaType,
 				PersonType: lineOfReportCashe.PersonType,
 			}
+			return device, nil
 		} else {
 			lineOfReport, ok := transport.data[key]
 			if ok {
@@ -342,38 +466,38 @@ func (transport *Transport) findInfoOfDevice(alias string) (InfoOfDeviceType, er
 					QuotaType:  lineOfReport.QuotaType,
 					PersonType: lineOfReport.PersonType,
 				}
+				return device, nil
 			} else {
 				for _, value := range transport.dataCashe {
-					if value.Mac != alias {
-						continue
-					}
-					device = InfoOfDeviceType{
-						DeviceType: value.DeviceType,
-						QuotaType:  value.QuotaType,
-						PersonType: value.PersonType,
+					if value.Mac == alias {
+						device = InfoOfDeviceType{
+							DeviceType: value.DeviceType,
+							QuotaType:  value.QuotaType,
+							PersonType: value.PersonType,
+						}
+						return device, nil
 					}
 				}
 				for _, value := range transport.data {
-					if value.Mac != alias {
-						continue
-					}
-					device = InfoOfDeviceType{
-						DeviceType: value.DeviceType,
-						QuotaType:  value.QuotaType,
-						PersonType: value.PersonType,
+					if value.Mac == alias {
+						device = InfoOfDeviceType{
+							DeviceType: value.DeviceType,
+							QuotaType:  value.QuotaType,
+							PersonType: value.PersonType,
+						}
+						return device, nil
 					}
 				}
 				for _, value := range transport.infoOfDevices {
 					if value.Mac != alias {
-						continue
-					}
-					device = InfoOfDeviceType{
-						DeviceType: value.DeviceType,
-						QuotaType:  value.QuotaType,
-						PersonType: value.PersonType,
+						device = InfoOfDeviceType{
+							DeviceType: value.DeviceType,
+							QuotaType:  value.QuotaType,
+							PersonType: value.PersonType,
+						}
+						return device, nil
 					}
 				}
-
 			}
 
 		}
@@ -385,45 +509,66 @@ func (transport *Transport) findInfoOfDevice(alias string) (InfoOfDeviceType, er
 				QuotaType:  lineOfInfo.QuotaType,
 				PersonType: lineOfInfo.PersonType,
 			}
+			return device, nil
 		} else {
 			for _, value := range transport.infoOfDevices {
-				if value.IP != alias {
-					continue
-				}
-				device = InfoOfDeviceType{
-					DeviceType: value.DeviceType,
-					QuotaType:  value.QuotaType,
-					PersonType: value.PersonType,
+				if value.IP == alias {
+					device = InfoOfDeviceType{
+						DeviceType: value.DeviceType,
+						QuotaType:  value.QuotaType,
+						PersonType: value.PersonType,
+					}
+					return device, nil
 				}
 			}
 			for _, value := range transport.data {
-				if value.IP != alias {
-					continue
-				}
-				device = InfoOfDeviceType{
-					DeviceType: value.DeviceType,
-					QuotaType:  value.QuotaType,
-					PersonType: value.PersonType,
+				if value.IP == alias {
+					device = InfoOfDeviceType{
+						DeviceType: value.DeviceType,
+						QuotaType:  value.QuotaType,
+						PersonType: value.PersonType,
+					}
+					return device, nil
 				}
 			}
 			for _, value := range transport.infoOfDevices {
 				if value.IP != alias {
-					continue
-				}
-				device = InfoOfDeviceType{
-					DeviceType: value.DeviceType,
-					QuotaType:  value.QuotaType,
-					PersonType: value.PersonType,
+					device = InfoOfDeviceType{
+						DeviceType: value.DeviceType,
+						QuotaType:  value.QuotaType,
+						PersonType: value.PersonType,
+					}
+					return device, nil
 				}
 			}
 
 		}
-	} else {
-		err = fmt.Errorf("Alias '%v' not found", alias)
-		log.Debugf("Alias '%v' not found", alias)
 	}
+	err = fmt.Errorf("Alias '%v' not found", alias)
+	log.Debugf("Alias '%v' not found", alias)
 
 	return device, err
+}
+
+func (transport *Transport) updateInfoOfDeviceFromMT(alias string) {
+	device := transport.getInfoOfDeviceFromMT(alias)
+	key := KeyMapOfReports{
+		Alias:   alias,
+		DateStr: time.Now().In(transport.Location).Format("2006-01-02"),
+	}
+	transport.Lock()
+	LineOfReports := transport.data[key]
+	LineOfReports.QuotaType = device.QuotaType
+	LineOfReports.PersonType = device.PersonType
+	transport.data[key] = LineOfReports
+	LineOfReports = transport.dataCashe[key]
+	LineOfReports.QuotaType = device.QuotaType
+	LineOfReports.PersonType = device.PersonType
+	transport.dataCashe[key] = LineOfReports
+	infoOfDevice := transport.infoOfDevices[device.IP]
+	infoOfDevice.QuotaType = device.QuotaType
+	infoOfDevice.PersonType = device.PersonType
+	transport.Unlock()
 }
 
 func (transport *Transport) readsStreamFromMT(cfg *Config) {

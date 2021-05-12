@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-routeros/routeros"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/routeros.v2"
 )
 
 type Transport struct {
@@ -24,6 +24,7 @@ type Transport struct {
 	lastUpdatedMT       time.Time
 	friends             []string
 	AssetsPath          string
+	BlockAddressList    string
 	SizeOneKilobyte     uint64
 	timer               *time.Timer
 	renewOneMac         chan string
@@ -51,21 +52,23 @@ type ResponseType struct {
 	// IP       string `JSON:"IP"`
 	// Mac      string `JSON:"Mac"`
 	// Hostname string `JSON:"Hostname"`
-	Comment string `JSON:"Comment"`
+	Comments string `JSON:"Comment"`
 	DeviceType
 }
 
 type QuotaType struct {
-	HourlyQuota  uint64
-	DailyQuota   uint64
-	MonthlyQuota uint64
-	Blocked      bool
+	HourlyQuota     uint64
+	DailyQuota      uint64
+	MonthlyQuota    uint64
+	Disabled        bool
+	Blocked         bool
+	Manual          bool
+	ShouldBeBlocked bool
 }
 
 type DeviceType struct {
 	Id           string
 	IP           string
-	TypeD        string
 	Mac          string
 	AMac         string
 	HostName     string
@@ -83,7 +86,7 @@ type lineOfLogType struct {
 	mime,
 	alias,
 	hostname,
-	comment string
+	comments string
 	year,
 	day,
 	hour,
@@ -96,22 +99,20 @@ type lineOfLogType struct {
 	// sitehashe   string
 }
 
-type MapOfReports map[KeyMapOfReports]ValueMapOfReports
+type MapOfReports map[KeyMapOfReports]ValueMapOfReportsType
 
 type KeyMapOfReports struct {
 	DateStr string
 	Alias   string
 }
 
-type ValueMapOfReports struct {
+type ValueMapOfReportsType struct {
 	// SizeOfHourU [24]uint64
 	Alias   string
 	DateStr string
 	// SizeU uint64
 	Hits uint32
-	DeviceType
-	PersonType
-	QuotaType
+	InfoOfDeviceType
 	StatType
 }
 
@@ -122,11 +123,13 @@ type InfoOfDeviceType struct {
 }
 
 type PersonType struct {
+	Comment  string
 	Comments string
 	Name     string
 	Position string
 	Company  string
 	IDUser   string
+	TypeD    string
 }
 
 type Count struct {
@@ -145,32 +148,38 @@ type Count struct {
 type LineOfDisplay struct {
 	Alias string
 	Login string
-	DeviceType
-	PersonType
-	QuotaType
+	InfoOfDeviceType
 	StatType
 }
 
 type DisplayDataType struct {
-	ArrayDisplay     []LineOfDisplay
-	Logs             []LogsOfJob
-	Header           string
-	DateFrom         string
-	DateTo           string
-	LastUpdated      string
-	LastUpdatedMT    string
-	SizeOneKilobyte  uint64
-	SizeOneKilobyteF float64
-	TimeToGenerate   time.Duration
+	ArrayDisplay   []LineOfDisplay
+	Logs           []LogsOfJob
+	Header         string
+	DateFrom       string
+	DateTo         string
+	LastUpdated    string
+	LastUpdatedMT  string
+	Path           string
+	Host           string
+	ReferURL       string
+	TimeToGenerate time.Duration
 	Author
+	SizeOneType
 	QuotaType
 }
 
+type SizeOneType struct {
+	SizeOneKilobyte uint64
+	SizeOneMegabyte uint64
+	SizeOneGigabyte uint64
+}
 type DisplayDataUserType struct {
-	Header    string
-	Copyright string
-	Mail      string
-	Alias     string
+	Header          string
+	Copyright       string
+	Mail            string
+	Alias           string
+	SizeOneKilobyte uint64
 	InfoOfDeviceType
 }
 
@@ -178,6 +187,8 @@ type RequestForm struct {
 	dateFrom,
 	dateTo,
 	path,
+	// host,
+	referURL,
 	report string
 }
 
@@ -205,13 +216,15 @@ func NewTransport(cfg *Config) *Transport {
 		log.Errorf("Error connect to %v:%v", cfg.MTAddr, err)
 		clientROS = tryingToReconnectToMokrotik(cfg)
 	}
-	// defer c.Close()
 
-	fileDestination, err = os.OpenFile(cfg.NameFileToLog, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		fileDestination.Close()
-		log.Fatalf("Error, the '%v' file could not be created (there are not enough premissions or it is busy with another program): %v", cfg.NameFileToLog, err)
+	if !cfg.NoFlow {
+		fileDestination, err = os.OpenFile(cfg.NameFileToLog, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			fileDestination.Close()
+			log.Fatalf("Error, the '%v' file could not be created (there are not enough premissions or it is busy with another program): %v", cfg.NameFileToLog, err)
+		}
 	}
+
 	if cfg.CSV {
 		csvFiletDestination, err = os.OpenFile(cfg.NameFileToLog+".csv", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
@@ -227,11 +240,12 @@ func NewTransport(cfg *Config) *Transport {
 	}
 
 	return &Transport{
-		data:                map[KeyMapOfReports]ValueMapOfReports{},
-		dataCashe:           map[KeyMapOfReports]ValueMapOfReports{},
+		data:                map[KeyMapOfReports]ValueMapOfReportsType{},
+		dataCashe:           map[KeyMapOfReports]ValueMapOfReportsType{},
 		infoOfDevices:       make(map[string]InfoOfDeviceType),
 		Aliases:             make(map[string][]string),
 		Location:            Location,
+		BlockAddressList:    cfg.BlockGroup,
 		clientROS:           clientROS,
 		fileDestination:     fileDestination,
 		csvFiletDestination: csvFiletDestination,

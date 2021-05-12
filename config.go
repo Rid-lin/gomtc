@@ -34,6 +34,7 @@ type Config struct {
 	MTPass                 string   `default:"" usage:"The password of the user of the Mikrotik router, from which the data on the comparison of the mac-address and IP-address is taken"`
 	Loc                    string   `default:"Asia/Yekaterinburg" usage:"Location for time"`
 	Interval               string   `default:"10m" usage:"Interval to getting info from Mikrotik"`
+	BlockGroup             string   `default:"Block" usage:"The name of the address list in MicrotiK with which access is blocked to users who have exceeded the quota."`
 	ReceiveBufferSizeBytes int      `default:"" usage:"Size of RxQueue, i.e. value for SO_RCVBUF in bytes"`
 	NumOfTryingConnectToMT int      `default:"10" usage:"The number of attempts to connect to the microtik router"`
 	DefaultQuotaHourly     uint64   `default:"0" usage:"Default hourly traffic consumption quota"`
@@ -42,6 +43,7 @@ type Config struct {
 	SizeOneKilobyte        uint64   `default:"1024" usage:"The number of bytes in one megabyte"`
 	UseTLS                 bool     `default:"false" usage:"Using TLS to connect to a router"`
 	CSV                    bool     `default:"false" usage:"Output to csv"`
+	NoFlow                 bool     `default:"false" usage:"When this parameter is specified, the netflow packet listener is not launched, therefore, log files are not created, but only parsed."`
 	Location               *time.Location
 	startTime              time.Time
 	endTime                time.Time

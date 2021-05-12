@@ -139,7 +139,7 @@ func (data *Transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) (
 			net.HardwareAddr(srcmacB).String(), // srcmac
 			binRecord.L4DstPort,                // dstport
 			response.HostName,
-			response.Comment,
+			response.Comments,
 		)
 		message2 = fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,non_inverse,%v",
 			header.UnixSec,                       // time
@@ -153,7 +153,7 @@ func (data *Transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) (
 			response.HostName,
 			intToIPv4Addr(binRecord.Ipv4SrcAddrInt).String(), // src ip
 			binRecord.L4SrcPort, // src port
-			response.Comment,
+			response.Comments,
 		)
 
 	} else if !ok && ok2 {
@@ -173,7 +173,7 @@ func (data *Transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) (
 			net.HardwareAddr(srcmacB).String(), // srcmac
 			binRecord.L4DstPort,                // dstport
 			response.HostName,
-			response.Comment,
+			response.Comments,
 		)
 		message2 = fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,inverse,%v",
 			header.UnixSec,                       // time
@@ -187,7 +187,7 @@ func (data *Transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) (
 			response.HostName,
 			intToIPv4Addr(binRecord.Ipv4DstAddrInt).String(), // dst ip - Inet  (reverses src ip)
 			binRecord.L4DstPort, // dstport  (reverses src port)
-			response.Comment,
+			response.Comments,
 		)
 
 	}
@@ -278,14 +278,14 @@ func handlePacket(buf *bytes.Buffer, remoteAddr *net.UDPAddr, outputChannel chan
 	header := header{}
 	err := binary.Read(buf, binary.BigEndian, &header)
 	if err != nil {
-		log.Printf("Error: %v\n", err)
+		log.Errorf("Error: %v\n", err)
 	} else {
 
 		for i := 0; i < int(header.FlowRecords); i++ {
 			record := binaryRecord{}
 			err := binary.Read(buf, binary.BigEndian, &record)
 			if err != nil {
-				log.Printf("binary.Read failed: %v\n", err)
+				log.Errorf("binary.Read failed: %v\n", err)
 				break
 			}
 

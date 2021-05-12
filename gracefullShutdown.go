@@ -68,6 +68,7 @@ func (transport *Transport) Exit() {
 	transport.fileDestination.Close()
 	transport.conn.Close()
 	log.Println("Shutting down")
+	time.Sleep(5 * time.Second)
 	os.Exit(0)
 
 }

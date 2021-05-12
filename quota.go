@@ -1,13 +1,17 @@
 package main
 
 import (
-	"encoding/json"
+	"fmt"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 )
 
 func (transport *Transport) getStatusDevices(cfg *Config) error {
+
+	// transport.mergeMap()
+
 	transport.Lock()
 	resultMap := transport.infoOfDevices
 
@@ -34,6 +38,35 @@ func (transport *Transport) getStatusDevices(cfg *Config) error {
 	return nil
 }
 
+// func (transport *Transport) mergeMap() {
+// 	var key KeyMapOfReports
+// 	DateStr := time.Now().In(transport.Location).Format("2006-01-02")
+// 	transport.Lock()
+// 	resultMap := transport.infoOfDevices
+// 	for _, value := range resultMap {
+// 		key = KeyMapOfReports{
+// 			Alias:   value.Mac,
+// 			DateStr: DateStr,
+// 		}
+// 		ValueMapOfReports := ValueMapOfReportsType{}
+// 		ValueMapOfReports.Alias = value.Mac
+// 		ValueMapOfReports.DateStr = DateStr
+// 		ValueMapOfReports.InfoOfDeviceType = value
+// 		transport.dataCashe[key] = ValueMapOfReports
+// 	}
+// 	transport.Unlock()
+// }
+
+func (transport *Transport) GetData(key KeyMapOfReports) (ValueMapOfReportsType, error) {
+	transport.RLock()
+	if data, ok := transport.dataCashe[key]; ok {
+		transport.RUnlock()
+		return data, nil
+	}
+	transport.RUnlock()
+	return ValueMapOfReportsType{}, fmt.Errorf("Map element with key(%v) not found", key)
+}
+
 func checkNULLQuota(setValue, deafultValue uint64) uint64 {
 	if setValue == 0 {
 		return uint64(deafultValue)
@@ -49,13 +82,13 @@ func (transport *Transport) checkQuota() {
 			continue
 		}
 		if value.Size >= value.DailyQuota {
-			value.Blocked = true
+			value.ShouldBeBlocked = true
 			log.Tracef("Login (%v) was disabled due to exceeding the daily quota(%v)", key.Alias, value.DailyQuota)
 		} else if value.SizeOfHour[hour] >= value.HourlyQuota {
-			value.Blocked = true
+			value.ShouldBeBlocked = true
 			log.Tracef("Login (%v) was disabled due to exceeding the hourly quota(%v)", key.Alias, value.DailyQuota)
-		} else if value.Blocked {
-			value.Blocked = false
+		} else if value.ShouldBeBlocked {
+			value.ShouldBeBlocked = false
 			log.Tracef("Login (%v)has been enabled, the quota(%v) has not been exceeded", key.Alias, value.HourlyQuota)
 		}
 		transport.data[key] = value
@@ -64,35 +97,38 @@ func (transport *Transport) checkQuota() {
 	transport.Unlock()
 }
 
-func (transport *Transport) sendStatusDevices(cfg *Config) {
-	SliceToBlock := map[string]bool{}
+func (transport *Transport) updateStatusDevicesToMT(cfg *Config) {
+
 	transport.RLock()
-	for key, value := range transport.data {
-		SliceToBlock[key.Alias] = value.Blocked
-	}
+	BlockGroup := transport.BlockAddressList
+	data := transport.dataCashe
+	Quota := transport.QuotaType
 	transport.RUnlock()
 
-	bytesRepresentation, err := json.MarshalIndent(SliceToBlock, "", "	")
-	if err != nil {
-		log.Error(err)
+	for _, device := range data {
+		if device.Manual {
+			continue
+		}
+		if device.ShouldBeBlocked && !device.Blocked {
+			if device.QuotaType == Quota {
+				device.QuotaType = QuotaType{}
+			}
+			device.Groups = device.Groups + "," + BlockGroup
+			if err := transport.setGroupOfDeviceToMT(device.InfoOfDeviceType); err != nil {
+				log.Errorf(`An error occurred while saving the device(%v):%v`, device, err.Error())
+			}
+		} else if !device.ShouldBeBlocked && device.Blocked {
+			if device.QuotaType == Quota {
+				device.QuotaType = QuotaType{}
+			}
+			device.Groups = strings.Replace(device.Groups, BlockGroup, "", 1)
+			device.Groups = strings.ReplaceAll(device.Groups, ",,", ",")
+			if err := transport.setGroupOfDeviceToMT(device.InfoOfDeviceType); err != nil {
+				log.Errorf(`An error occurred while saving the device(%v):%v`, device, err.Error())
+			}
+		}
 	}
 
-	log.Tracef("%s", bytesRepresentation)
-
-	// pathToPost := cfg.GonsquidAddr + "/setstatusdevices"
-
-	// resp, err := http.Post(pathToPost, "application/json", bytes.NewBuffer(bytesRepresentation))
-	// if err != nil {
-	// 	log.Errorf("Error in receiving information from the remote device management server(%v):%v", pathToPost, err)
-	// 	return
-	// }
-
-	// result := new(map[string]interface{})
-
-	// decoder := json.NewDecoder(resp.Body)
-	// err = decoder.Decode(&result)
-	// if err != nil {
-	// 	log.Errorf("%v", err)
-	// }
+	transport.updateDataFromMT()
 
 }

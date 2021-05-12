@@ -1,5 +1,9 @@
 package main
 
+import (
+	_ "net/http/pprof"
+)
+
 func main() {
 	cfg := newConfig()
 	// TODO проерка на запущенный экземпляр
@@ -16,5 +20,8 @@ func main() {
 	go transport.loopParse(cfg)
 	go transport.pipeOutputToSquid(cfg)
 	transport.handleRequest(cfg)
-	transport.readsStreamFromMT(cfg)
+	if !cfg.NoFlow {
+		transport.readsStreamFromMT(cfg)
+	}
+
 }

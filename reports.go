@@ -27,12 +27,8 @@ func (t *Transport) reportTrafficHourlyByLogins(request RequestForm, showFriends
 			continue
 		}
 		line.Alias = key.Alias
-		line.PersonType = value.PersonType
-		line.QuotaType = value.QuotaType
-		line.DeviceType = value.DeviceType
+		line.InfoOfDeviceType = value.InfoOfDeviceType
 		line.StatType = value.StatType
-		// line.Size = value.Size
-		// line.SizeOfHour = value.SizeOfHour
 		ReportData = add(ReportData, line)
 	}
 
@@ -44,15 +40,21 @@ func (t *Transport) reportTrafficHourlyByLogins(request RequestForm, showFriends
 	// ReportData = ReportData.Format(1)
 
 	return DisplayDataType{
-		ArrayDisplay:    ReportData,
-		Logs:            []LogsOfJob{},
-		Header:          "Отчёт почасовой по трафику пользователей с логинами и IP-адресами",
-		DateFrom:        request.dateFrom,
-		DateTo:          "",
-		LastUpdated:     LastUpdated,
-		LastUpdatedMT:   LastUpdatedMT,
-		SizeOneKilobyte: SizeOneKilobyte,
-		TimeToGenerate:  time.Since(start),
+		ArrayDisplay:   ReportData,
+		Logs:           []LogsOfJob{},
+		Header:         "Отчёт почасовой по трафику пользователей с логинами и IP-адресами",
+		DateFrom:       request.dateFrom,
+		DateTo:         "",
+		LastUpdated:    LastUpdated,
+		LastUpdatedMT:  LastUpdatedMT,
+		TimeToGenerate: time.Since(start),
+		ReferURL:       request.referURL,
+		Path:           request.path,
+		SizeOneType: SizeOneType{
+			SizeOneKilobyte: SizeOneKilobyte,
+			SizeOneMegabyte: SizeOneKilobyte * SizeOneKilobyte,
+			SizeOneGigabyte: SizeOneKilobyte * SizeOneKilobyte * SizeOneKilobyte,
+		},
 		Author: Author{Copyright: Copyright,
 			Mail: Mail,
 		},

@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/go-routeros/routeros"
+	"gopkg.in/routeros.v2"
 )
 
 func Test_dial(t *testing.T) {
@@ -104,8 +104,9 @@ func TestTransport_updateDataFromMT(t *testing.T) {
 
 func Test_getDataFromMT(t *testing.T) {
 	type args struct {
-		quota   QuotaType
-		connRos *routeros.Client
+		quota            QuotaType
+		connRos          *routeros.Client
+		blockAddressList string
 	}
 	tests := []struct {
 		name string
@@ -116,7 +117,7 @@ func Test_getDataFromMT(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getDataFromMT(tt.args.quota, tt.args.connRos); !reflect.DeepEqual(got, tt.want) {
+			if got := getDataFromMT(tt.args.quota, tt.args.connRos, tt.args.blockAddressList); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getDataFromMT() = %v, want %v", got, tt.want)
 			}
 		})
@@ -138,12 +139,28 @@ func Test_parseComments(t *testing.T) {
 		wantCompany      string
 		wantTypeD        string
 		wantIDUser       string
+		wantComment      string
+		wantAutomatic    bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "1",
+			args: args{
+				comment: "srv=Proxy/col=ServerOfProxy/com=UTTiST/id=00001/comment=agu lah ifh fs/fulltime/quotahourly=5000000000/quotadaily=500000000000/quotamonthly=1234567890",
+			},
+			wantQuotahourly:  5000000000,
+			wantQuotadaily:   500000000000,
+			wantQuotamonthly: 1234567890,
+			wantName:         "Proxy",
+			wantPosition:     "ServerOfProxy",
+			wantCompany:      "UTTiST",
+			wantTypeD:        "srv",
+			wantIDUser:       "00001",
+			wantComment:      "agu lah ifh fs/fulltime",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotQuotahourly, gotQuotadaily, gotQuotamonthly, gotName, gotPosition, gotCompany, gotTypeD, gotIDUser := parseComments(tt.args.comment)
+			gotQuotahourly, gotQuotadaily, gotQuotamonthly, gotName, gotPosition, gotCompany, gotTypeD, gotIDUser, gotComment, gotAutomatic := parseComments(tt.args.comment)
 			if gotQuotahourly != tt.wantQuotahourly {
 				t.Errorf("parseComments() gotQuotahourly = %v, want %v", gotQuotahourly, tt.wantQuotahourly)
 			}
@@ -167,6 +184,12 @@ func Test_parseComments(t *testing.T) {
 			}
 			if gotIDUser != tt.wantIDUser {
 				t.Errorf("parseComments() gotIDUser = %v, want %v", gotIDUser, tt.wantIDUser)
+			}
+			if gotComment != tt.wantComment {
+				t.Errorf("parseComments() gotComments = %v, want %v", gotComment, tt.wantComment)
+			}
+			if gotAutomatic != tt.wantAutomatic {
+				t.Errorf("parseComments() gotComments = %v, want %v", gotComment, tt.wantComment)
 			}
 		})
 	}
@@ -212,6 +235,46 @@ func Test_parseParamertToUint(t *testing.T) {
 	}
 }
 
+func Test_paramertToUint(t *testing.T) {
+	type args struct {
+		inputValue string
+	}
+	tests := []struct {
+		name      string
+		args      args
+		wantQuota uint64
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if gotQuota := paramertToUint(tt.args.inputValue); gotQuota != tt.wantQuota {
+				t.Errorf("paramertToUint() = %v, want %v", gotQuota, tt.wantQuota)
+			}
+		})
+	}
+}
+
+func Test_paramertToBool(t *testing.T) {
+	type args struct {
+		inputValue string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := paramertToBool(tt.args.inputValue); got != tt.want {
+				t.Errorf("paramertToBool() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestTransport_syncStatusDevices(t *testing.T) {
 	type args struct {
 		inputSync map[string]bool
@@ -226,6 +289,87 @@ func TestTransport_syncStatusDevices(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.transport.syncStatusDevices(tt.args.inputSync)
+		})
+	}
+}
+
+func TestTransport_setDevice(t *testing.T) {
+	type args struct {
+		d InfoOfDeviceType
+	}
+	cfg := Config{
+		// NameFileToLog:       "./logs/access.log",
+		MTAddr:              "192.168.65.1:8728",
+		MTUser:              "getmac",
+		MTPass:              "getmac_password",
+		NoFlow:              true,
+		DefaultQuotaHourly:  50000000,
+		DefaultQuotaDaily:   300000000,
+		DefaultQuotaMonthly: 9000000000,
+	}
+	data := NewTransport(&cfg)
+	data.DailyQuota = cfg.DefaultQuotaDaily
+	data.HourlyQuota = cfg.DefaultQuotaHourly
+	data.MonthlyQuota = cfg.DefaultQuotaMonthly
+	defer data.fileDestination.Close()
+
+	device := data.aliasToDevice("E8:D8:D1:47:55:93")
+	device2 := data.aliasToDevice("88:BF:E4:BC:7C:4A")
+	id1 := device.Id
+	id2 := device2.Id
+	tests := []struct {
+		name    string
+		data    *Transport
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "1",
+			data: data,
+			args: args{
+				d: InfoOfDeviceType{
+					DeviceType: DeviceType{
+						Id: id1,
+					},
+					PersonType: PersonType{
+						TypeD:    "nb",
+						Name:     "Vlad",
+						Position: "Admin",
+						Company:  "UTTiST",
+						IDUser:   ""},
+					QuotaType: QuotaType{
+						HourlyQuota:     0x1dcd6500,
+						DailyQuota:      0xba43b7400,
+						MonthlyQuota:    0x218711a00,
+						ShouldBeBlocked: false},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "2",
+			data: data,
+			args: args{
+				d: InfoOfDeviceType{
+					DeviceType: DeviceType{
+						Id: id2,
+					},
+					PersonType: PersonType{
+						TypeD:    "tel",
+						Name:     "Torgashev Evgen",
+						Position: "Sklad",
+						Company:  "UTTiST",
+						IDUser:   ""},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := tt.data.setDevice(tt.args.d); (err != nil) != tt.wantErr {
+				t.Errorf("Transport.setDevice() error = %v, wantErr %v", err, tt.wantErr)
+			}
 		})
 	}
 }
@@ -283,23 +427,23 @@ func TestTransport_getInfoOfDeviceFromMT(t *testing.T) {
 				DeviceType: DeviceType{
 					Id:           "*E6FF8",
 					IP:           "192.168.65.85",
-					TypeD:        "nb",
 					Mac:          "E8:D8:D1:47:55:93",
 					AMac:         "E8:D8:D1:47:55:93",
 					HostName:     "root-hp",
 					Groups:       "inet_over_vpn",
 					AddressLists: []string{"inet_over_vpn"}},
 				PersonType: PersonType{
+					TypeD:    "nb",
 					Comments: "nb=Admin/quotahourly=500000000/quotadaily=50000000000",
 					Name:     "Admin",
 					Position: "",
 					Company:  "",
 					IDUser:   ""},
 				QuotaType: QuotaType{
-					HourlyQuota:  0x1dcd6500,
-					DailyQuota:   0xba43b7400,
-					MonthlyQuota: 0x218711a00,
-					Blocked:      false},
+					HourlyQuota:     0x1dcd6500,
+					DailyQuota:      0xba43b7400,
+					MonthlyQuota:    0x218711a00,
+					ShouldBeBlocked: false},
 			},
 		},
 		{name: "2",
@@ -309,23 +453,23 @@ func TestTransport_getInfoOfDeviceFromMT(t *testing.T) {
 				DeviceType: DeviceType{
 					Id:           "*E6FF8",
 					IP:           "192.168.65.85",
-					TypeD:        "nb",
 					Mac:          "E8:D8:D1:47:55:93",
 					AMac:         "E8:D8:D1:47:55:93",
 					HostName:     "root-hp",
 					Groups:       "inet_over_vpn",
 					AddressLists: []string{"inet_over_vpn"}},
 				PersonType: PersonType{
+					TypeD:    "nb",
 					Comments: "nb=Admin/quotahourly=500000000/quotadaily=50000000000",
 					Name:     "Admin",
 					Position: "",
 					Company:  "",
 					IDUser:   ""},
 				QuotaType: QuotaType{
-					HourlyQuota:  0x1dcd6500,
-					DailyQuota:   0xba43b7400,
-					MonthlyQuota: 0x218711a00,
-					Blocked:      false},
+					HourlyQuota:     0x1dcd6500,
+					DailyQuota:      0xba43b7400,
+					MonthlyQuota:    0x218711a00,
+					ShouldBeBlocked: false},
 			},
 		},
 	}
@@ -346,7 +490,7 @@ func TestTransport_aliasToDevice(t *testing.T) {
 		name string
 		data *Transport
 		args args
-		want DeviceType
+		want InfoOfDeviceType
 	}{
 		// TODO: Add test cases.
 	}
@@ -368,7 +512,20 @@ func Test_isMac(t *testing.T) {
 		args args
 		want bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "MAC 00:00:00:00:00:00",
+			args: args{
+				inputStr: "00:00:00:00:00:00",
+			},
+			want: true,
+		},
+		{
+			name: "Not MAC ",
+			args: args{
+				inputStr: "00:00:00:00:0000",
+			},
+			want: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -388,7 +545,20 @@ func Test_isIP(t *testing.T) {
 		args args
 		want bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "IP 192.168.0.1",
+			args: args{
+				inputStr: "192.168.0.1",
+			},
+			want: true,
+		},
+		{
+			name: "not IP",
+			args: args{
+				inputStr: "192.168.01",
+			},
+			want: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -407,7 +577,7 @@ func TestTransport_findInfoOfDevice(t *testing.T) {
 		name      string
 		transport *Transport
 		args      args
-		want      DeviceType
+		want      InfoOfDeviceType
 		wantErr   bool
 	}{
 		// TODO: Add test cases.
