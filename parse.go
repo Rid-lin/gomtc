@@ -76,7 +76,7 @@ func (t *Transport) parseAllFilesAndCountingTraffic(cfg *Config) {
 
 	// Получение текущего времени для расчёта времени работы
 	cfg.startTime = time.Now()
-	log.Info("Parsing has started.")
+	fmt.Printf("Parsing has started.\n")
 	err := t.parseDirToMap(cfg)
 	if err != nil {
 		log.Error(err)
@@ -87,10 +87,19 @@ func (t *Transport) parseAllFilesAndCountingTraffic(cfg *Config) {
 	if ExTimeInSec == 0 {
 		ExTimeInSec = 1
 	}
-	log.Infof("The parsing is over. Execution time:%.3v Line %v in second", ExTime, cfg.totalLineParsed/ExTimeInSec)
-
 	cfg.endTime = time.Now() // Saves the current time to be inserted into the log table
 	t.lastUpdated = time.Now()
+	log.Infof("The parsing started at %v, ended at %v, and lasted %.3v seconds at a rate of %v lines per second.",
+		cfg.startTime.In(cfg.Location).Format(cfg.dateTimeLayout),
+		cfg.endTime.In(cfg.Location).Format(cfg.dateTimeLayout),
+		ExTime.Seconds(),
+		cfg.totalLineParsed/ExTimeInSec)
+	fmt.Printf("The parsing started at %v, ended at %v, and lasted %.3v seconds at a rate of %v lines per second.\n",
+		cfg.startTime.In(cfg.Location).Format(cfg.dateTimeLayout),
+		cfg.endTime.In(cfg.Location).Format(cfg.dateTimeLayout),
+		ExTime.Seconds(),
+		cfg.totalLineParsed/ExTimeInSec)
+
 }
 
 func (t *Transport) clearingCountedTraffic(cfg *Config, timestamp int64) {
@@ -143,7 +152,7 @@ func (t *Transport) parseDirToMap(cfg *Config) error {
 		cfg.SumAndReset()
 	}
 
-	log.Debugf("From all files lines Read:%v/Parsed:%v/Added:%v/Skiped:%v/Error:%v",
+	fmt.Printf("From all files lines Read:%v/Parsed:%v/Added:%v/Skiped:%v/Error:%v\n",
 		// Lines read:%v, parsed:%v, lines added:%v lines skiped:%v lines error:%v",
 		cfg.totalLineRead,
 		cfg.totalLineParsed,

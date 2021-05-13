@@ -35,7 +35,7 @@ func (transport *Transport) handleRequest(cfg *Config) {
 
 func logreq(f func(w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("access:%s%s?%s", r.Host, r.URL.Path, r.URL.RawQuery)
+		log.Debugf("access:%s%s?%s", r.Host, r.URL.Path, r.URL.RawQuery)
 
 		f(w, r)
 	})
