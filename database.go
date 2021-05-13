@@ -18,7 +18,7 @@ type VariableToWriteToLogDB struct {
 type LogsOfJob struct {
 	StartTime       time.Time
 	EndTime         time.Time
-	SizeOneMegabyte uint64
+	SizeOneKilobyte uint64
 	Count
 }
 

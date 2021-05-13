@@ -6,14 +6,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-routeros/routeros"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/routeros.v2"
 )
 
 type Transport struct {
-	infoOfDevices       map[string]LineOfData
+	infoOfDevices       map[string]InfoOfDeviceType
 	data                MapOfReports
-	dataChashe          MapOfReports
+	dataCashe           MapOfReports
 	Location            *time.Location
 	fileDestination     *os.File
 	csvFiletDestination *os.File
@@ -21,9 +21,11 @@ type Transport struct {
 	clientROS           *routeros.Client
 	logs                []LogsOfJob
 	lastUpdated         time.Time
+	lastUpdatedMT       time.Time
 	friends             []string
 	AssetsPath          string
-	SizeOneMegabyte     uint64
+	BlockAddressList    string
+	SizeOneKilobyte     uint64
 	timer               *time.Timer
 	renewOneMac         chan string
 	exitChan            chan os.Signal
@@ -43,36 +45,35 @@ type Author struct {
 type request struct {
 	Time,
 	IP string
-	timeInt int64
+	// timeInt int64
 }
 
 type ResponseType struct {
-	IP       string `JSON:"IP"`
-	Mac      string `JSON:"Mac"`
-	Hostname string `JSON:"Hostname"`
-	Comment  string `JSON:"Comment"`
+	// IP       string `JSON:"IP"`
+	// Mac      string `JSON:"Mac"`
+	// Hostname string `JSON:"Hostname"`
+	Comments string `JSON:"Comment"`
+	DeviceType
 }
 
 type QuotaType struct {
-	HourlyQuota  uint64
-	DailyQuota   uint64
-	MonthlyQuota uint64
-	Blocked      bool
+	HourlyQuota     uint64
+	DailyQuota      uint64
+	MonthlyQuota    uint64
+	Disabled        bool
+	Blocked         bool
+	Manual          bool
+	ShouldBeBlocked bool
 }
 
 type DeviceType struct {
-	Id       string
-	IP       string
-	TypeD    string
-	Mac      string
-	HostName string
-	Groups   string
-}
-
-type responseMapType struct {
-	DeviceType
-	PersonType
-	QuotaType
+	Id           string
+	IP           string
+	Mac          string
+	AMac         string
+	HostName     string
+	Groups       string
+	AddressLists []string
 }
 
 type lineOfLogType struct {
@@ -85,7 +86,7 @@ type lineOfLogType struct {
 	mime,
 	alias,
 	hostname,
-	comment string
+	comments string
 	year,
 	day,
 	hour,
@@ -98,29 +99,37 @@ type lineOfLogType struct {
 	// sitehashe   string
 }
 
-type MapOfReports map[KeyMapOfReports]ValueMapOfReports
+type MapOfReports map[KeyMapOfReports]ValueMapOfReportsType
 
 type KeyMapOfReports struct {
 	DateStr string
 	Alias   string
 }
 
-type ValueMapOfReports struct {
-	SizeOfHour  [24]uint64
-	Alias       string
-	DateStr     string
-	SizeInBytes uint64
-	Hits        uint32
+type ValueMapOfReportsType struct {
+	// SizeOfHourU [24]uint64
+	Alias   string
+	DateStr string
+	// SizeU uint64
+	Hits uint32
+	InfoOfDeviceType
+	StatType
+}
+
+type InfoOfDeviceType struct {
 	DeviceType
-	QuotaType
 	PersonType
+	QuotaType
 }
 
 type PersonType struct {
+	Comment  string
 	Comments string
 	Name     string
 	Position string
 	Company  string
+	IDUser   string
+	TypeD    string
 }
 
 type Count struct {
@@ -136,66 +145,68 @@ type Count struct {
 	totalLineError uint64
 }
 
-type LineOfData struct {
-	timeout,
-	Comment,
-	disable string
-	addressLists []string
-	timeoutInt   int64
-	DeviceType
-	QuotaType
-	PersonType
-}
-
 type LineOfDisplay struct {
 	Alias string
 	Login string
+	InfoOfDeviceType
 	StatType
-	DeviceType
-	PersonType
-	QuotaType
 }
 
 type DisplayDataType struct {
-	ArrayDisplay    []LineOfDisplay
-	Logs            []LogsOfJob
-	Header          string
-	DateFrom        string
-	DateTo          string
-	LastUpdated     string
-	SizeOneMegabyte uint64
-	TimeToGenerate  time.Duration
+	ArrayDisplay   []LineOfDisplay
+	Logs           []LogsOfJob
+	Header         string
+	DateFrom       string
+	DateTo         string
+	LastUpdated    string
+	LastUpdatedMT  string
+	Path           string
+	Host           string
+	ReferURL       string
+	TimeToGenerate time.Duration
 	Author
+	SizeOneType
 	QuotaType
 }
 
+type SizeOneType struct {
+	SizeOneKilobyte uint64
+	SizeOneMegabyte uint64
+	SizeOneGigabyte uint64
+}
 type DisplayDataUserType struct {
-	Header    string
-	Copyright string
-	Mail      string
-	LineOfDisplay
+	Header          string
+	Copyright       string
+	Mail            string
+	Alias           string
+	SizeOneKilobyte uint64
+	InfoOfDeviceType
 }
 
 type RequestForm struct {
 	dateFrom,
 	dateTo,
 	path,
+	// host,
+	referURL,
 	report string
 }
 
 type StatType struct {
-	HourSize           [24]float64
-	HourSizeStr        [24]string
-	Site               string
-	SizeStr            string
-	SizeOfPrecentilStr string
-	PrecentStr         string
-	AverageStr         string
-	Precent            float64
-	Size               float64
-	SizeOfPrecentil    float64
-	Average            float64
-	Count              int32
+	// SizeOfHourF        [24]float64
+	// SizeOfHourStr      [24]string
+	// SizeStr            string
+	// SizeOfPrecentilStr string
+	// PrecentStr         string
+	// AverageStr         string
+	// SizeF              float64
+	SizeOfHour      [24]uint64
+	Site            string
+	Precent         float64
+	SizeOfPrecentil uint64
+	Average         uint64
+	Size            uint64
+	Count           uint32
 }
 
 func NewTransport(cfg *Config) *Transport {
@@ -205,13 +216,15 @@ func NewTransport(cfg *Config) *Transport {
 		log.Errorf("Error connect to %v:%v", cfg.MTAddr, err)
 		clientROS = tryingToReconnectToMokrotik(cfg)
 	}
-	// defer c.Close()
 
-	fileDestination, err = os.OpenFile(cfg.NameFileToLog, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		fileDestination.Close()
-		log.Fatalf("Error, the '%v' file could not be created (there are not enough premissions or it is busy with another program): %v", cfg.NameFileToLog, err)
+	if !cfg.NoFlow {
+		fileDestination, err = os.OpenFile(cfg.NameFileToLog, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			fileDestination.Close()
+			log.Fatalf("Error, the '%v' file could not be created (there are not enough premissions or it is busy with another program): %v", cfg.NameFileToLog, err)
+		}
 	}
+
 	if cfg.CSV {
 		csvFiletDestination, err = os.OpenFile(cfg.NameFileToLog+".csv", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
@@ -227,27 +240,28 @@ func NewTransport(cfg *Config) *Transport {
 	}
 
 	return &Transport{
-		data:                map[KeyMapOfReports]ValueMapOfReports{},
-		dataChashe:          map[KeyMapOfReports]ValueMapOfReports{},
-		infoOfDevices:       make(map[string]LineOfData),
+		data:                map[KeyMapOfReports]ValueMapOfReportsType{},
+		dataCashe:           map[KeyMapOfReports]ValueMapOfReportsType{},
+		infoOfDevices:       make(map[string]InfoOfDeviceType),
 		Aliases:             make(map[string][]string),
 		Location:            Location,
+		BlockAddressList:    cfg.BlockGroup,
 		clientROS:           clientROS,
 		fileDestination:     fileDestination,
 		csvFiletDestination: csvFiletDestination,
 		logs:                []LogsOfJob{},
 		friends:             cfg.Friends,
 		AssetsPath:          cfg.AssetsPath,
-		SizeOneMegabyte:     cfg.SizeOneMegabyte,
+		SizeOneKilobyte:     cfg.SizeOneKilobyte,
 		parseChan:           make(chan *time.Time),
 		outputChannel:       make(chan decodedRecord, 100),
 		renewOneMac:         make(chan string, 100),
 		newLogChan:          getNewLogSignalsChannel(),
 		exitChan:            getExitSignalsChannel(),
 		QuotaType: QuotaType{
-			HourlyQuota:  cfg.DefaultQuotaHourly * cfg.SizeOneMegabyte,
-			DailyQuota:   cfg.DefaultQuotaDaily * cfg.SizeOneMegabyte,
-			MonthlyQuota: cfg.DefaultQuotaMonthly * cfg.SizeOneMegabyte,
+			HourlyQuota:  cfg.DefaultQuotaHourly * cfg.SizeOneKilobyte * cfg.SizeOneKilobyte,
+			DailyQuota:   cfg.DefaultQuotaDaily * cfg.SizeOneKilobyte * cfg.SizeOneKilobyte,
+			MonthlyQuota: cfg.DefaultQuotaMonthly * cfg.SizeOneKilobyte * cfg.SizeOneKilobyte,
 		},
 		Author: Author{
 			Copyright: "GoSquidLogAnalyzer © 2020-2021 by Vladislav Vegner",

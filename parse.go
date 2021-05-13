@@ -39,7 +39,7 @@ func (transport *Transport) parseOnce(cfg *Config) {
 
 	if err := transport.getStatusDevices(cfg); err == nil {
 		transport.checkQuota()
-		transport.sendStatusDevices(cfg)
+		transport.updateStatusDevicesToMT(cfg)
 	}
 
 	transport.clearingCountedTraffic(cfg, cfg.LastDate)
@@ -76,7 +76,7 @@ func (t *Transport) parseAllFilesAndCountingTraffic(cfg *Config) {
 
 	// Получение текущего времени для расчёта времени работы
 	cfg.startTime = time.Now()
-	log.Info("Parsing has started.")
+	fmt.Printf("Parsing has started.\n")
 	err := t.parseDirToMap(cfg)
 	if err != nil {
 		log.Error(err)
@@ -87,10 +87,19 @@ func (t *Transport) parseAllFilesAndCountingTraffic(cfg *Config) {
 	if ExTimeInSec == 0 {
 		ExTimeInSec = 1
 	}
-	log.Infof("The parsing is over. Execution time:%.8v Line in second:%v", ExTime, cfg.totalLineParsed/ExTimeInSec)
-
 	cfg.endTime = time.Now() // Saves the current time to be inserted into the log table
 	t.lastUpdated = time.Now()
+	log.Infof("The parsing started at %v, ended at %v, and lasted %.3v seconds at a rate of %v lines per second.",
+		cfg.startTime.In(cfg.Location).Format(cfg.dateTimeLayout),
+		cfg.endTime.In(cfg.Location).Format(cfg.dateTimeLayout),
+		ExTime.Seconds(),
+		cfg.totalLineParsed/ExTimeInSec)
+	fmt.Printf("The parsing started at %v, ended at %v, and lasted %.3v seconds at a rate of %v lines per second.\n",
+		cfg.startTime.In(cfg.Location).Format(cfg.dateTimeLayout),
+		cfg.endTime.In(cfg.Location).Format(cfg.dateTimeLayout),
+		ExTime.Seconds(),
+		cfg.totalLineParsed/ExTimeInSec)
+
 }
 
 func (t *Transport) clearingCountedTraffic(cfg *Config, timestamp int64) {
@@ -111,7 +120,7 @@ func (t *Transport) ClearDataOfLastDay(cfg *Config) {
 	for key := range data {
 		if key.DateStr == dateStr {
 			delete(data, key)
-			log.Tracef("Item key(%v) data(%v)(%v)(%v)) was deleted", key, data[key].SizeInBytes, data[key].Hits, data[key].SizeOfHour)
+			log.Tracef("Item key(%v) data(%v)(%v)(%v)) was deleted", key, data[key].Size, data[key].Hits, data[key].SizeOfHour)
 		}
 	}
 	t.Lock()
@@ -133,7 +142,7 @@ func (t *Transport) parseDirToMap(cfg *Config) error {
 			log.Error(err)
 			continue
 		}
-		log.Debugf("From file %v lines Read/Parsed/Added/Skiped/Error:%v/%v/%v/%v/%v",
+		fmt.Printf("From file %v lines Read:%v/Parsed:%v/Added:%v/Skiped:%v/Error:%v\n",
 			file.Name(),
 			cfg.LineRead,
 			cfg.LineParsed,
@@ -143,7 +152,7 @@ func (t *Transport) parseDirToMap(cfg *Config) error {
 		cfg.SumAndReset()
 	}
 
-	log.Debugf("From all files lines Read/Parsed/Added/Skiped/Error:%v/%v/%v/%v/%v",
+	fmt.Printf("From all files lines Read:%v/Parsed:%v/Added:%v/Skiped:%v/Error:%v\n",
 		// Lines read:%v, parsed:%v, lines added:%v lines skiped:%v lines error:%v",
 		cfg.totalLineRead,
 		cfg.totalLineParsed,
@@ -170,9 +179,9 @@ func (t *Transport) parseFileToMap(info os.FileInfo, cfg *Config) error {
 
 		// Если нет ошибок, то извлекаем файл во временную папку и передаём в след.шаг имя файла
 	} else if errGZip == nil {
-		dir, err := ioutil.TempDir("", "gosla")
+		dir, err := ioutil.TempDir("", "gomtc")
 		if err != nil {
-			log.Fatal(err)
+			log.Errorf("Error extracting file to temporary folder:%v", err)
 		}
 
 		defer os.RemoveAll(dir) // очистка
@@ -302,9 +311,9 @@ func parseLineToStruct(line string, cfg *Config) (lineOfLogType, error) {
 		lineOut.hostname = ""
 	}
 	if len(valueArray) > 11 {
-		lineOut.comment = strings.Join(valueArray[11:], " ")
+		lineOut.comments = strings.Join(valueArray[11:], " ")
 	} else {
-		lineOut.comment = ""
+		lineOut.comments = ""
 	}
 
 	return lineOut, nil
@@ -327,7 +336,7 @@ func (t *Transport) addLineOutToMapOfReports(value *lineOfLogType, cfg *Config) 
 	}
 	_, ok := t.data[key]
 	if !ok {
-		t.data[key] = ValueMapOfReports{}
+		t.data[key] = ValueMapOfReportsType{}
 	}
 
 	// Подсчёт трафика для пользователя и в определенный час
@@ -338,10 +347,12 @@ func (t *Transport) AddLineToMapData(key KeyMapOfReports, value lineOfLogType) {
 	var SizeOfHour [24]uint64
 	t.Lock()
 	SizeOfHour[value.hour] = value.sizeInBytes
-	valueMapOfReports := ValueMapOfReports{
-		SizeInBytes: value.sizeInBytes,
-		Hits:        1,
-		SizeOfHour:  SizeOfHour,
+	valueMapOfReports := ValueMapOfReportsType{
+		Hits: 1,
+		StatType: StatType{
+			SizeOfHour: SizeOfHour,
+			Size:       value.sizeInBytes,
+		},
 	}
 	t.data[key] = valueMapOfReports
 	t.Unlock()
@@ -353,10 +364,10 @@ func (t *Transport) trafficСounting(key KeyMapOfReports, value *lineOfLogType) 
 	valueMapOfReports := t.data[key]
 	t.RUnlock()
 	// Расчет суммы трафика для дальшейшего отображения
-	valueMapOfReports.SizeInBytes = valueMapOfReports.SizeInBytes + value.sizeInBytes
+	valueMapOfReports.Size = valueMapOfReports.Size + value.sizeInBytes
 	valueMapOfReports.Hits++
 	valueMapOfReports.HostName = value.hostname
-	valueMapOfReports.Comments = value.comment
+	valueMapOfReports.Comments = value.comments
 	SizeOfHour := valueMapOfReports.SizeOfHour
 	SizeOfHour[value.hour] = SizeOfHour[value.hour] + value.sizeInBytes
 	// Подсчёт окончен
@@ -403,7 +414,7 @@ func (t *Transport) totalTrafficСounting() {
 		valueTotal := t.data[keyTotal]
 		value := t.data[key]
 
-		valueTotal.SizeInBytes += value.SizeInBytes
+		valueTotal.Size += value.Size
 
 		valueTotal.Hits += value.Hits
 
@@ -432,7 +443,7 @@ func sleepOnInterval(IntervalStr string) {
 
 func (trasnport *Transport) writeToChasheData() {
 	trasnport.Lock()
-	trasnport.dataChashe = MapOfReports{}
-	trasnport.dataChashe = trasnport.data
+	trasnport.dataCashe = MapOfReports{}
+	trasnport.dataCashe = trasnport.data
 	trasnport.Unlock()
 }

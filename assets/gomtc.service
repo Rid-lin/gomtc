@@ -3,13 +3,13 @@
   After=network.target
  
 [Service]
-  ExecStart=/usr/local/bin/gonsquid -config=/etc/gonsquid/config.toml
+  ExecStart=/usr/local/bin/gomtc
   ExecStop=/bin/kill -HUP $MAINPID
   Type=idle
   KillMode=process
   Restart=on-failure
 
-  SyslogIdentifier=gonsquid
+  SyslogIdentifier=gomtc
   SyslogFacility=daemon
   User=proxy
   Group=proxy

@@ -1,17 +1,19 @@
 {{ define "indexwf" }} {{ template "header" }}
 <header>
-    <h1>{{.Header}}</h1>
-    <form action="/withfriends" method="get" id="report">
+    <h2>{{.Header}}</h2>
+    <form action="/wf" method="get" id="report">
         <label for="date_from">Дата: </label>
         <input type="date" id="date_from" name="date_from" value="{{.DateFrom}}" />
         <input type="submit" value="Загрузить" />
     </form>
-    {{$s:= (index .ArrayDisplay 0)}}
-    <span>Пользователей превысивших среднее значение трафика по 90 перцентилю ({{$s.Average}} Mb): {{$s.Count}} - в поле Пользователь отмечены другим фоном</span>
-    <span>Пользователей превысивших часовую({{$.DailyQuota}} Mb) или дневную квоту({{$.HourlyQuota}} Mb) - в поле объёма трафика отмечены другим фоном</span>
-    <span>Страница сгененрирована за: {{.TimeToGenerate}} </span>
-    <span>Последнее обновление: {{.LastUpdated}} </span>
 </header>
+<div class="postheader">
+    {{$s:= (index .ArrayDisplay 0)}}
+    <span>Пользователей превысивших среднее значение трафика по 90 перцентилю ({{ FormatSize $s.Average $.SizeOneKilobyte}}): {{$s.Count}} - отмечены другим фоном</span>
+    <span>Пользователей превысивших часовую({{ FormatSize $.HourlyQuota $.SizeOneKilobyte}}) или дневную квоту({{ FormatSize $.DailyQuota $.SizeOneKilobyte}}) - в поле объёма трафика отмечены другим фоном</span>
+    <span>Страница сгененрирована за: {{.TimeToGenerate}} </span>
+    <span>Последнее обновление: {{.LastUpdated}} Последнее обновление MT: {{.LastUpdatedMT}} </span>
+</div>
 <hr>
 <div class="body_report">
     <table>
@@ -51,21 +53,26 @@
             </tr>
         </thead>
         <tbody>
-            {{range $k, $v := .ArrayDisplay}}
+            {{ range $k, $v := .ArrayDisplay }}
             <tr>
                 <th>{{$k}}</th>
-                <th {{if and (le $s.Average $v.Size) (ne $k 0)}} style="background-color: rgb(252, 210, 186);" {{else}} {{end}}><a href="/editalias?alias={{$v.Alias}}">{{$v.Alias}}</a></th>
-                <th>{{$v.HostName}}</th>
-                <th>{{$v.Name}}</th>
-                <th>{{$v.Comments}}</th>
-                <th {{if $v.Blocked}} style="background-color: rgb(236, 162, 162);" {{else}} {{end}}>
-                    <a href="/editquota?alias={{$v.Alias}}">{{$v.Size}}.Mb</a></th>
-                <th>{{$v.Precent}}.%</th>
-                {{range $value := $v.HourSize}}
-                <th>{{printf "%3.1f" $value }}</th>
-                {{end}}
+                <th {{ if and (le $s.Average $v.Size) (ne $k 0) }} style="background-color: rgb(252, 210, 186);" {{ else }} {{ end }}><a href="/editalias?alias={{$v.Alias}}" title="Редактировать пользователя">{{$v.Alias}}</a></th>
+                <th{{if $v.Blocked}} style="background-color: rgb(252, 210, 186);" {{end}}>{{$v.HostName}}</th>
+                    <th>{{$v.Name}}</th>
+                    <th>{{$v.Comment}}</th>
+                    <th {{if $v.ShouldBeBlocked}} style="background-color: rgb(248, 74, 74);" {{end}} {{if and (le $.SizeOneGigabyte $v.Size) (ne $k 0)}} style="color: rgb(179, 8, 185);" {{else if and (ge $.SizeOneKilobyte $v.Size) (ne $k 0)}} style="color: #12c470;" {{else
+                        if and (ge $.SizeOneMegabyte $v.Size) (ne $k 0)}} style="color: rgb(77, 182, 245);" {{end}}>{{ FormatSize $v.Size $.SizeOneKilobyte}}</th>
+                    <th>{{$v.Precent}}.%</th>
+                    {{range $value := $v.SizeOfHour}}
+                    <!-- <th>{{$value}}</th> -->
+                    <th {{if and (le $.HourlyQuota $value) (ne $k 0)}} style="background-color: rgb(252, 210, 186);" {{end}} {{if and (le $.SizeOneGigabyte $value) (ne $k 0)}} style="color: rgb(179, 8, 185);" {{else if and (ge $.SizeOneKilobyte $value) (ne $k 0)}} style="color: #12c470"
+                        {{else if and (ge $.SizeOneMegabyte $value) (ne $k 0)}} style="color: rgb(77, 182, 245);" {{end}}>{{ FormatSize $value $.SizeOneKilobyte}}</th>
+                    {{end}}
             </tr>
-            {{end}}
+            {{ else }}
+            <h2>Данные или отсуствую или еще загружаются.</h2>
+
+            {{ end }}
         </tbody>
 
     </table>
