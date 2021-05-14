@@ -114,6 +114,7 @@ func (transport *Transport) updateStatusDevicesToMT(cfg *Config) {
 				device.QuotaType = QuotaType{}
 			}
 			device.Groups = device.Groups + "," + BlockGroup
+			device.Groups = strings.Trim(device.Groups, ",")
 			if err := transport.setGroupOfDeviceToMT(device.InfoOfDeviceType); err != nil {
 				log.Errorf(`An error occurred while saving the device(%v):%v`, device, err.Error())
 			}
@@ -123,6 +124,7 @@ func (transport *Transport) updateStatusDevicesToMT(cfg *Config) {
 			}
 			device.Groups = strings.Replace(device.Groups, BlockGroup, "", 1)
 			device.Groups = strings.ReplaceAll(device.Groups, ",,", ",")
+			device.Groups = strings.Trim(device.Groups, ",")
 			if err := transport.setGroupOfDeviceToMT(device.InfoOfDeviceType); err != nil {
 				log.Errorf(`An error occurred while saving the device(%v):%v`, device, err.Error())
 			}

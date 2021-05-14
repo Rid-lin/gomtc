@@ -64,6 +64,7 @@ func (data *Transport) loopGetDataFromMT() {
 		if e := recover(); e != nil {
 			log.Errorf("Error while trying to get data from the router:%v", e)
 			data.exitChan <- os.Kill
+			fmt.Printf("\n")
 			panic(e)
 		}
 	}()
@@ -343,11 +344,23 @@ func (data *Transport) setDevice(d InfoOfDeviceType) error {
 
 func (data *Transport) setGroupOfDeviceToMT(d InfoOfDeviceType) error {
 
-	reply, err := data.clientROS.RunArgs([]string{
+	if d.Id == "" {
+		return fmt.Errorf("Device ID is empty")
+	}
+
+	argsForMT := []string{
 		"/ip/dhcp-server/lease/set",
 		"=numbers=" + d.Id,
 		"=address-lists=" + d.Groups,
-	})
+	}
+	log.Debug(argsForMT)
+
+	reply, err := data.clientROS.RunArgs(argsForMT)
+	// reply, err := data.clientROS.RunArgs([]string{
+	// 	"/ip/dhcp-server/lease/set",
+	// 	"=numbers=" + d.Id,
+	// 	"=address-lists=" + d.Groups,
+	// })
 	if err != nil {
 		return err
 	} else if reply.Done.Word != "!done" {
@@ -589,16 +602,22 @@ func (transport *Transport) readsStreamFromMT(cfg *Config) {
 			} else {
 				/* Infinite-loop for reading packets */
 				for {
-					buf := make([]byte, 4096)
-					rlen, remote, err := transport.conn.ReadFromUDP(buf)
+					select {
+					case <-transport.stopReadFromUDP:
+						time.Sleep(5 * time.Second)
+						return
+					default:
+						bufUDP := make([]byte, 4096)
+						rlen, remote, err := transport.conn.ReadFromUDP(bufUDP)
 
-					if err != nil {
-						log.Errorf("Error: %v\n", err)
-					} else {
+						if err != nil {
+							log.Errorf("Error read from UDP: %v\n", err)
+						} else {
 
-						stream := bytes.NewBuffer(buf[:rlen])
+							stream := bytes.NewBuffer(bufUDP[:rlen])
 
-						go handlePacket(stream, remote, transport.outputChannel, cfg)
+							go handlePacket(stream, remote, transport.outputChannel, cfg)
+						}
 					}
 				}
 			}

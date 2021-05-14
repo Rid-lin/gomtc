@@ -28,6 +28,7 @@ type Transport struct {
 	SizeOneKilobyte     uint64
 	timer               *time.Timer
 	renewOneMac         chan string
+	stopReadFromUDP     chan uint8
 	exitChan            chan os.Signal
 	parseChan           chan *time.Time
 	newLogChan          chan os.Signal
@@ -253,6 +254,7 @@ func NewTransport(cfg *Config) *Transport {
 		friends:             cfg.Friends,
 		AssetsPath:          cfg.AssetsPath,
 		SizeOneKilobyte:     cfg.SizeOneKilobyte,
+		stopReadFromUDP:     make(chan uint8),
 		parseChan:           make(chan *time.Time),
 		outputChannel:       make(chan decodedRecord, 100),
 		renewOneMac:         make(chan string, 100),
