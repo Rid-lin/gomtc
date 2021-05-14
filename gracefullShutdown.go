@@ -64,6 +64,7 @@ func getExitSignalsChannel() chan os.Signal {
 
 func (transport *Transport) Exit() {
 	<-transport.exitChan
+	transport.stopReadFromUDP <- 1
 	transport.clientROS.Close()
 	transport.fileDestination.Close()
 	transport.conn.Close()
