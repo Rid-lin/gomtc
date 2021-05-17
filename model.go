@@ -212,10 +212,10 @@ type StatType struct {
 
 func NewTransport(cfg *Config) *Transport {
 
-	clientROS, err := dial(cfg)
+	clientROS, err := dial(cfg.MTAddr, cfg.MTUser, cfg.MTPass, cfg.UseTLS)
 	if err != nil {
 		log.Errorf("Error connect to %v:%v", cfg.MTAddr, err)
-		clientROS = tryingToReconnectToMokrotik(cfg)
+		clientROS = tryingToReconnectToMokrotik(cfg.MTAddr, cfg.MTUser, cfg.MTPass, cfg.UseTLS, cfg.NumOfTryingConnectToMT)
 	}
 
 	if !cfg.NoFlow {

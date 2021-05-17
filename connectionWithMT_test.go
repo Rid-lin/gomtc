@@ -9,7 +9,9 @@ import (
 
 func Test_dial(t *testing.T) {
 	type args struct {
-		cfg *Config
+		MTAddr, MTUser, MTPass string
+		UseTLS                 bool
+		NumOfTryingConnectToMT int
 	}
 	tests := []struct {
 		name    string
@@ -21,7 +23,7 @@ func Test_dial(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := dial(tt.args.cfg)
+			got, err := dial(tt.args.MTAddr, tt.args.MTUser, tt.args.MTPass, tt.args.UseTLS)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("dial() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -35,7 +37,9 @@ func Test_dial(t *testing.T) {
 
 func Test_tryingToReconnectToMokrotik(t *testing.T) {
 	type args struct {
-		cfg *Config
+		MTAddr, MTUser, MTPass string
+		UseTLS                 bool
+		NumOfTryingConnectToMT int
 	}
 	tests := []struct {
 		name string
@@ -46,7 +50,7 @@ func Test_tryingToReconnectToMokrotik(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tryingToReconnectToMokrotik(tt.args.cfg); !reflect.DeepEqual(got, tt.want) {
+			if got := tryingToReconnectToMokrotik(tt.args.MTAddr, tt.args.MTUser, tt.args.MTPass, tt.args.UseTLS, tt.args.NumOfTryingConnectToMT); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("tryingToReconnectToMokrotik() = %v, want %v", got, tt.want)
 			}
 		})

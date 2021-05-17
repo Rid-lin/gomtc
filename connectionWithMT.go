@@ -13,25 +13,25 @@ import (
 	"gopkg.in/routeros.v2"
 )
 
-func dial(cfg *Config) (*routeros.Client, error) {
-	if cfg.UseTLS {
-		return routeros.DialTLS(cfg.MTAddr, cfg.MTUser, cfg.MTPass, nil)
+func dial(MTAddr, MTUser, MTPass string, UseTLS bool) (*routeros.Client, error) {
+	if UseTLS {
+		return routeros.DialTLS(MTAddr, MTUser, MTPass, nil)
 	}
-	return routeros.Dial(cfg.MTAddr, cfg.MTUser, cfg.MTPass)
+	return routeros.Dial(MTAddr, MTUser, MTPass)
 }
 
-func tryingToReconnectToMokrotik(cfg *Config) *routeros.Client {
-	c, err := dial(cfg)
+func tryingToReconnectToMokrotik(MTAddr, MTUser, MTPass string, UseTLS bool, NumOfTryingConnectToMT int) *routeros.Client {
+	c, err := dial(MTAddr, MTUser, MTPass, UseTLS)
 	if err != nil {
-		if cfg.NumOfTryingConnectToMT == 0 {
-			log.Fatalf("Error connect to %v:%v", cfg.MTAddr, err)
-		} else if cfg.NumOfTryingConnectToMT < 0 {
+		if NumOfTryingConnectToMT == 0 {
+			log.Fatalf("Error connect to %v:%v", MTAddr, err)
+		} else if NumOfTryingConnectToMT < 0 {
 			cfg.NumOfTryingConnectToMT = -1
 		}
-		log.Errorf("Error connect to %v:%v", cfg.MTAddr, err)
+		log.Errorf("Error connect to %v:%v", MTAddr, err)
 		time.Sleep(15 * time.Second)
-		c = tryingToReconnectToMokrotik(cfg)
-		cfg.NumOfTryingConnectToMT--
+		NumOfTryingConnectToMT--
+		c = tryingToReconnectToMokrotik(MTAddr, MTUser, MTPass, UseTLS, NumOfTryingConnectToMT)
 	}
 	return c
 }
