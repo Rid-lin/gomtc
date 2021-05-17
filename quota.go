@@ -38,25 +38,6 @@ func (transport *Transport) getStatusDevices(cfg *Config) error {
 	return nil
 }
 
-// func (transport *Transport) mergeMap() {
-// 	var key KeyMapOfReports
-// 	DateStr := time.Now().In(transport.Location).Format("2006-01-02")
-// 	transport.Lock()
-// 	resultMap := transport.infoOfDevices
-// 	for _, value := range resultMap {
-// 		key = KeyMapOfReports{
-// 			Alias:   value.Mac,
-// 			DateStr: DateStr,
-// 		}
-// 		ValueMapOfReports := ValueMapOfReportsType{}
-// 		ValueMapOfReports.Alias = value.Mac
-// 		ValueMapOfReports.DateStr = DateStr
-// 		ValueMapOfReports.InfoOfDeviceType = value
-// 		transport.dataCashe[key] = ValueMapOfReports
-// 	}
-// 	transport.Unlock()
-// }
-
 func (transport *Transport) GetData(key KeyMapOfReports) (ValueMapOfReportsType, error) {
 	transport.RLock()
 	if data, ok := transport.dataCashe[key]; ok {

@@ -89,11 +89,11 @@ func (data *Transport) updateDataFromMT() {
 	data.Unlock()
 }
 
-func getDataFromMT(quota QuotaType, connRos *routeros.Client, BlockAddressList string) map[string]InfoOfDeviceType {
+func getDataFromMT(quotaDefault QuotaType, connRos *routeros.Client, BlockAddressList string) map[string]InfoOfDeviceType {
 
-	quotahourly := quota.HourlyQuota
-	quotadaily := quota.DailyQuota
-	quotamonthly := quota.MonthlyQuota
+	quotahourly := quotaDefault.HourlyQuota
+	quotadaily := quotaDefault.DailyQuota
+	quotamonthly := quotaDefault.MonthlyQuota
 
 	lineOfData := InfoOfDeviceType{}
 	ipToMac := map[string]InfoOfDeviceType{}
@@ -107,7 +107,7 @@ func getDataFromMT(quota QuotaType, connRos *routeros.Client, BlockAddressList s
 		lineOfData.HourlyQuota = checkNULLQuota(lineOfData.HourlyQuota, quotahourly)
 		lineOfData.DailyQuota = checkNULLQuota(lineOfData.DailyQuota, quotadaily)
 		lineOfData.MonthlyQuota = checkNULLQuota(lineOfData.MonthlyQuota, quotamonthly)
-		// lineOfData.timeoutInt = time.Now().Add(1 * time.Minute).Unix()
+		lineOfData.timeout = time.Now()
 		ipToMac[lineOfData.IP] = lineOfData
 	}
 
@@ -131,7 +131,9 @@ func getDataFromMT(quota QuotaType, connRos *routeros.Client, BlockAddressList s
 		if BlockAddressList != "" {
 			lineOfData.Blocked = strings.Contains(lineOfData.Groups, BlockAddressList)
 		}
-		lineOfData.AddressLists = strings.Split(lineOfData.Groups, ",")
+		lineOfData.timeout = time.Now()
+
+		// lineOfData.AddressLists = strings.Split(lineOfData.Groups, ",")
 
 		ipToMac[lineOfData.IP] = lineOfData
 
@@ -141,7 +143,8 @@ func getDataFromMT(quota QuotaType, connRos *routeros.Client, BlockAddressList s
 
 func parseComments(comment string) (
 	quotahourly, quotadaily, quotamonthly uint64,
-	name, position, company, typeD, IDUser, Comment string, manual bool) {
+	name, position, company, typeD, IDUser, Comment string,
+	manual bool) {
 	commentArray := strings.Split(comment, "/")
 	var comments string
 	for _, value := range commentArray {
@@ -389,7 +392,7 @@ func (data *Transport) setStatusDevice(number string, status bool) error {
 	return nil
 }
 
-func (data *Transport) getInfoOfDeviceFromMT(alias string) InfoOfDeviceType {
+func (data *Transport) obtainingInformationFromMTboutOneDevice(alias string) InfoOfDeviceType {
 	var device InfoOfDeviceType
 	var entity string
 
@@ -402,8 +405,6 @@ func (data *Transport) getInfoOfDeviceFromMT(alias string) InfoOfDeviceType {
 	} else if isIP(alias) {
 		entity = "active-address"
 	}
-
-	// /ip dhcp-server lease get [/ip dhcp-server lease find mac-address="E8:D8:D1:47:55:93"]
 
 	reply, err := data.clientROS.Run("/ip/dhcp-server/lease/print", "?"+entity+"="+alias)
 	if err != nil {
@@ -425,9 +426,9 @@ func (data *Transport) getInfoOfDeviceFromMT(alias string) InfoOfDeviceType {
 		if BlockAddressList != "" {
 			device.Blocked = strings.Contains(device.Groups, BlockAddressList)
 		}
-		device.AddressLists = strings.Split(device.Groups, ",")
+		// device.AddressLists = strings.Split(device.Groups, ",")
 	}
-	log.Tracef("Response from Mikrotik(numbers):%v(%v::%v)", reply, device, reply)
+	log.Tracef("Response from Mikrotik(numbers)(%v) %v", reply, device)
 
 	return device
 }
@@ -435,7 +436,7 @@ func (data *Transport) getInfoOfDeviceFromMT(alias string) InfoOfDeviceType {
 func (data *Transport) aliasToDevice(alias string) InfoOfDeviceType {
 	device, err := data.findInfoOfDevice(alias)
 	if err != nil {
-		device = data.getInfoOfDeviceFromMT(alias)
+		device = data.obtainingInformationFromMTboutOneDevice(alias)
 	}
 
 	return device
@@ -564,7 +565,7 @@ func (transport *Transport) findInfoOfDevice(alias string) (InfoOfDeviceType, er
 }
 
 func (transport *Transport) updateInfoOfDeviceFromMT(alias string) {
-	device := transport.getInfoOfDeviceFromMT(alias)
+	device := transport.obtainingInformationFromMTboutOneDevice(alias)
 	key := KeyMapOfReports{
 		Alias:   alias,
 		DateStr: time.Now().In(transport.Location).Format("2006-01-02"),

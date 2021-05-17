@@ -68,13 +68,13 @@ type QuotaType struct {
 }
 
 type DeviceType struct {
-	Id           string
-	IP           string
-	Mac          string
-	AMac         string
-	HostName     string
-	Groups       string
-	AddressLists []string
+	Id       string
+	IP       string
+	Mac      string
+	AMac     string
+	HostName string
+	Groups   string
+	timeout  time.Time
 }
 
 type lineOfLogType struct {

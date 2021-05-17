@@ -429,13 +429,14 @@ func TestTransport_getInfoOfDeviceFromMT(t *testing.T) {
 			args: args{alias: "E8:D8:D1:47:55:93"},
 			want: InfoOfDeviceType{
 				DeviceType: DeviceType{
-					Id:           "*E6FF8",
-					IP:           "192.168.65.85",
-					Mac:          "E8:D8:D1:47:55:93",
-					AMac:         "E8:D8:D1:47:55:93",
-					HostName:     "root-hp",
-					Groups:       "inet_over_vpn",
-					AddressLists: []string{"inet_over_vpn"}},
+					Id:       "*E6FF8",
+					IP:       "192.168.65.85",
+					Mac:      "E8:D8:D1:47:55:93",
+					AMac:     "E8:D8:D1:47:55:93",
+					HostName: "root-hp",
+					Groups:   "inet_over_vpn",
+					// AddressLists: []string{"inet_over_vpn"},
+				},
 				PersonType: PersonType{
 					TypeD:    "nb",
 					Comments: "nb=Admin/quotahourly=500000000/quotadaily=50000000000",
@@ -455,13 +456,14 @@ func TestTransport_getInfoOfDeviceFromMT(t *testing.T) {
 			args: args{alias: "192.168.65.85"},
 			want: InfoOfDeviceType{
 				DeviceType: DeviceType{
-					Id:           "*E6FF8",
-					IP:           "192.168.65.85",
-					Mac:          "E8:D8:D1:47:55:93",
-					AMac:         "E8:D8:D1:47:55:93",
-					HostName:     "root-hp",
-					Groups:       "inet_over_vpn",
-					AddressLists: []string{"inet_over_vpn"}},
+					Id:       "*E6FF8",
+					IP:       "192.168.65.85",
+					Mac:      "E8:D8:D1:47:55:93",
+					AMac:     "E8:D8:D1:47:55:93",
+					HostName: "root-hp",
+					Groups:   "inet_over_vpn",
+					// AddressLists: []string{"inet_over_vpn"},
+				},
 				PersonType: PersonType{
 					TypeD:    "nb",
 					Comments: "nb=Admin/quotahourly=500000000/quotadaily=50000000000",
@@ -479,7 +481,7 @@ func TestTransport_getInfoOfDeviceFromMT(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.data.getInfoOfDeviceFromMT(tt.args.alias); !reflect.DeepEqual(got, tt.want) {
+			if got := tt.data.obtainingInformationFromMTboutOneDevice(tt.args.alias); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Transport.getInfoOfDeviceFromMT() = %#v, want %v", got, tt.want)
 			}
 		})
