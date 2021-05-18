@@ -2,9 +2,10 @@ package main
 
 import (
 	"bytes"
+	"encoding/csv"
 	"fmt"
-	"io"
 	"net"
+	"os"
 	"runtime"
 	"strconv"
 	"strings"
@@ -215,56 +216,144 @@ func getResponseOverSSHfMT(SSHCred SSHCredetinals, commands []string) bytes.Buff
 	return b
 }
 
-func parseInfoFromMTToSlice(qDef QuotaType, BlockAddressList string, SSHCred SSHCredetinals) []DeviceType {
+// TODO заменить параметры на один тип который называется parseType
+func parseInfoFromMTToSlice(p parseType) []DeviceType {
 
-	// device := DeviceType{}
+	device, device2 := DeviceType{}, DeviceType{}
 	devices := []DeviceType{}
-	b := getResponseOverSSHfMT(SSHCred, []string{"/ip dhcp-server lease print detail without-paging"})
-	delim := '\n'
-	for inputStr, err := b.ReadString(byte(delim)); err != io.EOF; {
-		fmt.Print(inputStr)
+	b := getResponseOverSSHfMT(p.SSHCredetinals, []string{"/ip dhcp-server lease print detail without-paging"})
+	inputStr := b.String()
+	inputArr := strings.Split(inputStr, "\n")
+	for _, line := range inputArr {
+		if device.parseLine(line) != nil {
+			device2.timeout = time.Now().In(p.Location)
+			devices = append(devices, device2)
+			// fmt.Printf("1=%#v\n2=%#v\n", device, device2)
+			device = DeviceType{}
+		}
+		device2 = device
+	}
+	fmt.Print(saveDeviceToCSV(devices))
+	return devices
+}
+
+func (d *DeviceType) parseLine(l string) (err error) {
+	l = strings.Trim(l, " ")
+	l = strings.ReplaceAll(l, "  ", " ")
+	arr := strings.Split(l, " ")
+	for index, s := range arr {
+		switch {
+		case isNumDot(s):
+			err = fmt.Errorf("New line")
+		case l == "\n":
+			return fmt.Errorf("New line")
+			// fallthrough
+		// case strings.Contains(s, ";;;"):
+		case strings.Contains(s, "address-lists="):
+			d.addressLists = parseParamertToStr(s)
+		case strings.Contains(s, "server="):
+			d.server = parseParamertToStr(s)
+		case strings.Contains(s, "dhcp-option="):
+			d.dhcpOption = parseParamertToStr(s)
+		case strings.Contains(s, "status="):
+			d.status = parseParamertToStr(s)
+		case strings.Contains(s, "expires-after="):
+			d.expiresAfter = parseParamertToStr(s)
+		case strings.Contains(s, "last-seen="):
+			d.lastSeen = parseParamertToStr(s)
+		case strings.Contains(s, "active-address="):
+			d.activeAddress = parseParamertToStr(s)
+		case strings.Contains(s, "active-mac-address="):
+			d.activeMacAddress = parseParamertToStr(s)
+		case strings.Contains(s, "mac-address="):
+			d.macAddress = parseParamertToStr(s)
+		case strings.Contains(s, "address="):
+			d.address = parseParamertToStr(s)
+		case strings.Contains(s, "mac-address="):
+			d.activeMacAddress = parseParamertToStr(s)
+		case strings.Contains(s, "active-client-id="):
+			d.activeClientId = parseParamertToStr(s)
+		case strings.Contains(s, "client-id="):
+			d.clientId = parseParamertToStr(s)
+		case strings.Contains(s, "active-server="):
+			d.activeServer = parseParamertToStr(s)
+		case strings.Contains(s, "host-name="):
+			d.hostName = parseParamertToStr(s)
+		case strings.Contains(s, "radius="):
+			d.radius = parseParamertToStr(s)
+		case s == "X":
+			d.disabled = "yes"
+		case s == "B":
+			d.blocked = "yes"
+		case s == "D":
+			d.dynamic = "yes"
+		case s == ";;;":
+			d.comment = strings.Join(arr[index+1:], " ")
+			return err
+		}
+	}
+	return err
+}
+
+func isNumDot(s string) bool {
+	dotFound := false
+	for _, v := range s {
+		if v == '.' {
+			if dotFound {
+				return false
+			}
+			dotFound = true
+		} else if v < '0' || v > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+func saveDeviceToCSV(devices []DeviceType) error {
+	f, e := os.Create("./Device.csv")
+	if e != nil {
+		fmt.Println(e)
 	}
 
-	// for _, re := range reply.Re {
-	// 	lineOfData.IP = re.Map["address"]
-	// 	lineOfData.Mac = re.Map["mac-address"]
-	// 	lineOfData.HourlyQuota = checkNULLQuota(lineOfData.HourlyQuota, qDef.HourlyQuota)
-	// 	lineOfData.DailyQuota = checkNULLQuota(lineOfData.DailyQuota, qDef.DailyQuota)
-	// 	lineOfData.MonthlyQuota = checkNULLQuota(lineOfData.MonthlyQuota, qDef.MonthlyQuota)
-	// 	lineOfData.timeout = time.Now()
-	// 	ipToMac[lineOfData.IP] = lineOfData
-	// }
-	// commands := []string{
-	// 	"/ip dhcp-server lease print detail without-paging",
-	// 	// "quit",
-	// 	"exit",
-	// }
-	// reply2, err2 := connRos.Run("/ip/dhcp-server/lease/print") //, "?status=bound") //, "?disabled=false")
-	// if err2 != nil {
-	// 	log.Error(err2)
-	// }
-	// for _, re := range reply2.Re {
-	// 	lineOfData.Id = re.Map[".id"]
-	// 	lineOfData.IP = re.Map["active-address"]
-	// 	lineOfData.Mac = re.Map["mac-address"]
-	// 	lineOfData.AMac = re.Map["active-mac-address"]
-	// 	lineOfData.HostName = re.Map["host-name"]
-	// 	lineOfData.Comments = re.Map["comment"]
-	// 	lineOfData.HourlyQuota, lineOfData.DailyQuota, lineOfData.MonthlyQuota, lineOfData.Name, lineOfData.Position, lineOfData.Company, lineOfData.TypeD, lineOfData.IDUser, lineOfData.Comment, lineOfData.Manual = parseComments(lineOfData.Comments)
-	// 	lineOfData.HourlyQuota = checkNULLQuota(lineOfData.HourlyQuota, qDef.HourlyQuota)
-	// 	lineOfData.DailyQuota = checkNULLQuota(lineOfData.DailyQuota, qDef.DailyQuota)
-	// 	lineOfData.MonthlyQuota = checkNULLQuota(lineOfData.MonthlyQuota, qDef.MonthlyQuota)
-	// 	lineOfData.Disabled = paramertToBool(re.Map["disabled"])
-	// 	lineOfData.Groups = re.Map["address-lists"]
-	// 	if BlockAddressList != "" {
-	// 		lineOfData.Blocked = strings.Contains(lineOfData.Groups, BlockAddressList)
-	// 	}
-	// 	lineOfData.timeout = time.Now()
-	// 	// lineOfData.AddressLists = strings.Split(lineOfData.Groups, ",")
-	// 	ipToMac[lineOfData.IP] = lineOfData
-	// }
+	writer := csv.NewWriter(f)
 
-	return devices
+	for _, value := range devices {
+		fields := deviceToSlice(value)
+		err := writer.Write(fields)
+		if err != nil {
+			fmt.Println(e)
+		}
+	}
+	return nil
+}
+
+func deviceToSlice(d DeviceType) []string {
+	var slice []string
+	slice = append(slice, d.Id)
+	slice = append(slice, d.activeAddress)
+	slice = append(slice, d.activeClientId)
+	slice = append(slice, d.activeMacAddress)
+	slice = append(slice, d.activeServer)
+	slice = append(slice, d.address)
+	slice = append(slice, d.addressLists)
+	slice = append(slice, d.blocked)
+	slice = append(slice, d.clientId)
+	slice = append(slice, d.comment)
+	slice = append(slice, d.dhcpOption)
+	slice = append(slice, d.disabled)
+	slice = append(slice, d.dynamic)
+	slice = append(slice, d.expiresAfter)
+	slice = append(slice, d.hostName)
+	slice = append(slice, d.lastSeen)
+	slice = append(slice, d.macAddress)
+	slice = append(slice, d.radius)
+	slice = append(slice, d.server)
+	slice = append(slice, d.status)
+	slice = append(slice, fmt.Sprint(d.Manual))
+	slice = append(slice, fmt.Sprint(d.ShouldBeBlocked))
+	slice = append(slice, d.timeout.Format("2006-01-02 15:04:05 -0700 MST "))
+	return slice
 }
 
 func parseComments(comment string) (

@@ -232,6 +232,13 @@ type SSHCredetinals struct {
 	SSHPass string
 }
 
+type parseType struct {
+	SSHCredetinals
+	QuotaType
+	BlockAddressList string
+	Location         *time.Location
+}
+
 func NewTransport(cfg *Config) *Transport {
 
 	clientROS, err := dial(cfg.MTAddr, cfg.MTUser, cfg.MTPass, cfg.UseTLS)

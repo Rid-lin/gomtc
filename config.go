@@ -43,7 +43,7 @@ type Config struct {
 	SizeOneKilobyte        uint64   `default:"1024" usage:"The number of bytes in one megabyte"`
 	UseTLS                 bool     `default:"false" usage:"Using TLS to connect to a router"`
 	CSV                    bool     `default:"false" usage:"Output to csv"`
-	NoFlow                 bool     `default:"false" usage:"When this parameter is specified, the netflow packet listener is not launched, therefore, log files are not created, but only parsed."`
+	NoFlow                 bool     `default:"true" usage:"When this parameter is specified, the netflow packet listener is not launched, therefore, log files are not created, but only parsed."`
 	Location               *time.Location
 	startTime              time.Time
 	endTime                time.Time
@@ -76,7 +76,9 @@ func newConfig() *Config {
 	})
 
 	if err := loader.Load(); err != nil {
-		panic(err)
+		log.Error(err)
+		// For testing
+		// panic(err)
 	}
 
 	lvl, err := log.ParseLevel(cfg.LogLevel)

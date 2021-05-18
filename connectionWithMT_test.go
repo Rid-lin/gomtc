@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"reflect"
 	"testing"
+	"time"
 
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/routeros.v2"
 )
 
@@ -627,13 +629,13 @@ func Test_getResponseOverSSHfMT(t *testing.T) {
 		commands []string
 	}
 
-	cfg := newConfig()
-	SSHCred := SSHCredetinals{
-		SSHHost: cfg.MTAddr,
-		SSHPort: "22",
-		SSHUser: cfg.MTUser,
-		SSHPass: cfg.MTPass,
-	}
+	// cfg := newConfig()
+	// SSHCred: SSHCredetinals{
+	// 	SSHHost: cfg.MTAddr,
+	// 	SSHPort: "22",
+	// 	SSHUser: cfg.MTUser,
+	// 	SSHPass: cfg.MTPass,
+	// }
 
 	tests := []struct {
 		name string
@@ -643,13 +645,12 @@ func Test_getResponseOverSSHfMT(t *testing.T) {
 		{
 			name: "1 with exit",
 			args: args{
-				SSHCred: SSHCred,
-				// SSHCredetinals{
-				// 	SSHHost: "192.168.65.1",
-				// 	SSHPort: "22",
-				// 	SSHUser: "getmac",
-				// 	SSHPass: "getmac_password",
-				// },
+				SSHCred: SSHCredetinals{
+					SSHHost: "192.168.65.1",
+					SSHPort: "22",
+					SSHUser: "getmac",
+					SSHPass: "getmac_password",
+				},
 				commands: []string{
 					"/ip dhcp-server lease print detail without-paging",
 					"exit",
@@ -684,16 +685,13 @@ func Test_getResponseOverSSHfMT(t *testing.T) {
 
 func Test_parseInfoFromMTToSlice(t *testing.T) {
 	type args struct {
-		qDef             QuotaType
-		BlockAddressList string
-		SSHCred          SSHCredetinals
+		p parseType
 	}
-	cfg := newConfig()
-	SSHCred := SSHCredetinals{
-		SSHHost: cfg.MTAddr,
-		SSHPort: "22",
-		SSHUser: cfg.MTUser,
-		SSHPass: cfg.MTPass,
+
+	Location, err := time.LoadLocation("Asia/Yekaterinburg")
+	if err != nil {
+		log.Errorf("Error loading Location(%v):%v", "Asia/Yekaterinburg", err)
+		Location = time.UTC
 	}
 
 	tests := []struct {
@@ -704,16 +702,23 @@ func Test_parseInfoFromMTToSlice(t *testing.T) {
 		{
 			name: "1",
 			args: args{
-				qDef:             QuotaType{},
-				BlockAddressList: "Block",
-				SSHCred:          SSHCred,
-			},
+				p: parseType{
+					QuotaType:        QuotaType{},
+					BlockAddressList: "Block",
+					SSHCredetinals: SSHCredetinals{
+						SSHHost: "192.168.65.1",
+						SSHPort: "22",
+						SSHUser: "getmac",
+						SSHPass: "getmac_password",
+					},
+					Location: Location,
+				}},
 			want: []DeviceType{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := parseInfoFromMTToSlice(tt.args.qDef, tt.args.BlockAddressList, tt.args.SSHCred); !reflect.DeepEqual(got, tt.want) {
+			if got := parseInfoFromMTToSlice(tt.args.p); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("parseInfoFromMTToSlice() = %v, want %v", got, tt.want)
 			}
 		})
