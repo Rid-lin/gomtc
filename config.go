@@ -61,6 +61,7 @@ func newConfig() *Config {
 		// feel free to skip some steps :)
 		// SkipEnv:      true,
 		SkipFiles:          false,
+		AllowUnknownFlags:  true,
 		AllowUnknownFields: true,
 		SkipDefaults:       false,
 		SkipFlags:          false,
