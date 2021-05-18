@@ -46,7 +46,6 @@ type Author struct {
 type request struct {
 	Time,
 	IP string
-	// timeInt int64
 }
 
 type ResponseType struct {
@@ -54,7 +53,7 @@ type ResponseType struct {
 	// Mac      string `JSON:"Mac"`
 	// Hostname string `JSON:"Hostname"`
 	Comments string `JSON:"Comment"`
-	DeviceType
+	DeviceOldType
 }
 
 type QuotaType struct {
@@ -67,7 +66,7 @@ type QuotaType struct {
 	ShouldBeBlocked bool
 }
 
-type DeviceType struct {
+type DeviceOldType struct {
 	Id       string
 	IP       string
 	Mac      string
@@ -77,27 +76,53 @@ type DeviceType struct {
 	timeout  time.Time
 }
 
+type DeviceType struct {
+	// From MT
+	Id               string
+	activeAddress    string // 192.168.65.85
+	activeClientId   string // 1:e8:d8:d1:47:55:93
+	activeMacAddress string // E8:D8:D1:47:55:93
+	activeServer     string // dhcp_lan
+	address          string // pool_admin
+	addressLists     string // inet
+	blocked          string // false
+	clientId         string // 1:e8:d8:d1:47:55:93
+	comment          string // nb=Vlad/com=UTTiST/col=Admin/quotahourly=500000000/quotadaily=50000000000
+	dhcpOption       string //
+	disabled         string // false
+	dynamic          string // false
+	expiresAfter     string // 6m32s
+	hostName         string // root-hp
+	lastSeen         string // 3m28s
+	macAddress       string // E8:D8:D1:47:55:93
+	radius           string // false
+	server           string // dhcp_lan
+	status           string // bound
+	//User Defined
+	Manual          bool
+	ShouldBeBlocked bool
+	timeout         time.Time
+}
+
 type lineOfLogType struct {
-	date,
-	ipaddress,
-	httpstatus,
-	method,
-	siteName,
-	login,
-	mime,
-	alias,
-	hostname,
-	comments string
-	year,
-	day,
-	hour,
-	minute int
-	nsec,
-	timestamp int64
+	date        string
+	ipaddress   string
+	httpstatus  string
+	method      string
+	siteName    string
+	login       string
+	mime        string
+	alias       string
+	hostname    string
+	comments    string
+	year        int
+	day         int
+	hour        int
+	minute      int
+	nsec        int64
+	timestamp   int64
 	month       time.Month
 	sizeInBytes uint64
-	// port int
-	// sitehashe   string
 }
 
 type MapOfReports map[KeyMapOfReports]ValueMapOfReportsType
@@ -108,17 +133,15 @@ type KeyMapOfReports struct {
 }
 
 type ValueMapOfReportsType struct {
-	// SizeOfHourU [24]uint64
 	Alias   string
 	DateStr string
-	// SizeU uint64
-	Hits uint32
+	Hits    uint32
 	InfoOfDeviceType
 	StatType
 }
 
 type InfoOfDeviceType struct {
-	DeviceType
+	DeviceOldType
 	PersonType
 	QuotaType
 }
@@ -185,22 +208,14 @@ type DisplayDataUserType struct {
 }
 
 type RequestForm struct {
-	dateFrom,
-	dateTo,
-	path,
-	// host,
-	referURL,
-	report string
+	dateFrom string
+	dateTo   string
+	path     string
+	referURL string
+	report   string
 }
 
 type StatType struct {
-	// SizeOfHourF        [24]float64
-	// SizeOfHourStr      [24]string
-	// SizeStr            string
-	// SizeOfPrecentilStr string
-	// PrecentStr         string
-	// AverageStr         string
-	// SizeF              float64
 	SizeOfHour      [24]uint64
 	Site            string
 	Precent         float64
@@ -208,6 +223,13 @@ type StatType struct {
 	Average         uint64
 	Size            uint64
 	Count           uint32
+}
+
+type SSHCredetinals struct {
+	SSHHost string
+	SSHPort string
+	SSHUser string
+	SSHPass string
 }
 
 func NewTransport(cfg *Config) *Transport {

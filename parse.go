@@ -37,9 +37,10 @@ func (transport *Transport) parseOnce(cfg *Config) {
 
 	transport.writeToChasheData()
 
-	if err := transport.getStatusDevices(cfg); err == nil {
+	if err := transport.getStatusallDevices(); err == nil {
+		// if err := transport.getStatusDevices(cfg); err == nil {
 		transport.checkQuota()
-		transport.updateStatusDevicesToMT(cfg)
+		// transport.updateStatusDevicesToMT(cfg)
 	}
 
 	transport.clearingCountedTraffic(cfg, cfg.LastDate)

@@ -332,7 +332,7 @@ func TestTransport_setDevice(t *testing.T) {
 			data: data,
 			args: args{
 				d: InfoOfDeviceType{
-					DeviceType: DeviceType{
+					DeviceOldType: DeviceOldType{
 						Id: id1,
 					},
 					PersonType: PersonType{
@@ -355,7 +355,7 @@ func TestTransport_setDevice(t *testing.T) {
 			data: data,
 			args: args{
 				d: InfoOfDeviceType{
-					DeviceType: DeviceType{
+					DeviceOldType: DeviceOldType{
 						Id: id2,
 					},
 					PersonType: PersonType{
@@ -428,7 +428,7 @@ func TestTransport_getInfoOfDeviceFromMT(t *testing.T) {
 			data: data,
 			args: args{alias: "E8:D8:D1:47:55:93"},
 			want: InfoOfDeviceType{
-				DeviceType: DeviceType{
+				DeviceOldType: DeviceOldType{
 					Id:       "*E6FF8",
 					IP:       "192.168.65.85",
 					Mac:      "E8:D8:D1:47:55:93",
@@ -455,7 +455,7 @@ func TestTransport_getInfoOfDeviceFromMT(t *testing.T) {
 			data: data,
 			args: args{alias: "192.168.65.85"},
 			want: InfoOfDeviceType{
-				DeviceType: DeviceType{
+				DeviceOldType: DeviceOldType{
 					Id:       "*E6FF8",
 					IP:       "192.168.65.85",
 					Mac:      "E8:D8:D1:47:55:93",
@@ -616,6 +616,38 @@ func TestTransport_readsStreamFromMT(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.transport.readsStreamFromMT(tt.args.cfg)
+		})
+	}
+}
+
+func Test_getLeasesOverSSHfMT(t *testing.T) {
+	type args struct {
+		SSHCred SSHCredetinals
+	}
+
+	tests := []struct {
+		name string
+		args args
+		want []DeviceType
+	}{
+		{
+			name: "1",
+			args: args{
+				SSHCred: SSHCredetinals{
+					SSHHost: "192.168.65.1",
+					SSHPort: "22",
+					SSHUser: "getmac",
+					SSHPass: "getmac_password",
+				},
+			},
+			want: []DeviceType{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getLeasesOverSSHfMT(tt.args.SSHCred); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getLeasesOverSSHfMT() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

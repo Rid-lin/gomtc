@@ -26,7 +26,7 @@ func (transport *Transport) getStatusDevices(cfg *Config) error {
 		for _, value2 := range resultMap {
 			if key.Alias == value2.IP || key.Alias == value2.Mac || key.Alias == value2.HostName {
 				value.PersonType = value2.PersonType
-				value.DeviceType = value2.DeviceType
+				value.DeviceOldType = value2.DeviceOldType
 				value.QuotaType = value2.QuotaType
 				break
 			}
@@ -35,6 +35,23 @@ func (transport *Transport) getStatusDevices(cfg *Config) error {
 		transport.dataCashe[key] = value
 	}
 	transport.Unlock()
+	return nil
+}
+
+func (transport *Transport) getStatusallDevices() error {
+	var i uint16
+	for key, value := range transport.dataCashe {
+		value.Alias = key.Alias
+		value.DateStr = key.DateStr
+		info := transport.obtainingInformationFromMTboutOneDevice(key.Alias)
+		value.InfoOfDeviceType = info
+		transport.Lock()
+		transport.infoOfDevices[info.IP] = info
+		transport.dataCashe[key] = value
+		transport.Unlock()
+		i++
+	}
+	fmt.Printf("Total devices read:%v\n", i)
 	return nil
 }
 
@@ -97,7 +114,7 @@ func (transport *Transport) updateStatusDevicesToMT(cfg *Config) {
 			device.Groups = device.Groups + "," + BlockGroup
 			device.Groups = strings.Trim(device.Groups, ",")
 			if err := transport.setGroupOfDeviceToMT(device.InfoOfDeviceType); err != nil {
-				log.Errorf(`An error occurred while saving the device(%v):%v`, device, err.Error())
+				log.Errorf(`An error occurred while saving the device:%v`, err.Error())
 			}
 		} else if !device.ShouldBeBlocked && device.Blocked {
 			if device.QuotaType == Quota {
@@ -107,7 +124,7 @@ func (transport *Transport) updateStatusDevicesToMT(cfg *Config) {
 			device.Groups = strings.ReplaceAll(device.Groups, ",,", ",")
 			device.Groups = strings.Trim(device.Groups, ",")
 			if err := transport.setGroupOfDeviceToMT(device.InfoOfDeviceType); err != nil {
-				log.Errorf(`An error occurred while saving the device(%v):%v`, device, err.Error())
+				log.Errorf(`An error occurred while saving the device:%v`, err.Error())
 			}
 		}
 	}

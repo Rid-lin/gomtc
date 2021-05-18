@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"net"
-	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/crypto/ssh"
 	"gopkg.in/routeros.v2"
 )
 
@@ -44,7 +45,7 @@ func (data *Transport) GetInfo(request *request) ResponseType {
 	data.RUnlock()
 	if ok {
 		log.Tracef("IP:%v to MAC:%v, hostname:%v, comment:%v", ipStruct.IP, ipStruct.Mac, ipStruct.HostName, ipStruct.Comments)
-		response.DeviceType = ipStruct.DeviceType
+		response.DeviceOldType = ipStruct.DeviceOldType
 		response.Comments = ipStruct.Comments
 	} else {
 		log.Tracef("IP:'%v' not find in table lease of router:'%v'", ipStruct.IP, cfg.MTAddr)
@@ -60,16 +61,22 @@ func (data *Transport) GetInfo(request *request) ResponseType {
 }
 
 func (data *Transport) loopGetDataFromMT() {
-	defer func() {
-		if e := recover(); e != nil {
-			log.Errorf("Error while trying to get data from the router:%v", e)
-			data.exitChan <- os.Kill
-			fmt.Printf("\n")
-			panic(e)
-		}
-	}()
+	// defer func() {
+	// 	if e := recover(); e != nil {
+	// 		log.Errorf("Error while trying to get data from the router:%v", e)
+	// 		data.exitChan <- os.Kill
+	// 		fmt.Printf("\n")
+	// 		panic(e)
+	// 	}
+	// }()
 	for {
 		data.updateDataFromMT()
+
+		if err := data.getStatusallDevices(); err == nil {
+			// if err := transport.getStatusDevices(cfg); err == nil {
+			data.checkQuota()
+			// transport.updateStatusDevicesToMT(cfg)
+		}
 
 		interval, err := time.ParseDuration(cfg.Interval)
 		if err != nil {
@@ -85,8 +92,8 @@ func (data *Transport) updateDataFromMT() {
 	BlockAddressList := data.BlockAddressList
 	data.infoOfDevices = getDataFromMT(data.QuotaType, data.clientROS, BlockAddressList)
 	data.lastUpdatedMT = time.Now()
-	log.Tracef("Info Of Devices updated from MT")
 	data.Unlock()
+	log.Tracef("Info Of Devices updated from MT")
 }
 
 func getDataFromMT(quotaDefault QuotaType, connRos *routeros.Client, BlockAddressList string) map[string]InfoOfDeviceType {
@@ -140,6 +147,119 @@ func getDataFromMT(quotaDefault QuotaType, connRos *routeros.Client, BlockAddres
 	}
 	return ipToMac
 }
+
+func getLeasesOverSSHfMT(SSHCred SSHCredetinals) []DeviceType {
+	// device := DeviceType{}
+	devices := []DeviceType{}
+
+	sshConfig := &ssh.ClientConfig{
+		User: SSHCred.SSHUser,
+		Auth: []ssh.AuthMethod{
+			ssh.Password(SSHCred.SSHPass),
+		},
+		// Non-production only
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+	// Established connection
+	connection, err := ssh.Dial("tcp", SSHCred.SSHHost+":"+SSHCred.SSHPort, sshConfig)
+	if err != nil {
+		log.Errorf("Failed to dial: %s", err)
+	}
+	defer connection.Close()
+	// crete ssh session
+	session, err := connection.NewSession()
+	if err != nil {
+		log.Errorf("Failed to ceate session: %s", err)
+	}
+	defer session.Close()
+
+	command := "/ip/arp/print"
+	// тут происходит запуск uname -a на удалённом сервере
+	b, err := session.CombinedOutput(command)
+	if err != nil {
+		panic(err)
+	}
+	// выводим результат
+	fmt.Print(string(b))
+
+	// for _, re := range reply.Re {
+	// 	device.IP = re.Map["address"]
+	// 	device.Mac = re.Map["mac-address"]
+	// 	device.timeout = time.Now()
+	// 	devices = append(devices, device)
+	// }
+
+	// reply2, err2 := connRos.Run("/ip/dhcp-server/lease/print") //, "?status=bound") //, "?disabled=false")
+	// if err2 != nil {
+	// 	log.Error(err2)
+	// }
+	// for _, re := range reply2.Re {
+	// 	device.Id = re.Map[".id"]
+	// 	device.IP = re.Map["active-address"]
+	// 	device.Mac = re.Map["mac-address"]
+	// 	device.AMac = re.Map["active-mac-address"]
+	// 	device.HostName = re.Map["host-name"]
+	// 	device.Comments = re.Map["comment"]
+	// 	device.Disabled = paramertToBool(re.Map["disabled"])
+	// 	device.Groups = re.Map["address-lists"]
+	// 	device.timeout = time.Now()
+
+	// 	devices = append(devices, device)
+	// }
+	return devices
+}
+
+// func getInfofMT(quotaDefault QuotaType, SSHCred SSHCredetinals, BlockAddressList string) map[string]InfoOfDeviceType {
+
+// 	quotahourly := quotaDefault.HourlyQuota
+// 	quotadaily := quotaDefault.DailyQuota
+// 	quotamonthly := quotaDefault.MonthlyQuota
+
+// 	lineOfData := InfoOfDeviceType{}
+// 	ipToMac := map[string]InfoOfDeviceType{}
+// 	reply, err := connRos.Run("/ip/arp/print")
+// 	if err != nil {
+// 		log.Error(err)
+// 	}
+// 	for _, re := range reply.Re {
+// 		lineOfData.IP = re.Map["address"]
+// 		lineOfData.Mac = re.Map["mac-address"]
+// 		lineOfData.HourlyQuota = checkNULLQuota(lineOfData.HourlyQuota, quotahourly)
+// 		lineOfData.DailyQuota = checkNULLQuota(lineOfData.DailyQuota, quotadaily)
+// 		lineOfData.MonthlyQuota = checkNULLQuota(lineOfData.MonthlyQuota, quotamonthly)
+// 		lineOfData.timeout = time.Now()
+// 		ipToMac[lineOfData.IP] = lineOfData
+// 	}
+
+// 	reply2, err2 := connRos.Run("/ip/dhcp-server/lease/print") //, "?status=bound") //, "?disabled=false")
+// 	if err2 != nil {
+// 		log.Error(err2)
+// 	}
+// 	for _, re := range reply2.Re {
+// 		lineOfData.Id = re.Map[".id"]
+// 		lineOfData.IP = re.Map["active-address"]
+// 		lineOfData.Mac = re.Map["mac-address"]
+// 		lineOfData.AMac = re.Map["active-mac-address"]
+// 		lineOfData.HostName = re.Map["host-name"]
+// 		lineOfData.Comments = re.Map["comment"]
+// 		lineOfData.HourlyQuota, lineOfData.DailyQuota, lineOfData.MonthlyQuota, lineOfData.Name, lineOfData.Position, lineOfData.Company, lineOfData.TypeD, lineOfData.IDUser, lineOfData.Comment, lineOfData.Manual = parseComments(lineOfData.Comments)
+// 		lineOfData.HourlyQuota = checkNULLQuota(lineOfData.HourlyQuota, quotahourly)
+// 		lineOfData.DailyQuota = checkNULLQuota(lineOfData.DailyQuota, quotadaily)
+// 		lineOfData.MonthlyQuota = checkNULLQuota(lineOfData.MonthlyQuota, quotamonthly)
+// 		lineOfData.Disabled = paramertToBool(re.Map["disabled"])
+// 		lineOfData.Groups = re.Map["address-lists"]
+// 		if BlockAddressList != "" {
+// 			lineOfData.Blocked = strings.Contains(lineOfData.Groups, BlockAddressList)
+// 		}
+// 		lineOfData.timeout = time.Now()
+
+// 		// lineOfData.AddressLists = strings.Split(lineOfData.Groups, ",")
+
+// 		ipToMac[lineOfData.IP] = lineOfData
+
+// 	}
+// 	return ipToMac
+// }
 
 func parseComments(comment string) (
 	quotahourly, quotadaily, quotamonthly uint64,
@@ -393,11 +513,21 @@ func (data *Transport) setStatusDevice(number string, status bool) error {
 }
 
 func (data *Transport) obtainingInformationFromMTboutOneDevice(alias string) InfoOfDeviceType {
+	defer func() {
+		if e := recover(); e != nil {
+			runtime.Breakpoint()
+		}
+	}()
+
 	var device InfoOfDeviceType
 	var entity string
 
 	data.RLock()
 	BlockAddressList := data.BlockAddressList
+	DefaultHourlyQuota := data.HourlyQuota
+	DefaultDailyQuota := data.DailyQuota
+	DefaultMonthlyQuota := data.MonthlyQuota
+
 	data.RUnlock()
 
 	if isMac(alias) {
@@ -405,10 +535,15 @@ func (data *Transport) obtainingInformationFromMTboutOneDevice(alias string) Inf
 	} else if isIP(alias) {
 		entity = "active-address"
 	}
-
-	reply, err := data.clientROS.Run("/ip/dhcp-server/lease/print", "?"+entity+"="+alias)
+	alias = strings.Trim(alias, "]")
+	alias = strings.Trim(alias, "[")
+	runArgs := []string{
+		"/ip/dhcp-server/lease/print",
+		"?" + entity + "=" + alias,
+	}
+	reply, err := data.clientROS.RunArgs(runArgs)
 	if err != nil {
-		log.Errorf("Error to get Info from MT( alias:'%v'):%v", alias, err)
+		log.Errorf("Error to get Info from MT(alias:'%v', runArgs:'%v'):%v", alias, runArgs, err)
 	} else if reply.Done.Word != "!done" {
 		log.Errorf("%v", reply.Done.Word)
 	}
@@ -426,7 +561,9 @@ func (data *Transport) obtainingInformationFromMTboutOneDevice(alias string) Inf
 		if BlockAddressList != "" {
 			device.Blocked = strings.Contains(device.Groups, BlockAddressList)
 		}
-		// device.AddressLists = strings.Split(device.Groups, ",")
+		device.HourlyQuota = checkNULLQuota(device.HourlyQuota, DefaultHourlyQuota)
+		device.DailyQuota = checkNULLQuota(device.DailyQuota, DefaultDailyQuota)
+		device.MonthlyQuota = checkNULLQuota(device.MonthlyQuota, DefaultMonthlyQuota)
 	}
 	log.Tracef("Response from Mikrotik(numbers)(%v) %v", reply, device)
 
@@ -467,27 +604,27 @@ func (transport *Transport) findInfoOfDevice(alias string) (InfoOfDeviceType, er
 		lineOfReportCashe, ok := transport.dataCashe[key]
 		if ok {
 			device = InfoOfDeviceType{
-				DeviceType: lineOfReportCashe.DeviceType,
-				QuotaType:  lineOfReportCashe.QuotaType,
-				PersonType: lineOfReportCashe.PersonType,
+				DeviceOldType: lineOfReportCashe.DeviceOldType,
+				QuotaType:     lineOfReportCashe.QuotaType,
+				PersonType:    lineOfReportCashe.PersonType,
 			}
 			return device, nil
 		} else {
 			lineOfReport, ok := transport.data[key]
 			if ok {
 				device = InfoOfDeviceType{
-					DeviceType: lineOfReport.DeviceType,
-					QuotaType:  lineOfReport.QuotaType,
-					PersonType: lineOfReport.PersonType,
+					DeviceOldType: lineOfReport.DeviceOldType,
+					QuotaType:     lineOfReport.QuotaType,
+					PersonType:    lineOfReport.PersonType,
 				}
 				return device, nil
 			} else {
 				for _, value := range transport.dataCashe {
 					if value.Mac == alias {
 						device = InfoOfDeviceType{
-							DeviceType: value.DeviceType,
-							QuotaType:  value.QuotaType,
-							PersonType: value.PersonType,
+							DeviceOldType: value.DeviceOldType,
+							QuotaType:     value.QuotaType,
+							PersonType:    value.PersonType,
 						}
 						return device, nil
 					}
@@ -495,9 +632,9 @@ func (transport *Transport) findInfoOfDevice(alias string) (InfoOfDeviceType, er
 				for _, value := range transport.data {
 					if value.Mac == alias {
 						device = InfoOfDeviceType{
-							DeviceType: value.DeviceType,
-							QuotaType:  value.QuotaType,
-							PersonType: value.PersonType,
+							DeviceOldType: value.DeviceOldType,
+							QuotaType:     value.QuotaType,
+							PersonType:    value.PersonType,
 						}
 						return device, nil
 					}
@@ -505,9 +642,9 @@ func (transport *Transport) findInfoOfDevice(alias string) (InfoOfDeviceType, er
 				for _, value := range transport.infoOfDevices {
 					if value.Mac != alias {
 						device = InfoOfDeviceType{
-							DeviceType: value.DeviceType,
-							QuotaType:  value.QuotaType,
-							PersonType: value.PersonType,
+							DeviceOldType: value.DeviceOldType,
+							QuotaType:     value.QuotaType,
+							PersonType:    value.PersonType,
 						}
 						return device, nil
 					}
@@ -519,18 +656,18 @@ func (transport *Transport) findInfoOfDevice(alias string) (InfoOfDeviceType, er
 		lineOfInfo, ok := transport.infoOfDevices[alias]
 		if ok {
 			device = InfoOfDeviceType{
-				DeviceType: lineOfInfo.DeviceType,
-				QuotaType:  lineOfInfo.QuotaType,
-				PersonType: lineOfInfo.PersonType,
+				DeviceOldType: lineOfInfo.DeviceOldType,
+				QuotaType:     lineOfInfo.QuotaType,
+				PersonType:    lineOfInfo.PersonType,
 			}
 			return device, nil
 		} else {
 			for _, value := range transport.infoOfDevices {
 				if value.IP == alias {
 					device = InfoOfDeviceType{
-						DeviceType: value.DeviceType,
-						QuotaType:  value.QuotaType,
-						PersonType: value.PersonType,
+						DeviceOldType: value.DeviceOldType,
+						QuotaType:     value.QuotaType,
+						PersonType:    value.PersonType,
 					}
 					return device, nil
 				}
@@ -538,9 +675,9 @@ func (transport *Transport) findInfoOfDevice(alias string) (InfoOfDeviceType, er
 			for _, value := range transport.data {
 				if value.IP == alias {
 					device = InfoOfDeviceType{
-						DeviceType: value.DeviceType,
-						QuotaType:  value.QuotaType,
-						PersonType: value.PersonType,
+						DeviceOldType: value.DeviceOldType,
+						QuotaType:     value.QuotaType,
+						PersonType:    value.PersonType,
 					}
 					return device, nil
 				}
@@ -548,9 +685,9 @@ func (transport *Transport) findInfoOfDevice(alias string) (InfoOfDeviceType, er
 			for _, value := range transport.infoOfDevices {
 				if value.IP != alias {
 					device = InfoOfDeviceType{
-						DeviceType: value.DeviceType,
-						QuotaType:  value.QuotaType,
-						PersonType: value.PersonType,
+						DeviceOldType: value.DeviceOldType,
+						QuotaType:     value.QuotaType,
+						PersonType:    value.PersonType,
 					}
 					return device, nil
 				}
