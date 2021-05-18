@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"net"
 	"runtime"
 	"strconv"
@@ -148,10 +149,16 @@ func getDataFromMT(quotaDefault QuotaType, connRos *routeros.Client, BlockAddres
 	return ipToMac
 }
 
-func getLeasesOverSSHfMT(SSHCred SSHCredetinals) []DeviceType {
-	// device := DeviceType{}
-	devices := []DeviceType{}
-
+func getResponseOverSSHfMT(SSHCred SSHCredetinals, commands []string) bytes.Buffer {
+	// Add the last command (exit), if not, to reduce the number of commands passed in parameters.
+	if len(commands) > 0 {
+		lastCommand := commands[len(commands)-1]
+		if lastCommand != "exit" {
+			commands = append(commands, "exit")
+		}
+	} else {
+		commands = append(commands, "exit")
+	}
 	sshConfig := &ssh.ClientConfig{
 		User: SSHCred.SSHUser,
 		Auth: []ssh.AuthMethod{
@@ -172,94 +179,93 @@ func getLeasesOverSSHfMT(SSHCred SSHCredetinals) []DeviceType {
 		log.Errorf("Failed to ceate session: %s", err)
 	}
 	defer session.Close()
-
-	command := "/ip/arp/print"
-	// тут происходит запуск uname -a на удалённом сервере
-	b, err := session.CombinedOutput(command)
+	// StdinPipe for commands
+	stdin, err := session.StdinPipe()
 	if err != nil {
-		panic(err)
+		log.Errorf("Failed redirect StdinPipe: %s", err)
 	}
-	// выводим результат
-	fmt.Print(string(b))
+	// Uncomment to store output in variable
+	var b bytes.Buffer
+	session.Stdout = &b
+	session.Stderr = &b
+	// Enable system stdout
+	// Comment these if you uncomment to store in variable
+	// session.Stdout = os.Stdout
+	// session.Stderr = os.Stderr
+	// Start remote shell
+	err = session.Shell()
+	if err != nil {
+		log.Errorf("Failed to ceate Shell: %s", err)
+	}
+	// send the commands
+	for _, cmd := range commands {
+		_, err = fmt.Fprintf(stdin, "%s\n", cmd)
+		if err != nil {
+			log.Errorf("Failed to send command(%s): %s", cmd, err)
+		}
+	}
+	// session.Close()
+	// Wait for sess to finish
+	err = session.Wait()
+	if err != nil {
+		log.Errorf("Failed to wait session: %s", err)
+	}
+	// str := b.String()
+	// fmt.Print(str)
+	return b
+}
+
+func parseInfoFromMTToSlice(qDef QuotaType, BlockAddressList string, SSHCred SSHCredetinals) []DeviceType {
+
+	// device := DeviceType{}
+	devices := []DeviceType{}
+	b := getResponseOverSSHfMT(SSHCred, []string{"/ip dhcp-server lease print detail without-paging"})
+	delim := '\n'
+	for inputStr, err := b.ReadString(byte(delim)); err != io.EOF; {
+		fmt.Print(inputStr)
+	}
 
 	// for _, re := range reply.Re {
-	// 	device.IP = re.Map["address"]
-	// 	device.Mac = re.Map["mac-address"]
-	// 	device.timeout = time.Now()
-	// 	devices = append(devices, device)
+	// 	lineOfData.IP = re.Map["address"]
+	// 	lineOfData.Mac = re.Map["mac-address"]
+	// 	lineOfData.HourlyQuota = checkNULLQuota(lineOfData.HourlyQuota, qDef.HourlyQuota)
+	// 	lineOfData.DailyQuota = checkNULLQuota(lineOfData.DailyQuota, qDef.DailyQuota)
+	// 	lineOfData.MonthlyQuota = checkNULLQuota(lineOfData.MonthlyQuota, qDef.MonthlyQuota)
+	// 	lineOfData.timeout = time.Now()
+	// 	ipToMac[lineOfData.IP] = lineOfData
 	// }
-
+	// commands := []string{
+	// 	"/ip dhcp-server lease print detail without-paging",
+	// 	// "quit",
+	// 	"exit",
+	// }
 	// reply2, err2 := connRos.Run("/ip/dhcp-server/lease/print") //, "?status=bound") //, "?disabled=false")
 	// if err2 != nil {
 	// 	log.Error(err2)
 	// }
 	// for _, re := range reply2.Re {
-	// 	device.Id = re.Map[".id"]
-	// 	device.IP = re.Map["active-address"]
-	// 	device.Mac = re.Map["mac-address"]
-	// 	device.AMac = re.Map["active-mac-address"]
-	// 	device.HostName = re.Map["host-name"]
-	// 	device.Comments = re.Map["comment"]
-	// 	device.Disabled = paramertToBool(re.Map["disabled"])
-	// 	device.Groups = re.Map["address-lists"]
-	// 	device.timeout = time.Now()
-
-	// 	devices = append(devices, device)
+	// 	lineOfData.Id = re.Map[".id"]
+	// 	lineOfData.IP = re.Map["active-address"]
+	// 	lineOfData.Mac = re.Map["mac-address"]
+	// 	lineOfData.AMac = re.Map["active-mac-address"]
+	// 	lineOfData.HostName = re.Map["host-name"]
+	// 	lineOfData.Comments = re.Map["comment"]
+	// 	lineOfData.HourlyQuota, lineOfData.DailyQuota, lineOfData.MonthlyQuota, lineOfData.Name, lineOfData.Position, lineOfData.Company, lineOfData.TypeD, lineOfData.IDUser, lineOfData.Comment, lineOfData.Manual = parseComments(lineOfData.Comments)
+	// 	lineOfData.HourlyQuota = checkNULLQuota(lineOfData.HourlyQuota, qDef.HourlyQuota)
+	// 	lineOfData.DailyQuota = checkNULLQuota(lineOfData.DailyQuota, qDef.DailyQuota)
+	// 	lineOfData.MonthlyQuota = checkNULLQuota(lineOfData.MonthlyQuota, qDef.MonthlyQuota)
+	// 	lineOfData.Disabled = paramertToBool(re.Map["disabled"])
+	// 	lineOfData.Groups = re.Map["address-lists"]
+	// 	if BlockAddressList != "" {
+	// 		lineOfData.Blocked = strings.Contains(lineOfData.Groups, BlockAddressList)
+	// 	}
+	// 	lineOfData.timeout = time.Now()
+	// 	// lineOfData.AddressLists = strings.Split(lineOfData.Groups, ",")
+	// 	ipToMac[lineOfData.IP] = lineOfData
 	// }
+
 	return devices
 }
-
-// func getInfofMT(quotaDefault QuotaType, SSHCred SSHCredetinals, BlockAddressList string) map[string]InfoOfDeviceType {
-
-// 	quotahourly := quotaDefault.HourlyQuota
-// 	quotadaily := quotaDefault.DailyQuota
-// 	quotamonthly := quotaDefault.MonthlyQuota
-
-// 	lineOfData := InfoOfDeviceType{}
-// 	ipToMac := map[string]InfoOfDeviceType{}
-// 	reply, err := connRos.Run("/ip/arp/print")
-// 	if err != nil {
-// 		log.Error(err)
-// 	}
-// 	for _, re := range reply.Re {
-// 		lineOfData.IP = re.Map["address"]
-// 		lineOfData.Mac = re.Map["mac-address"]
-// 		lineOfData.HourlyQuota = checkNULLQuota(lineOfData.HourlyQuota, quotahourly)
-// 		lineOfData.DailyQuota = checkNULLQuota(lineOfData.DailyQuota, quotadaily)
-// 		lineOfData.MonthlyQuota = checkNULLQuota(lineOfData.MonthlyQuota, quotamonthly)
-// 		lineOfData.timeout = time.Now()
-// 		ipToMac[lineOfData.IP] = lineOfData
-// 	}
-
-// 	reply2, err2 := connRos.Run("/ip/dhcp-server/lease/print") //, "?status=bound") //, "?disabled=false")
-// 	if err2 != nil {
-// 		log.Error(err2)
-// 	}
-// 	for _, re := range reply2.Re {
-// 		lineOfData.Id = re.Map[".id"]
-// 		lineOfData.IP = re.Map["active-address"]
-// 		lineOfData.Mac = re.Map["mac-address"]
-// 		lineOfData.AMac = re.Map["active-mac-address"]
-// 		lineOfData.HostName = re.Map["host-name"]
-// 		lineOfData.Comments = re.Map["comment"]
-// 		lineOfData.HourlyQuota, lineOfData.DailyQuota, lineOfData.MonthlyQuota, lineOfData.Name, lineOfData.Position, lineOfData.Company, lineOfData.TypeD, lineOfData.IDUser, lineOfData.Comment, lineOfData.Manual = parseComments(lineOfData.Comments)
-// 		lineOfData.HourlyQuota = checkNULLQuota(lineOfData.HourlyQuota, quotahourly)
-// 		lineOfData.DailyQuota = checkNULLQuota(lineOfData.DailyQuota, quotadaily)
-// 		lineOfData.MonthlyQuota = checkNULLQuota(lineOfData.MonthlyQuota, quotamonthly)
-// 		lineOfData.Disabled = paramertToBool(re.Map["disabled"])
-// 		lineOfData.Groups = re.Map["address-lists"]
-// 		if BlockAddressList != "" {
-// 			lineOfData.Blocked = strings.Contains(lineOfData.Groups, BlockAddressList)
-// 		}
-// 		lineOfData.timeout = time.Now()
-
-// 		// lineOfData.AddressLists = strings.Split(lineOfData.Groups, ",")
-
-// 		ipToMac[lineOfData.IP] = lineOfData
-
-// 	}
-// 	return ipToMac
-// }
 
 func parseComments(comment string) (
 	quotahourly, quotadaily, quotamonthly uint64,

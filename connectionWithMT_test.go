@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"reflect"
 	"testing"
 
@@ -620,9 +621,79 @@ func TestTransport_readsStreamFromMT(t *testing.T) {
 	}
 }
 
-func Test_getLeasesOverSSHfMT(t *testing.T) {
+func Test_getResponseOverSSHfMT(t *testing.T) {
 	type args struct {
-		SSHCred SSHCredetinals
+		SSHCred  SSHCredetinals
+		commands []string
+	}
+
+	cfg := newConfig()
+	SSHCred := SSHCredetinals{
+		SSHHost: cfg.MTAddr,
+		SSHPort: "22",
+		SSHUser: cfg.MTUser,
+		SSHPass: cfg.MTPass,
+	}
+
+	tests := []struct {
+		name string
+		args args
+		want bytes.Buffer
+	}{
+		{
+			name: "1 with exit",
+			args: args{
+				SSHCred: SSHCred,
+				// SSHCredetinals{
+				// 	SSHHost: "192.168.65.1",
+				// 	SSHPort: "22",
+				// 	SSHUser: "getmac",
+				// 	SSHPass: "getmac_password",
+				// },
+				commands: []string{
+					"/ip dhcp-server lease print detail without-paging",
+					"exit",
+				},
+			},
+			want: bytes.Buffer{},
+		},
+		{
+			name: "1 without exit",
+			args: args{
+				SSHCred: SSHCredetinals{
+					SSHHost: "192.168.65.1",
+					SSHPort: "22",
+					SSHUser: "getmac",
+					SSHPass: "getmac_password",
+				},
+				commands: []string{
+					"/ip dhcp-server lease print detail without-paging",
+				},
+			},
+			want: bytes.Buffer{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getResponseOverSSHfMT(tt.args.SSHCred, tt.args.commands); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getResponseOverSSHfMT() = %v, want %v", got.String(), tt.want.String())
+			}
+		})
+	}
+}
+
+func Test_parseInfoFromMTToSlice(t *testing.T) {
+	type args struct {
+		qDef             QuotaType
+		BlockAddressList string
+		SSHCred          SSHCredetinals
+	}
+	cfg := newConfig()
+	SSHCred := SSHCredetinals{
+		SSHHost: cfg.MTAddr,
+		SSHPort: "22",
+		SSHUser: cfg.MTUser,
+		SSHPass: cfg.MTPass,
 	}
 
 	tests := []struct {
@@ -633,20 +704,17 @@ func Test_getLeasesOverSSHfMT(t *testing.T) {
 		{
 			name: "1",
 			args: args{
-				SSHCred: SSHCredetinals{
-					SSHHost: "192.168.65.1",
-					SSHPort: "22",
-					SSHUser: "getmac",
-					SSHPass: "getmac_password",
-				},
+				qDef:             QuotaType{},
+				BlockAddressList: "Block",
+				SSHCred:          SSHCred,
 			},
 			want: []DeviceType{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getLeasesOverSSHfMT(tt.args.SSHCred); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getLeasesOverSSHfMT() = %v, want %v", got, tt.want)
+			if got := parseInfoFromMTToSlice(tt.args.qDef, tt.args.BlockAddressList, tt.args.SSHCred); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("parseInfoFromMTToSlice() = %v, want %v", got, tt.want)
 			}
 		})
 	}
