@@ -221,7 +221,10 @@ func parseInfoFromMTToSlice(p parseType) []DeviceType {
 
 	device, device2 := DeviceType{}, DeviceType{}
 	devices := []DeviceType{}
-	b := getResponseOverSSHfMT(p.SSHCredetinals, []string{"/ip dhcp-server lease print detail without-paging"})
+	var b bytes.Buffer
+	for b.Len() < 1 {
+		b = getResponseOverSSHfMT(p.SSHCredetinals, []string{"/ip dhcp-server lease print detail without-paging"})
+	}
 	inputStr := b.String()
 	inputArr := strings.Split(inputStr, "\n")
 	for _, line := range inputArr {
@@ -243,12 +246,8 @@ func (d *DeviceType) parseLine(l string) (err error) {
 	arr := strings.Split(l, " ")
 	for index, s := range arr {
 		switch {
-		case isNumDot(s):
-			err = fmt.Errorf("New line")
-		case l == "\n":
-			return fmt.Errorf("New line")
-			// fallthrough
-		// case strings.Contains(s, ";;;"):
+		case s == "Flags:":
+			return nil
 		case strings.Contains(s, "address-lists="):
 			d.addressLists = parseParamertToStr(s)
 		case strings.Contains(s, "server="):
@@ -281,6 +280,12 @@ func (d *DeviceType) parseLine(l string) (err error) {
 			d.hostName = parseParamertToStr(s)
 		case strings.Contains(s, "radius="):
 			d.radius = parseParamertToStr(s)
+		case isNumDot(s):
+			err = fmt.Errorf("New line")
+		case l == "\n":
+			return fmt.Errorf("New line")
+			// fallthrough
+		// case strings.Contains(s, ";;;"):
 		case s == "X":
 			d.disabled = "yes"
 		case s == "B":
@@ -296,6 +301,12 @@ func (d *DeviceType) parseLine(l string) (err error) {
 }
 
 func isNumDot(s string) bool {
+	if len(s) == 0 {
+		return false
+	} else if s == `
+` {
+		return false
+	}
 	dotFound := false
 	for _, v := range s {
 		if v == '.' {
