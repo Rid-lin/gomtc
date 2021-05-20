@@ -19,6 +19,7 @@ type Transport struct {
 	fileDestination     *os.File
 	csvFiletDestination *os.File
 	conn                *net.UDPConn
+	sshCredetinals      SSHCredetinals
 	clientROS           *routeros.Client
 	logs                []LogsOfJob
 	lastUpdated         time.Time
@@ -243,12 +244,13 @@ type parseType struct {
 }
 
 func NewTransport(cfg *Config) *Transport {
-
-	clientROS, err := dial(cfg.MTAddr, cfg.MTUser, cfg.MTPass, cfg.UseTLS)
-	if err != nil {
-		log.Errorf("Error connect to %v:%v", cfg.MTAddr, err)
-		clientROS = tryingToReconnectToMokrotik(cfg.MTAddr, cfg.MTUser, cfg.MTPass, cfg.UseTLS, cfg.NumOfTryingConnectToMT)
-	}
+	var err error
+	// TODO DELETE
+	// clientROS, err := dial(cfg.MTAddr, cfg.MTUser, cfg.MTPass, cfg.UseTLS)
+	// if err != nil {
+	// 	log.Errorf("Error connect to %v:%v", cfg.MTAddr, err)
+	// 	clientROS = tryingToReconnectToMokrotik(cfg.MTAddr, cfg.MTUser, cfg.MTPass, cfg.UseTLS, cfg.NumOfTryingConnectToMT)
+	// }
 
 	if !cfg.NoFlow {
 		fileDestination, err = os.OpenFile(cfg.NameFileToLog, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -273,13 +275,15 @@ func NewTransport(cfg *Config) *Transport {
 	}
 
 	return &Transport{
+		// TODO DELETE
+		// clientROS:           clientROS,
+		// infoOfDevices:       make(map[string]InfoOfDeviceType),
 		data:                map[KeyMapOfReports]ValueMapOfReportsType{},
 		dataCashe:           map[KeyMapOfReports]ValueMapOfReportsType{},
-		infoOfDevices:       make(map[string]InfoOfDeviceType),
+		devices:             DevicesType{},
 		Aliases:             make(map[string][]string),
 		Location:            Location,
 		BlockAddressList:    cfg.BlockGroup,
-		clientROS:           clientROS,
 		fileDestination:     fileDestination,
 		csvFiletDestination: csvFiletDestination,
 		logs:                []LogsOfJob{},

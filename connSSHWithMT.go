@@ -169,8 +169,8 @@ func saveDeviceToCSV(devices []DeviceType) error {
 
 	writer := csv.NewWriter(f)
 
-	for _, value := range devices {
-		fields := deviceToSlice(value)
+	for _, device := range devices {
+		fields := device.convertToSlice()
 		err := writer.Write(fields)
 		if err != nil {
 			fmt.Println(e)
@@ -179,7 +179,35 @@ func saveDeviceToCSV(devices []DeviceType) error {
 	return nil
 }
 
-func deviceToSlice(d DeviceType) []string {
+// func deviceToSlice(d DeviceType) []string {
+// 	var slice []string
+// 	slice = append(slice, d.Id)
+// 	slice = append(slice, d.activeAddress)
+// 	slice = append(slice, d.activeClientId)
+// 	slice = append(slice, d.activeMacAddress)
+// 	slice = append(slice, d.activeServer)
+// 	slice = append(slice, d.address)
+// 	slice = append(slice, d.addressLists)
+// 	slice = append(slice, d.blocked)
+// 	slice = append(slice, d.clientId)
+// 	slice = append(slice, d.comment)
+// 	slice = append(slice, d.dhcpOption)
+// 	slice = append(slice, d.disabled)
+// 	slice = append(slice, d.dynamic)
+// 	slice = append(slice, d.expiresAfter)
+// 	slice = append(slice, d.hostName)
+// 	slice = append(slice, d.lastSeen)
+// 	slice = append(slice, d.macAddress)
+// 	slice = append(slice, d.radius)
+// 	slice = append(slice, d.server)
+// 	slice = append(slice, d.status)
+// 	slice = append(slice, fmt.Sprint(d.Manual))
+// 	slice = append(slice, fmt.Sprint(d.ShouldBeBlocked))
+// 	slice = append(slice, d.timeout.Format("2006-01-02 15:04:05 -0700 MST "))
+// 	return slice
+// }
+
+func (d DeviceType) convertToSlice() []string {
 	var slice []string
 	slice = append(slice, d.Id)
 	slice = append(slice, d.activeAddress)
@@ -207,44 +235,29 @@ func deviceToSlice(d DeviceType) []string {
 	return slice
 }
 
-func (ds *DevicesType) getInfo(alias string, quota QuotaType) InfoOfDeviceType {
-	InfoOfDevice := InfoOfDeviceType{}
-	var (
-		ip, mac, name, position, company, typeD, IDUser, comment string
-		hourlyQuota, dailyQuota, monthlyQuota                    uint64
-		manual                                                   bool
-	)
+func (ds *DevicesType) getInfoD(alias string, quota QuotaType) InfoOfDeviceType {
 	for _, d := range *ds {
 		if d.activeAddress == alias || d.activeMacAddress == alias || d.address == alias || d.macAddress == alias {
-			ip = validateIP(d.activeAddress, d.address)
-			mac = validateMac(d.activeMacAddress, d.macAddress, d.clientId, d.activeClientId)
-			hourlyQuota, dailyQuota, monthlyQuota, name, position, company, typeD, IDUser, comment, manual = parseComments(d.comment)
-			InfoOfDevice = InfoOfDeviceType{
-				DeviceOldType: DeviceOldType{
-					IP:       ip,
-					Mac:      mac,
-					AMac:     mac,
-					HostName: d.hostName,
-					Groups:   d.addressLists,
-					timeout:  d.timeout,
-				},
-				QuotaType: QuotaType{
-					HourlyQuota:  hourlyQuota,
-					DailyQuota:   dailyQuota,
-					MonthlyQuota: monthlyQuota,
-					Manual:       manual,
-				},
-				PersonType: PersonType{
-					IDUser:   IDUser,
-					Name:     name,
-					Position: position,
-					Company:  company,
-					TypeD:    typeD,
-					Comment:  comment,
-				},
-			}
+			return d.convertToInfo()
 		}
 	}
+	return InfoOfDeviceType{}
+}
 
-	return InfoOfDevice
+func (ds *DevicesType) updateInfo(deviceNew DeviceType) error {
+	index := ds.find(&deviceNew)
+	if index == -1 {
+		p := *ds
+		p = append(p, deviceNew)
+		ds = &p
+	}
+	p := *ds
+	p[index] = deviceNew
+	ds = &p
+	return nil
+}
+
+func (d DeviceType) send() error {
+	// TODO доделать функцию
+	return nil
 }

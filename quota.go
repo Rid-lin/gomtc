@@ -101,40 +101,52 @@ func (transport *Transport) checkQuota() {
 	transport.Unlock()
 }
 
-func (transport *Transport) updateStatusDevicesToMT(cfg *Config) {
+func (t *Transport) updateStatusDevicesToMT(cfg *Config) {
 
-	transport.RLock()
-	BlockGroup := transport.BlockAddressList
-	data := transport.dataCashe
-	Quota := transport.QuotaType
-	transport.RUnlock()
+	t.RLock()
+	BlockGroup := t.BlockAddressList
+	data := t.dataCashe
+	Quota := t.QuotaType
+	p := parseType{
+		SSHCredetinals:   t.sshCredetinals,
+		QuotaType:        t.QuotaType,
+		BlockAddressList: t.BlockAddressList,
+		Location:         t.Location,
+	}
+	t.RUnlock()
 
-	for _, device := range data {
-		if device.Manual {
+	for _, dInfo := range data {
+		if dInfo.Manual {
 			continue
 		}
-		if device.ShouldBeBlocked && !device.Blocked {
-			if device.QuotaType == Quota {
-				device.QuotaType = QuotaType{}
+		if dInfo.ShouldBeBlocked && !dInfo.Blocked {
+			if dInfo.QuotaType == Quota {
+				dInfo.QuotaType = QuotaType{}
 			}
-			device.Groups = device.Groups + "," + BlockGroup
-			device.Groups = strings.Trim(device.Groups, ",")
-			if err := transport.setGroupOfDeviceToMT(device.InfoOfDeviceType); err != nil {
+			dInfo.Groups = dInfo.Groups + "," + BlockGroup
+			dInfo.Groups = strings.Trim(dInfo.Groups, ",")
+			// TODO DELETE
+			// if err := transport.setGroupOfDeviceToMT(device.InfoOfDeviceType); err != nil {
+			if err := dInfo.convertToDevice().send(); err != nil {
 				log.Errorf(`An error occurred while saving the device:%v`, err.Error())
 			}
-		} else if !device.ShouldBeBlocked && device.Blocked {
-			if device.QuotaType == Quota {
-				device.QuotaType = QuotaType{}
+		} else if !dInfo.ShouldBeBlocked && dInfo.Blocked {
+			if dInfo.QuotaType == Quota {
+				dInfo.QuotaType = QuotaType{}
 			}
-			device.Groups = strings.Replace(device.Groups, BlockGroup, "", 1)
-			device.Groups = strings.ReplaceAll(device.Groups, ",,", ",")
-			device.Groups = strings.Trim(device.Groups, ",")
-			if err := transport.setGroupOfDeviceToMT(device.InfoOfDeviceType); err != nil {
+			dInfo.Groups = strings.Replace(dInfo.Groups, BlockGroup, "", 1)
+			dInfo.Groups = strings.ReplaceAll(dInfo.Groups, ",,", ",")
+			dInfo.Groups = strings.Trim(dInfo.Groups, ",")
+			// TODO DELETE
+			// if err := transport.setGroupOfDeviceToMT(dInfo.InfoOfDeviceType); err != nil {
+			if err := dInfo.convertToDevice().send(); err != nil {
 				log.Errorf(`An error occurred while saving the device:%v`, err.Error())
 			}
 		}
 	}
-
-	transport.updateInfoOfDevicesFromMT()
-
+	// TODO DELETE
+	// transport.updateInfoOfDevicesFromMT()
+	t.Lock()
+	t.devices = parseInfoFromMTToSlice(p)
+	t.Unlock()
 }

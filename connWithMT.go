@@ -12,13 +12,19 @@ import (
 )
 
 func (data *Transport) loopGetDataFromMT() {
+	p := parseType{}
 	for {
-		data.updateInfoOfDevicesFromMT()
-		if err := data.getStatusallDevices(); err == nil {
-			// if err := transport.getStatusDevices(cfg); err == nil {
-			data.checkQuota()
-			// transport.updateStatusDevicesToMT(cfg)
-		}
+		data.RLock()
+		p.SSHCredetinals = data.sshCredetinals
+		p.BlockAddressList = data.BlockAddressList
+		p.QuotaType = data.QuotaType
+		p.Location = data.Location
+		data.RUnlock()
+		data.Lock()
+		data.devices = parseInfoFromMTToSlice(p)
+		data.Unlock()
+		data.checkQuota()
+		// data.updateStatusDevicesToMT(&cfg)
 		interval, err := time.ParseDuration(cfg.Interval)
 		if err != nil {
 			interval = 1 * time.Minute
@@ -27,6 +33,23 @@ func (data *Transport) loopGetDataFromMT() {
 
 	}
 }
+
+// func (data *Transport) loopGetDataFromMTOverAPI() {
+// 	for {
+// 		data.updateInfoOfDevicesFromMT()
+// 		if err := data.getStatusallDevices(); err == nil {
+// 			// if err := transport.getStatusDevices(cfg); err == nil {
+// 			data.checkQuota()
+// 			// transport.updateStatusDevicesToMT(cfg)
+// 		}
+// 		interval, err := time.ParseDuration(cfg.Interval)
+// 		if err != nil {
+// 			interval = 1 * time.Minute
+// 		}
+// 		time.Sleep(interval)
+
+// 	}
+// }
 
 func parseParamertToStr(inpuStr string) string {
 	Arr := strings.Split(inpuStr, "=")
@@ -274,6 +297,117 @@ func parseComments(comment string) (
 	Comment = Comment + comments
 	return
 
+}
+
+// func (infoD *InfoOfDeviceType) fill(d DeviceType) error {
+// 	// InfoOfDevice := *infoD
+// 	var (
+// 		ip, mac, name, position, company, typeD, IDUser, comment string
+// 		hourlyQuota, dailyQuota, monthlyQuota                    uint64
+// 		manual                                                   bool
+// 	)
+// 	ip = validateIP(d.activeAddress, d.address)
+// 	mac = validateMac(d.activeMacAddress, d.macAddress, d.clientId, d.activeClientId)
+// 	hourlyQuota, dailyQuota, monthlyQuota, name, position, company, typeD, IDUser, comment, manual = parseComments(d.comment)
+// 	infoD = &InfoOfDeviceType{
+// 		// InfoOfDevice = InfoOfDeviceType{
+// 		DeviceOldType: DeviceOldType{
+// 			IP:       ip,
+// 			Mac:      mac,
+// 			AMac:     mac,
+// 			HostName: d.hostName,
+// 			Groups:   d.addressLists,
+// 			timeout:  d.timeout,
+// 		},
+// 		QuotaType: QuotaType{
+// 			HourlyQuota:  hourlyQuota,
+// 			DailyQuota:   dailyQuota,
+// 			MonthlyQuota: monthlyQuota,
+// 			Manual:       manual,
+// 		},
+// 		PersonType: PersonType{
+// 			IDUser:   IDUser,
+// 			Name:     name,
+// 			Position: position,
+// 			Company:  company,
+// 			TypeD:    typeD,
+// 			Comment:  comment,
+// 		},
+// 	}
+// 	// infoD = &InfoOfDevice
+// 	return nil
+// }
+
+func (d DeviceType) convertToInfo() InfoOfDeviceType {
+	var (
+		ip, mac, name, position, company, typeD, IDUser, comment string
+		hourlyQuota, dailyQuota, monthlyQuota                    uint64
+		manual                                                   bool
+	)
+	ip = validateIP(d.activeAddress, d.address)
+	mac = validateMac(d.activeMacAddress, d.macAddress, d.clientId, d.activeClientId)
+	hourlyQuota, dailyQuota, monthlyQuota, name, position, company, typeD, IDUser, comment, manual = parseComments(d.comment)
+	infoD := InfoOfDeviceType{
+		DeviceOldType: DeviceOldType{
+			IP:       ip,
+			Mac:      mac,
+			AMac:     mac,
+			HostName: d.hostName,
+			Groups:   d.addressLists,
+			timeout:  d.timeout,
+		},
+		QuotaType: QuotaType{
+			HourlyQuota:  hourlyQuota,
+			DailyQuota:   dailyQuota,
+			MonthlyQuota: monthlyQuota,
+			Manual:       manual,
+		},
+		PersonType: PersonType{
+			IDUser:   IDUser,
+			Name:     name,
+			Position: position,
+			Company:  company,
+			TypeD:    typeD,
+			Comment:  comment,
+		},
+	}
+	return infoD
+}
+
+func (d1 *DeviceType) compare(d2 *DeviceType) bool {
+	switch {
+	case d1.macAddress == d2.macAddress || d1.activeMacAddress == d2.macAddress || d1.macAddress == d2.activeMacAddress || d1.activeMacAddress == d2.activeMacAddress:
+		return true
+	case d1.activeClientId == d2.activeClientId || d1.activeClientId == d2.clientId || d1.clientId == d2.activeClientId || d1.clientId == d2.clientId:
+		return true
+	}
+	return false
+}
+
+func (ds *DevicesType) find(d *DeviceType) int {
+	for index, device := range *ds {
+		if d.compare(&device) {
+			return index
+		}
+	}
+	return -1
+}
+
+func (dInfo *InfoOfDeviceType) convertToDevice() DeviceType {
+	return DeviceType{
+		activeAddress:    dInfo.IP,
+		address:          dInfo.IP,
+		activeMacAddress: dInfo.AMac,
+		addressLists:     dInfo.Groups,
+		blocked:          fmt.Sprint(dInfo.Blocked),
+		comment:          makeCommentFromIodt(*dInfo, dInfo.QuotaType),
+		disabled:         fmt.Sprint(dInfo.Disabled),
+		hostName:         dInfo.HostName,
+		macAddress:       dInfo.Mac,
+		Manual:           dInfo.Manual,
+		ShouldBeBlocked:  dInfo.ShouldBeBlocked,
+		timeout:          dInfo.timeout,
+	}
 }
 
 func (transport *Transport) readsStreamFromMT(cfg *Config) {

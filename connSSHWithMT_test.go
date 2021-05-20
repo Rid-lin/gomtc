@@ -177,7 +177,7 @@ func Test_deviceToSlice(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := deviceToSlice(tt.args.d); !reflect.DeepEqual(got, tt.want) {
+			if got := tt.args.d.convertToSlice(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("deviceToSlice() = %v, want %v", got, tt.want)
 			}
 		})

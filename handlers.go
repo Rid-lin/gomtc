@@ -168,18 +168,20 @@ func (data *Transport) handleWithFriends(w http.ResponseWriter, r *http.Request)
 // }
 
 func (data *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
+	data.RLock()
+	assetsPath := data.AssetsPath
+	SizeOneKilobyte := data.SizeOneKilobyte
+	devices := data.devices
+	quota := data.QuotaType
+	BlockAddressList := data.BlockAddressList
+	sshCredetinals := data.sshCredetinals
+	Location := data.Location
+	data.RUnlock()
+
 	if r.Method == "GET" {
 		alias := r.FormValue("alias")
-
-		data.RLock()
-		assetsPath := data.AssetsPath
-		SizeOneKilobyte := data.SizeOneKilobyte
-		data.RUnlock()
-
-		InfoOfDevice := data.aliasToDevice(alias)
-		// InfoOfDevice := data.getInfoOfDeviceFromMT(alias)
-		// TempInfoOfDevice := data.aliasToDevice(alias)
-		// InfoOfDevice.ShouldBeBlocked = TempInfoOfDevice.ShouldBeBlocked
+		InfoOfDevice := devices.getInfoD(alias, quota)
+		// InfoOfDevice := data.aliasToDevice(alias)
 
 		DisplayDataUser := DisplayDataUserType{
 			Header:           "Редактирование пользователя",
@@ -209,14 +211,14 @@ func (data *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 			<br> Если ничего не происходит нажмите <a href="/">сюда</a>`, err.Error())
 			time.Sleep(5 * time.Second)
 			http.Redirect(w, r, "/", 302)
-
 		}
 		params := r.Form
 		alias := params["alias"][0]
-		device := data.aliasToDevice(alias)
-		parseParamertToDevice(&device, params)
-
-		if err := data.setDevice(device); err != nil {
+		deviceInfo := devices.getInfoD(alias, quota)
+		// device := data.aliasToDevice(alias)
+		parseParamertToDevice(&deviceInfo, params)
+		// if err := data.setDevice(device); err != nil {
+		if err := devices.updateInfo(deviceInfo.convertToDevice()); err != nil {
 			fmt.Fprintf(w, `Произошла ошибка при сохранении. 
 			<br> %v
 			<br> Перенаправление...
@@ -225,11 +227,16 @@ func (data *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/", 302)
 			return
 		}
-
-		data.updateInfoOfDeviceFromMT(alias)
-
+		data.Lock()
+		data.devices = parseInfoFromMTToSlice(parseType{
+			QuotaType:        quota,
+			BlockAddressList: BlockAddressList,
+			SSHCredetinals:   sshCredetinals,
+			Location:         Location,
+		})
+		data.Unlock()
 		http.Redirect(w, r, "/", 302)
-		log.Printf("%v(%v)%v", alias, device, params)
+		log.Printf("%v(%v)%v", alias, deviceInfo, params)
 	}
 }
 
