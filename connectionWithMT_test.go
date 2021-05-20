@@ -1,12 +1,9 @@
 package main
 
 import (
-	"bytes"
 	"reflect"
 	"testing"
-	"time"
 
-	log "github.com/sirupsen/logrus"
 	"gopkg.in/routeros.v2"
 )
 
@@ -619,108 +616,6 @@ func TestTransport_readsStreamFromMT(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.transport.readsStreamFromMT(tt.args.cfg)
-		})
-	}
-}
-
-func Test_getResponseOverSSHfMT(t *testing.T) {
-	type args struct {
-		SSHCred  SSHCredetinals
-		commands []string
-	}
-
-	// cfg := newConfig()
-	// SSHCred: SSHCredetinals{
-	// 	SSHHost: cfg.MTAddr,
-	// 	SSHPort: "22",
-	// 	SSHUser: cfg.MTUser,
-	// 	SSHPass: cfg.MTPass,
-	// }
-
-	tests := []struct {
-		name string
-		args args
-		want bytes.Buffer
-	}{
-		{
-			name: "1 with exit",
-			args: args{
-				SSHCred: SSHCredetinals{
-					SSHHost: "192.168.65.1",
-					SSHPort: "22",
-					SSHUser: "getmac",
-					SSHPass: "getmac_password",
-				},
-				commands: []string{
-					"/ip dhcp-server lease print detail without-paging",
-					"exit",
-				},
-			},
-			want: bytes.Buffer{},
-		},
-		{
-			name: "1 without exit",
-			args: args{
-				SSHCred: SSHCredetinals{
-					SSHHost: "192.168.65.1",
-					SSHPort: "22",
-					SSHUser: "getmac",
-					SSHPass: "getmac_password",
-				},
-				commands: []string{
-					"/ip dhcp-server lease print detail without-paging",
-				},
-			},
-			want: bytes.Buffer{},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := getResponseOverSSHfMT(tt.args.SSHCred, tt.args.commands); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getResponseOverSSHfMT() = %v, want %v", got.String(), tt.want.String())
-			}
-		})
-	}
-}
-
-func Test_parseInfoFromMTToSlice(t *testing.T) {
-	type args struct {
-		p parseType
-	}
-
-	Location, err := time.LoadLocation("Asia/Yekaterinburg")
-	if err != nil {
-		log.Errorf("Error loading Location(%v):%v", "Asia/Yekaterinburg", err)
-		Location = time.UTC
-	}
-
-	tests := []struct {
-		name string
-		args args
-		want []DeviceType
-	}{
-		{
-			name: "1",
-			args: args{
-				p: parseType{
-					QuotaType:        QuotaType{},
-					BlockAddressList: "Block",
-					SSHCredetinals: SSHCredetinals{
-						SSHHost: "192.168.65.1",
-						SSHPort: "22",
-						SSHUser: "getmac",
-						SSHPass: "getmac_password",
-					},
-					Location: Location,
-				}},
-			want: []DeviceType{},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := parseInfoFromMTToSlice(tt.args.p); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("parseInfoFromMTToSlice() = %v, want %v", got, tt.want)
-			}
 		})
 	}
 }
