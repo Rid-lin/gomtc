@@ -161,27 +161,6 @@ func (d *DeviceType) parseLine(l string) (err error) {
 	return err
 }
 
-func isNumDot(s string) bool {
-	if len(s) == 0 {
-		return false
-	} else if s == `
-` {
-		return false
-	}
-	dotFound := false
-	for _, v := range s {
-		if v == '.' {
-			if dotFound {
-				return false
-			}
-			dotFound = true
-		} else if v < '0' || v > '9' {
-			return false
-		}
-	}
-	return true
-}
-
 func saveDeviceToCSV(devices []DeviceType) error {
 	f, e := os.Create("./Device.csv")
 	if e != nil {
@@ -268,27 +247,4 @@ func (ds *DevicesType) getInfo(alias string, quota QuotaType) InfoOfDeviceType {
 	}
 
 	return InfoOfDevice
-}
-
-func validateIP(ip, altIp string) string {
-	if ip != "" {
-		return ip
-	} else if isIP(altIp) {
-		return altIp
-	}
-	return ""
-}
-
-func validateMac(mac, altMac, hopeMac, lastHopeMac string) string {
-	switch {
-	case mac != "":
-		return mac
-	case altMac != "":
-		return altMac
-	case isMac(hopeMac[2:]):
-		return hopeMac[2:]
-	case isMac(lastHopeMac[2:]):
-		return lastHopeMac[2:]
-	}
-	return ""
 }
