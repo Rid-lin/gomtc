@@ -8,6 +8,29 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func (data *Transport) GetInfo(request *request) ResponseType {
+	var response ResponseType
+
+	data.RLock()
+	ipStruct, ok := data.infoOfDevices[request.IP]
+	data.RUnlock()
+	if ok {
+		log.Tracef("IP:%v to MAC:%v, hostname:%v, comment:%v", ipStruct.IP, ipStruct.Mac, ipStruct.HostName, ipStruct.Comments)
+		response.DeviceOldType = ipStruct.DeviceOldType
+		response.Comments = ipStruct.Comments
+	} else {
+		log.Tracef("IP:'%v' not find in table lease of router:'%v'", ipStruct.IP, cfg.MTAddr)
+		response.Mac = request.IP
+		response.IP = request.IP
+	}
+	if response.Mac == "" {
+		response.Mac = request.IP
+		log.Error("Mac of Device = '' O_o", request)
+	}
+
+	return response
+}
+
 func (transport *Transport) getStatusDevices(cfg *Config) error {
 
 	// transport.mergeMap()
@@ -35,23 +58,6 @@ func (transport *Transport) getStatusDevices(cfg *Config) error {
 		transport.dataCashe[key] = value
 	}
 	transport.Unlock()
-	return nil
-}
-
-func (transport *Transport) getStatusallDevices() error {
-	var i uint16
-	for key, value := range transport.dataCashe {
-		value.Alias = key.Alias
-		value.DateStr = key.DateStr
-		info := transport.obtainingInformationFromMTboutOneDevice(key.Alias)
-		value.InfoOfDeviceType = info
-		transport.Lock()
-		transport.infoOfDevices[info.IP] = info
-		transport.dataCashe[key] = value
-		transport.Unlock()
-		i++
-	}
-	fmt.Printf("Total devices read:%v\n", i)
 	return nil
 }
 
@@ -129,6 +135,6 @@ func (transport *Transport) updateStatusDevicesToMT(cfg *Config) {
 		}
 	}
 
-	transport.updateDataFromMT()
+	transport.updateInfoOfDevicesFromMT()
 
 }

@@ -14,6 +14,7 @@ type Transport struct {
 	infoOfDevices       map[string]InfoOfDeviceType
 	data                MapOfReports
 	dataCashe           MapOfReports
+	devices             DevicesType
 	Location            *time.Location
 	fileDestination     *os.File
 	csvFiletDestination *os.File
@@ -103,6 +104,8 @@ type DeviceType struct {
 	ShouldBeBlocked bool
 	timeout         time.Time
 }
+
+type DevicesType []DeviceType
 
 type lineOfLogType struct {
 	date        string

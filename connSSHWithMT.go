@@ -227,3 +227,68 @@ func deviceToSlice(d DeviceType) []string {
 	slice = append(slice, d.timeout.Format("2006-01-02 15:04:05 -0700 MST "))
 	return slice
 }
+
+func (ds *DevicesType) getInfo(alias string, quota QuotaType) InfoOfDeviceType {
+	InfoOfDevice := InfoOfDeviceType{}
+	var (
+		ip, mac, name, position, company, typeD, IDUser, comment string
+		hourlyQuota, dailyQuota, monthlyQuota                    uint64
+		manual                                                   bool
+	)
+	for _, d := range *ds {
+		if d.activeAddress == alias || d.activeMacAddress == alias || d.address == alias || d.macAddress == alias {
+			ip = validateIP(d.activeAddress, d.address)
+			mac = validateMac(d.activeMacAddress, d.macAddress, d.clientId, d.activeClientId)
+			hourlyQuota, dailyQuota, monthlyQuota, name, position, company, typeD, IDUser, comment, manual = parseComments(d.comment)
+			InfoOfDevice = InfoOfDeviceType{
+				DeviceOldType: DeviceOldType{
+					IP:       ip,
+					Mac:      mac,
+					AMac:     mac,
+					HostName: d.hostName,
+					Groups:   d.addressLists,
+					timeout:  d.timeout,
+				},
+				QuotaType: QuotaType{
+					HourlyQuota:  hourlyQuota,
+					DailyQuota:   dailyQuota,
+					MonthlyQuota: monthlyQuota,
+					Manual:       manual,
+				},
+				PersonType: PersonType{
+					IDUser:   IDUser,
+					Name:     name,
+					Position: position,
+					Company:  company,
+					TypeD:    typeD,
+					Comment:  comment,
+				},
+			}
+		}
+	}
+
+	return InfoOfDevice
+}
+
+func validateIP(ip, altIp string) string {
+	if ip != "" {
+		return ip
+	} else if isIP(altIp) {
+		return altIp
+	}
+	return ""
+}
+
+func validateMac(mac, altMac, hopeMac, lastHopeMac string) string {
+	switch {
+	case mac != "":
+		return mac
+	case altMac != "":
+		return altMac
+	case isMac(hopeMac[2:]):
+		return hopeMac[2:]
+	case isMac(lastHopeMac[2:]):
+		return lastHopeMac[2:]
+	}
+	return ""
+}
