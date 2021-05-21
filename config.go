@@ -30,6 +30,7 @@ type Config struct {
 	FlowAddr               string   `default:"0.0.0.0:2055" usage:"Address and port to listen NetFlow packets"`
 	NameFileToLog          string   `default:"" usage:"The file where logs will be written in the format of squid logs"`
 	MTAddr                 string   `default:"" usage:"The address of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken"`
+	SSHPort                string   `default:"22" usage:"The port of the Mikrotik router for SSH connection"`
 	MTUser                 string   `default:"" usage:"User of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken"`
 	MTPass                 string   `default:"" usage:"The password of the user of the Mikrotik router, from which the data on the comparison of the mac-address and IP-address is taken"`
 	Loc                    string   `default:"Asia/Yekaterinburg" usage:"Location for time"`
@@ -77,8 +78,6 @@ func newConfig() *Config {
 
 	if err := loader.Load(); err != nil {
 		log.Error(err)
-		// For testing
-		// panic(err)
 	}
 
 	lvl, err := log.ParseLevel(cfg.LogLevel)
@@ -92,6 +91,10 @@ func newConfig() *Config {
 	if err != nil {
 		log.Errorf("Error loading Location(%v):%v", cfg.Loc, err)
 		cfg.Location = time.UTC
+	}
+
+	if !isIP(cfg.MTAddr) {
+		log.Fatalf("Parametr %v is not IP-address", cfg.MTAddr)
 	}
 
 	cfg.dateLayout = "2006-01-02"
