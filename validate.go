@@ -1,25 +1,17 @@
 package main
 
-import "strings"
+import (
+	"net"
+)
 
 func isMac(inputStr string) bool {
-	arr := strings.Split(inputStr, ":")
-	for i := range arr {
-		if !isHexColon(arr[i]) {
-			return false
-		}
-	}
-	return len(arr) == 6
+	_, err := net.ParseMAC(inputStr)
+	return err == nil
 }
 
 func isIP(inputStr string) bool {
-	arr := strings.Split(inputStr, ".")
-	for _, item := range arr {
-		if item < "0" || item > "254" || len(item) > 3 {
-			return false
-		}
-	}
-	return len(arr) == 4
+	ip := net.ParseIP(inputStr)
+	return !(ip == nil)
 }
 
 func isNumDot(s string) bool {
@@ -77,7 +69,7 @@ func validateIP(ip, altIp string) string {
 	return ""
 }
 
-func validateMac(mac, altMac, hopeMac, lastHopeMac string) string {
+func getSwithMac(mac, altMac, hopeMac, lastHopeMac string) string {
 	var hopeMacR, lastHopeMacR string
 	if len(hopeMac) > 2 {
 		hopeMacR = hopeMac[2:]

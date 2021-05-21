@@ -59,7 +59,7 @@ func Test_validateMac(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := validateMac(tt.args.mac, tt.args.altMac, tt.args.hopeMac, tt.args.lastHopeMac); got != tt.want {
+			if got := getSwithMac(tt.args.mac, tt.args.altMac, tt.args.hopeMac, tt.args.lastHopeMac); got != tt.want {
 				t.Errorf("validateMac() = %v, want %v", got, tt.want)
 			}
 		})
@@ -266,6 +266,13 @@ func Test_isIP(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "4-true",
+			args: args{
+				inputStr: "192.168.65.254",
+			},
+			want: true,
+		},
+		{
 			name: "1-false",
 			args: args{
 				inputStr: "10.0.0.1000",
@@ -291,7 +298,7 @@ func Test_isIP(t *testing.T) {
 			args: args{
 				inputStr: "10.0.0.255",
 			},
-			want: false,
+			want: true,
 		},
 	}
 	for _, tt := range tests {
