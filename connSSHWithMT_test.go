@@ -11,7 +11,7 @@ import (
 
 func Test_getResponseOverSSHfMT(t *testing.T) {
 	type args struct {
-		SSHCred  SSHCredetinals
+		SSHCred  SSHCredentials
 		commands []string
 	}
 
@@ -23,7 +23,7 @@ func Test_getResponseOverSSHfMT(t *testing.T) {
 		{
 			name: "1 with exit",
 			args: args{
-				SSHCred: SSHCredetinals{
+				SSHCred: SSHCredentials{
 					SSHHost: "192.168.65.1",
 					SSHPort: "22",
 					SSHUser: "getmac",
@@ -39,7 +39,7 @@ func Test_getResponseOverSSHfMT(t *testing.T) {
 		{
 			name: "1 without exit",
 			args: args{
-				SSHCred: SSHCredetinals{
+				SSHCred: SSHCredentials{
 					SSHHost: "192.168.65.1",
 					SSHPort: "22",
 					SSHUser: "getmac",
@@ -83,7 +83,7 @@ func Test_parseInfoFromMTToSlice(t *testing.T) {
 				p: parseType{
 					QuotaType:        QuotaType{},
 					BlockAddressList: "Block",
-					SSHCredetinals: SSHCredetinals{
+					SSHCredentials: SSHCredentials{
 						SSHHost: "192.168.65.1",
 						SSHPort: "22",
 						SSHUser: "getmac",

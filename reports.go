@@ -106,18 +106,18 @@ func (data ReportDataType) percentileCalculation(cub uint8) ReportDataType {
 // TODO вместо 4384 Мб использовать 4,38 Гб или 4.4 Гб
 // TODO Вывод сделать чисто в строковом формате
 
-func (data ReportDataType) FiltredFriendS(friends []string) ReportDataType {
-	dataLen := len(data)
+func (rData ReportDataType) FiltredFriendS(friends []string) ReportDataType {
+	dataLen := len(rData)
 	for index := 0; index < dataLen; index++ {
 		for jndex := range friends {
-			if data[index].Login == friends[jndex] || data[index].Alias == friends[jndex] || data[index].IP == friends[jndex] {
-				data = append(data[:index], data[index+1:]...)
+			if rData[index].Login == friends[jndex] || rData[index].Alias == friends[jndex] || rData[index].IP == friends[jndex] {
+				rData = append(rData[:index], rData[index+1:]...)
 				index--
 				dataLen--
 			}
 		}
 	}
-	return data
+	return rData
 }
 
 // func (data ReportDataType) Format(cub uint8) ReportDataType {

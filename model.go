@@ -19,7 +19,7 @@ type Transport struct {
 	fileDestination     *os.File
 	csvFiletDestination *os.File
 	conn                *net.UDPConn
-	sshCredetinals      SSHCredetinals
+	sshCredentials      SSHCredentials
 	clientROS           *routeros.Client
 	logs                []LogsOfJob
 	lastUpdated         time.Time
@@ -229,7 +229,7 @@ type StatType struct {
 	Count           uint32
 }
 
-type SSHCredetinals struct {
+type SSHCredentials struct {
 	SSHHost string
 	SSHPort string
 	SSHUser string
@@ -237,7 +237,7 @@ type SSHCredetinals struct {
 }
 
 type parseType struct {
-	SSHCredetinals
+	SSHCredentials
 	QuotaType
 	BlockAddressList string
 	Location         *time.Location
@@ -308,6 +308,12 @@ func NewTransport(cfg *Config) *Transport {
 		renewOneMac:         make(chan string, 100),
 		newLogChan:          getNewLogSignalsChannel(),
 		exitChan:            getExitSignalsChannel(),
+		sshCredentials: SSHCredentials{
+			SSHHost: cfg.MTAddr,
+			SSHPort: "22",
+			SSHUser: cfg.MTUser,
+			SSHPass: cfg.MTPass,
+		},
 		QuotaType: QuotaType{
 			HourlyQuota:  cfg.DefaultQuotaHourly * cfg.SizeOneKilobyte * cfg.SizeOneKilobyte,
 			DailyQuota:   cfg.DefaultQuotaDaily * cfg.SizeOneKilobyte * cfg.SizeOneKilobyte,

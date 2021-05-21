@@ -172,7 +172,7 @@ func (data *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 	devices := data.devices
 	quota := data.QuotaType
 	BlockAddressList := data.BlockAddressList
-	sshCredetinals := data.sshCredetinals
+	sshCredetinals := data.sshCredentials
 	Location := data.Location
 	data.RUnlock()
 
@@ -228,7 +228,7 @@ func (data *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 		data.updateDevices(parseType{
 			QuotaType:        quota,
 			BlockAddressList: BlockAddressList,
-			SSHCredetinals:   sshCredetinals,
+			SSHCredentials:   sshCredetinals,
 			Location:         Location,
 		})
 		http.Redirect(w, r, "/", 302)

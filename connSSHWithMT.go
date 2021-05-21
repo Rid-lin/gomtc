@@ -12,7 +12,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func getResponseOverSSHfMT(SSHCred SSHCredetinals, commands []string) bytes.Buffer {
+func getResponseOverSSHfMT(SSHCred SSHCredentials, commands []string) bytes.Buffer {
 	// Add the last command (exit), if not, to reduce the number of commands passed in parameters.
 	if len(commands) > 0 {
 		lastCommand := commands[len(commands)-1]
@@ -84,7 +84,7 @@ func parseInfoFromMTToSlice(p parseType) []DeviceType {
 	devices := []DeviceType{}
 	var b bytes.Buffer
 	for b.Len() < 1 {
-		b = getResponseOverSSHfMT(p.SSHCredetinals, []string{"/ip dhcp-server lease print detail without-paging"})
+		b = getResponseOverSSHfMT(p.SSHCredentials, []string{"/ip dhcp-server lease print detail without-paging"})
 	}
 	inputStr := b.String()
 	inputArr := strings.Split(inputStr, "\n")

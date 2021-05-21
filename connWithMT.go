@@ -15,7 +15,7 @@ func (t *Transport) loopGetDataFromMT() {
 	p := parseType{}
 	for {
 		t.RLock()
-		p.SSHCredetinals = t.sshCredetinals
+		p.SSHCredentials = t.sshCredentials
 		p.BlockAddressList = t.BlockAddressList
 		p.QuotaType = t.QuotaType
 		p.Location = t.Location
