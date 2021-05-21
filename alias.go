@@ -10,7 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (transport *Transport) getAllAliases(cfg *Config) {
+func (t *Transport) getAllAliases(cfg *Config) {
 	aliases := make(map[string][]string)
 
 	path := path.Join(cfg.ConfigPath, "realname.cfg")
@@ -47,8 +47,8 @@ func (transport *Transport) getAllAliases(cfg *Config) {
 		log.Error(err)
 		return
 	}
-	transport.Lock()
-	transport.Aliases = aliases
-	transport.Unlock()
+	t.Lock()
+	t.Aliases = aliases
+	t.Unlock()
 	log.Trace(aliases)
 }
