@@ -80,7 +80,7 @@ func getResponseOverSSHfMT(SSHCred SSHCredetinals, commands []string) bytes.Buff
 
 func parseInfoFromMTToSlice(p parseType) []DeviceType {
 
-	device, device2 := DeviceType{}, DeviceType{}
+	deviceTemp, device := DeviceType{}, DeviceType{}
 	devices := []DeviceType{}
 	var b bytes.Buffer
 	for b.Len() < 1 {
@@ -89,15 +89,19 @@ func parseInfoFromMTToSlice(p parseType) []DeviceType {
 	inputStr := b.String()
 	inputArr := strings.Split(inputStr, "\n")
 	for _, line := range inputArr {
-		if device.parseLine(line) != nil {
-			device2.timeout = time.Now().In(p.Location)
-			devices = append(devices, device2)
-			// fmt.Printf("1=%#v\n2=%#v\n", device, device2)
-			device = DeviceType{}
+		// Если возникает ошибка, то это новое устройство
+		if deviceTemp.parseLine(line) != nil {
+
+			// Поэтому мы его дополняем предыдущее значение устройства дополняем...
+			device.timeout = time.Now().In(p.Location)
+			// ... и записываем в массив устройств
+			devices = append(devices, device)
+			// Обнуляем временное хранилище информации об устройстве для дальнейшей кокатенации из распарсенных строк.
+			deviceTemp = DeviceType{}
+			deviceTemp.parseLine(line)
 		}
-		device2 = device
+		device = deviceTemp
 	}
-	fmt.Print(saveDeviceToCSV(devices))
 	return devices
 }
 
@@ -105,6 +109,9 @@ func (d *DeviceType) parseLine(l string) (err error) {
 	l = strings.Trim(l, " ")
 	l = strings.ReplaceAll(l, "  ", " ")
 	arr := strings.Split(l, " ")
+	if len(arr) > 1 && isNumDot(arr[0]) {
+		err = fmt.Errorf("New line")
+	}
 	for index, s := range arr {
 		switch {
 		case s == "Flags:":
@@ -141,8 +148,8 @@ func (d *DeviceType) parseLine(l string) (err error) {
 			d.hostName = parseParamertToStr(s)
 		case strings.Contains(s, "radius="):
 			d.radius = parseParamertToStr(s)
-		case isNumDot(s):
-			err = fmt.Errorf("New line")
+		// case isNumDot(s):
+		// 	err = fmt.Errorf("New line")
 		case l == "\n":
 			return fmt.Errorf("New line")
 			// fallthrough
@@ -210,14 +217,16 @@ func (d DeviceType) convertToSlice() []string {
 func (ds *DevicesType) getInfoD(alias string, quota QuotaType) InfoOfDeviceType {
 	for _, d := range *ds {
 		if d.activeAddress == alias || d.activeMacAddress == alias || d.address == alias || d.macAddress == alias {
-			return d.convertToInfo()
+			ifoD := d.convertToInfo()
+			ifoD.QuotaType = checkNULLQuotas(ifoD.QuotaType, quota)
+			return ifoD
 		}
 	}
 	return InfoOfDeviceType{}
 }
 
 func (ds *DevicesType) updateInfo(deviceNew DeviceType) error {
-	index := ds.find(&deviceNew)
+	index := ds.findIndexOfDevice(&deviceNew)
 	if index == -1 {
 		// p := *ds
 		// p = append(p, deviceNew)
