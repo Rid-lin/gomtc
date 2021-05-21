@@ -1448,7 +1448,7 @@ func TestDevicesType_find(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.ds.find(tt.args.d); got != tt.want {
+			if got := tt.ds.findIndexOfDevice(tt.args.d); got != tt.want {
 				t.Errorf("Test(%s)DevicesType.find() = %v, want %v", tt.name, got, tt.want)
 			}
 		})
