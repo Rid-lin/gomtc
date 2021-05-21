@@ -11,20 +11,17 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (data *Transport) loopGetDataFromMT() {
+func (t *Transport) loopGetDataFromMT() {
 	p := parseType{}
 	for {
-		data.RLock()
-		p.SSHCredetinals = data.sshCredetinals
-		p.BlockAddressList = data.BlockAddressList
-		p.QuotaType = data.QuotaType
-		p.Location = data.Location
-		data.RUnlock()
-		data.Lock()
-		data.devices = parseInfoFromMTToSlice(p)
-		data.Unlock()
-		data.checkQuota()
-		// data.updateStatusDevicesToMT(&cfg)
+		t.RLock()
+		p.SSHCredetinals = t.sshCredetinals
+		p.BlockAddressList = t.BlockAddressList
+		p.QuotaType = t.QuotaType
+		p.Location = t.Location
+		// data.devices = parseInfoFromMTToSlice(p)
+		t.RUnlock()
+		t.updateDevices(p)
 		interval, err := time.ParseDuration(cfg.Interval)
 		if err != nil {
 			interval = 1 * time.Minute
@@ -32,6 +29,41 @@ func (data *Transport) loopGetDataFromMT() {
 		time.Sleep(interval)
 
 	}
+}
+
+func (t *Transport) updateDevices(p parseType) {
+	t.Lock()
+	t.devices = parseInfoFromMTToSlice(p)
+	t.Unlock()
+}
+
+// func (data *Transport) updateQuotas(p parseType) {
+// 	data.Lock()
+// 	for key, value := range data.dataCashe {
+// 		infoD, err := data.devices.findInfoDByAlias(value.Alias, p.QuotaType)
+// 		if err != nil {
+// 			continue
+// 		}
+// 		value.InfoOfDeviceType = infoD
+// 		data.dataCashe[key] = value
+// 		// value.InfoOfDeviceType = data.devices.getInfoD(value.Alias, p.QuotaType)
+// 	}
+// 	data.Unlock()
+// }
+
+func (t *Transport) updateQuotas(p parseType) {
+	t.Lock()
+	for key, value := range t.dataCashe {
+		if value.Alias == "" {
+			value.Alias = key.Alias
+		}
+		if value.DateStr == "" {
+			value.DateStr = key.DateStr
+		}
+		value.InfoOfDeviceType = t.devices.getInfoD(value.Alias, p.QuotaType)
+		t.dataCashe[key] = value
+	}
+	t.Unlock()
 }
 
 // func (data *Transport) loopGetDataFromMTOverAPI() {
@@ -268,20 +300,20 @@ func (d DeviceType) convertToInfo() InfoOfDeviceType {
 	return infoD
 }
 
-func (dInfo *InfoOfDeviceType) convertToDevice() DeviceType {
+func (i *InfoOfDeviceType) convertToDevice() DeviceType {
 	return DeviceType{
-		activeAddress:    dInfo.IP,
-		address:          dInfo.IP,
-		activeMacAddress: dInfo.AMac,
-		addressLists:     dInfo.Groups,
-		blocked:          fmt.Sprint(dInfo.Blocked),
-		comment:          makeCommentFromIodt(*dInfo, dInfo.QuotaType),
-		disabled:         fmt.Sprint(dInfo.Disabled),
-		hostName:         dInfo.HostName,
-		macAddress:       dInfo.Mac,
-		Manual:           dInfo.Manual,
-		ShouldBeBlocked:  dInfo.ShouldBeBlocked,
-		timeout:          dInfo.timeout,
+		activeAddress:    i.IP,
+		address:          i.IP,
+		activeMacAddress: i.AMac,
+		addressLists:     i.Groups,
+		blocked:          fmt.Sprint(i.Blocked),
+		comment:          makeCommentFromIodt(*i, i.QuotaType),
+		disabled:         fmt.Sprint(i.Disabled),
+		hostName:         i.HostName,
+		macAddress:       i.Mac,
+		Manual:           i.Manual,
+		ShouldBeBlocked:  i.ShouldBeBlocked,
+		timeout:          i.timeout,
 	}
 }
 
@@ -307,7 +339,7 @@ func (d1 *DeviceType) compare(d2 *DeviceType) bool {
 	return false
 }
 
-func (ds *DevicesType) find(d *DeviceType) int {
+func (ds *DevicesType) findIndexOfDevice(d *DeviceType) int {
 	for index, device := range *ds {
 		if d.compare(&device) {
 			return index
@@ -316,7 +348,18 @@ func (ds *DevicesType) find(d *DeviceType) int {
 	return -1
 }
 
-func (transport *Transport) readsStreamFromMT(cfg *Config) {
+func (ds *DevicesType) findInfoDByAlias(alias string, quota QuotaType) (InfoOfDeviceType, error) {
+	for _, d := range *ds {
+		if d.activeAddress == alias || d.activeMacAddress == alias || d.address == alias || d.macAddress == alias {
+			ifoD := d.convertToInfo()
+			ifoD.QuotaType = checkNULLQuotas(ifoD.QuotaType, quota)
+			return ifoD, nil
+		}
+	}
+	return InfoOfDeviceType{}, fmt.Errorf("NotFound")
+}
+
+func (t *Transport) readsStreamFromMT(cfg *Config) {
 
 	addr, err := net.ResolveUDPAddr("udp", cfg.FlowAddr)
 	if err != nil {
@@ -324,23 +367,23 @@ func (transport *Transport) readsStreamFromMT(cfg *Config) {
 	}
 	log.Infof("gomtc listen NetFlow on:'%v'", cfg.FlowAddr)
 	for {
-		transport.conn, err = net.ListenUDP("udp", addr)
+		t.conn, err = net.ListenUDP("udp", addr)
 		if err != nil {
 			log.Errorln(err)
 		} else {
-			err = transport.conn.SetReadBuffer(cfg.ReceiveBufferSizeBytes)
+			err = t.conn.SetReadBuffer(cfg.ReceiveBufferSizeBytes)
 			if err != nil {
 				log.Errorln(err)
 			} else {
 				/* Infinite-loop for reading packets */
 				for {
 					select {
-					case <-transport.stopReadFromUDP:
+					case <-t.stopReadFromUDP:
 						time.Sleep(5 * time.Second)
 						return
 					default:
 						bufUDP := make([]byte, 4096)
-						rlen, remote, err := transport.conn.ReadFromUDP(bufUDP)
+						rlen, remote, err := t.conn.ReadFromUDP(bufUDP)
 
 						if err != nil {
 							log.Errorf("Error read from UDP: %v\n", err)
@@ -348,7 +391,7 @@ func (transport *Transport) readsStreamFromMT(cfg *Config) {
 
 							stream := bytes.NewBuffer(bufUDP[:rlen])
 
-							go handlePacket(stream, remote, transport.outputChannel, cfg)
+							go handlePacket(stream, remote, t.outputChannel, cfg)
 						}
 					}
 				}
