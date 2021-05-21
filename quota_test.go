@@ -114,7 +114,7 @@ func TestTransport_checkQuota(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.transport.checkQuota()
+			tt.transport.checkQuotas()
 		})
 	}
 }
