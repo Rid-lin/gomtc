@@ -225,14 +225,12 @@ func (data *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/", 302)
 			return
 		}
-		data.Lock()
-		data.devices = parseInfoFromMTToSlice(parseType{
+		data.updateDevices(parseType{
 			QuotaType:        quota,
 			BlockAddressList: BlockAddressList,
 			SSHCredetinals:   sshCredetinals,
 			Location:         Location,
 		})
-		data.Unlock()
 		http.Redirect(w, r, "/", 302)
 		log.Printf("%v(%v)%v", alias, deviceInfo, params)
 	}
