@@ -131,13 +131,18 @@ func makeCommentFromIodt(d InfoOfDeviceType, quota QuotaType) string {
 		comment = fmt.Sprintf("name=%v",
 			d.Name)
 	}
+	if d.IDUser != "" {
+		comment = fmt.Sprintf("%v/id=%v",
+			comment,
+			d.IDUser)
+	}
 	if d.Company != "" {
 		comment = fmt.Sprintf("%v/com=%v",
 			comment,
 			d.Company)
 	}
 	if d.Position != "" {
-		comment = fmt.Sprintf("%v/col=%v",
+		comment = fmt.Sprintf("%v/pos=%v",
 			comment,
 			d.Position)
 	}
@@ -202,6 +207,8 @@ func parseComment(comment string) (
 			name = parseParamertToStr(value)
 		case strings.Contains(value, "col="):
 			position = parseParamertToStr(value)
+		case strings.Contains(value, "pos="):
+			position = parseParamertToStr(value)
 		case strings.Contains(value, "com="):
 			company = parseParamertToStr(value)
 		case strings.Contains(value, "id="):
@@ -231,7 +238,7 @@ func (d DeviceType) convertToInfo() InfoOfDeviceType {
 		manual                                                   bool
 	)
 	ip = validateIP(d.activeAddress, d.address)
-	mac = validateMac(d.activeMacAddress, d.macAddress, d.clientId, d.activeClientId)
+	mac = getSwithMac(d.activeMacAddress, d.macAddress, d.clientId, d.activeClientId)
 	hourlyQuota, dailyQuota, monthlyQuota, name, position, company, typeD, IDUser, comment, manual = parseComment(d.comment)
 	infoD := InfoOfDeviceType{
 		DeviceOldType: DeviceOldType{
@@ -255,6 +262,7 @@ func (d DeviceType) convertToInfo() InfoOfDeviceType {
 			Company:  company,
 			TypeD:    typeD,
 			Comment:  comment,
+			Comments: d.comment,
 		},
 	}
 	return infoD
@@ -279,21 +287,21 @@ func (dInfo *InfoOfDeviceType) convertToDevice() DeviceType {
 
 func (d1 *DeviceType) compare(d2 *DeviceType) bool {
 	switch {
-	case d1.macAddress == d2.macAddress:
+	case d1.macAddress == d2.macAddress && d1.macAddress != "" && d2.macAddress != "":
 		return true
-	case d1.activeMacAddress == d2.macAddress:
+	case d1.activeMacAddress == d2.macAddress && d1.activeMacAddress != "" && d2.macAddress != "":
 		return true
-	case d1.macAddress == d2.activeMacAddress:
+	case d1.macAddress == d2.activeMacAddress && d1.macAddress != "" && d2.activeMacAddress != "":
 		return true
-	case d1.activeMacAddress == d2.activeMacAddress:
+	case d1.activeMacAddress == d2.activeMacAddress && d1.activeMacAddress != "" && d2.activeMacAddress != "":
 		return true
-	case d1.activeClientId == d2.activeClientId:
+	case d1.activeClientId == d2.activeClientId && d1.activeClientId != "" && d2.activeClientId != "":
 		return true
-	case d1.activeClientId == d2.clientId:
+	case d1.activeClientId == d2.clientId && d1.activeClientId != "" && d2.clientId != "":
 		return true
-	case d1.clientId == d2.activeClientId:
+	case d1.clientId == d2.activeClientId && d1.clientId != "" && d2.activeClientId != "":
 		return true
-	case d1.clientId == d2.clientId:
+	case d1.clientId == d2.clientId && d1.clientId != "" && d2.clientId != "":
 		return true
 	}
 	return false

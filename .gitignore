@@ -31,3 +31,4 @@ SQL/*
 config.toml
 db/*
 *_old
+*.csv
