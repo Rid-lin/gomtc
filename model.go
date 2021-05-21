@@ -243,6 +243,18 @@ type parseType struct {
 	Location         *time.Location
 }
 
+// TODO to Future
+// type parseCommentType struct {
+// 	QuotaType
+// 	Name     string
+// 	Position string
+// 	Company  string
+// 	TypeD    string
+// 	IDUser   string
+// 	Comment  string
+// 	Manual   bool
+// }
+
 func NewTransport(cfg *Config) *Transport {
 	var err error
 	// TODO DELETE
