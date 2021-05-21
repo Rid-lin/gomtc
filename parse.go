@@ -18,42 +18,48 @@ import (
 var count Count
 
 // loopParse endless file parsing loop
-func (transport *Transport) loopParse(cfg *Config) {
-	transport.parseOnce(cfg)
+func (t *Transport) loopParse(cfg *Config) {
+	t.parseOnce(cfg)
 	for {
-		<-transport.timer.C
-		transport.parseOnce(cfg)
+		<-t.timer.C
+		t.parseOnce(cfg)
 	}
 }
 
-func (transport *Transport) parseOnce(cfg *Config) {
-	transport.readLog(cfg)
+func (t *Transport) parseOnce(cfg *Config) {
+	p := parseType{}
+	t.RLock()
+	p.SSHCredentials = t.sshCredentials
+	p.BlockAddressList = t.BlockAddressList
+	p.QuotaType = t.QuotaType
+	p.Location = t.Location
+	t.RUnlock()
+
+	t.readLog(cfg)
 
 	setLastdates(1, 1, cfg)
 
-	transport.parseAllFilesAndCountingTraffic(cfg)
+	t.parseAllFilesAndCountingTraffic(cfg)
 
-	transport.totalTrafficСounting()
+	t.totalTrafficСounting()
 
-	transport.writeToChasheData()
+	t.writeToChasheData()
 
-	// if err := transport.getStatusallDevices(); err == nil {
-	// if err := transport.getStatusDevices(cfg); err == nil {
-	// transport.checkQuota()
+	t.updateQuotas(p)
+	t.checkQuotas()
 	// transport.updateStatusDevicesToMT(cfg)
-	// }
 
-	transport.clearingCountedTraffic(cfg, cfg.LastDate)
+	t.clearingCountedTraffic(cfg, cfg.LastDate)
 
-	transport.writeLog(cfg)
+	t.writeLog(cfg)
 
 	count = Count{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
-	transport.setTimer(cfg.Interval)
+	t.setTimer(cfg.Interval)
 
 }
 
-func (transport *Transport) RunTikerParse(interval string) {
+func (t *Transport) RunTikerParse(interval string) {
 	for {
 
 		sleepOnInterval(interval)
@@ -61,13 +67,13 @@ func (transport *Transport) RunTikerParse(interval string) {
 	}
 }
 
-func (transport *Transport) setTimer(IntervalStr string) {
+func (t *Transport) setTimer(IntervalStr string) {
 	interval, err := time.ParseDuration(IntervalStr)
 	if err != nil {
-		transport.timer = time.NewTimer(15 * time.Minute)
+		t.timer = time.NewTimer(15 * time.Minute)
 
 	} else {
-		transport.timer = time.NewTimer(interval)
+		t.timer = time.NewTimer(interval)
 
 	}
 
@@ -187,7 +193,7 @@ func (t *Transport) parseFileToMap(info os.FileInfo, cfg *Config) error {
 
 		defer os.RemoveAll(dir) // очистка
 
-		FileName, err := UnGzip(FullFileName, dir)
+		FileName, err := unGzip(FullFileName, dir)
 		if err != nil {
 			return err
 		}
@@ -375,6 +381,8 @@ func (t *Transport) trafficСounting(key KeyMapOfReports, value *lineOfLogType) 
 	// Обработанные данные из временных переменных помещаем в карту....
 	valueMapOfReports.SizeOfHour = SizeOfHour
 	// .... блокируя её для записи во избежании коллизий
+	valueMapOfReports.Alias = key.Alias
+	valueMapOfReports.DateStr = key.DateStr
 	t.Lock()
 	t.data[key] = valueMapOfReports
 	t.Unlock()
@@ -442,9 +450,9 @@ func sleepOnInterval(IntervalStr string) {
 
 }
 
-func (trasnport *Transport) writeToChasheData() {
-	trasnport.Lock()
-	trasnport.dataCashe = MapOfReports{}
-	trasnport.dataCashe = trasnport.data
-	trasnport.Unlock()
+func (t *Transport) writeToChasheData() {
+	t.Lock()
+	t.dataCashe = MapOfReports{}
+	t.dataCashe = t.data
+	t.Unlock()
 }

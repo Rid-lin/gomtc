@@ -8,12 +8,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (data *Transport) GetInfo(request *request) ResponseType {
+func (t *Transport) GetInfo(request *request) ResponseType {
 	var response ResponseType
 
-	data.RLock()
-	ipStruct, ok := data.infoOfDevices[request.IP]
-	data.RUnlock()
+	t.RLock()
+	ipStruct, ok := t.infoOfDevices[request.IP]
+	t.RUnlock()
 	if ok {
 		log.Tracef("IP:%v to MAC:%v, hostname:%v, comment:%v", ipStruct.IP, ipStruct.Mac, ipStruct.HostName, ipStruct.Comments)
 		response.DeviceOldType = ipStruct.DeviceOldType
@@ -31,18 +31,18 @@ func (data *Transport) GetInfo(request *request) ResponseType {
 	return response
 }
 
-func (transport *Transport) getStatusDevices(cfg *Config) error {
+func (t *Transport) getStatusDevices(cfg *Config) error {
 
 	// transport.mergeMap()
 
-	transport.Lock()
-	resultMap := transport.infoOfDevices
+	t.Lock()
+	resultMap := t.infoOfDevices
 
-	DefaultHourlyQuota := transport.HourlyQuota
-	DefaultDailyQuota := transport.DailyQuota
-	DefaultMonthlyQuota := transport.MonthlyQuota
+	DefaultHourlyQuota := t.HourlyQuota
+	DefaultDailyQuota := t.DailyQuota
+	DefaultMonthlyQuota := t.MonthlyQuota
 
-	for key, value := range transport.dataCashe {
+	for key, value := range t.dataCashe {
 		value.HourlyQuota = checkNULLQuota(0, DefaultHourlyQuota)
 		value.DailyQuota = checkNULLQuota(0, DefaultDailyQuota)
 		value.MonthlyQuota = checkNULLQuota(0, DefaultMonthlyQuota)
@@ -55,19 +55,19 @@ func (transport *Transport) getStatusDevices(cfg *Config) error {
 			}
 
 		}
-		transport.dataCashe[key] = value
+		t.dataCashe[key] = value
 	}
-	transport.Unlock()
+	t.Unlock()
 	return nil
 }
 
-func (transport *Transport) GetData(key KeyMapOfReports) (ValueMapOfReportsType, error) {
-	transport.RLock()
-	if data, ok := transport.dataCashe[key]; ok {
-		transport.RUnlock()
+func (t *Transport) GetData(key KeyMapOfReports) (ValueMapOfReportsType, error) {
+	t.RLock()
+	if data, ok := t.dataCashe[key]; ok {
+		t.RUnlock()
 		return data, nil
 	}
-	transport.RUnlock()
+	t.RUnlock()
 	return ValueMapOfReportsType{}, fmt.Errorf("Map element with key(%v) not found", key)
 }
 
@@ -78,10 +78,24 @@ func checkNULLQuota(setValue, deafultValue uint64) uint64 {
 	return uint64(setValue)
 }
 
-func (transport *Transport) checkQuota() {
+func checkNULLQuotas(setValue, deafultValue QuotaType) QuotaType {
+	quotaReturned := setValue
+	if setValue.DailyQuota == 0 {
+		quotaReturned.DailyQuota = deafultValue.DailyQuota
+	}
+	if setValue.HourlyQuota == 0 {
+		quotaReturned.HourlyQuota = deafultValue.HourlyQuota
+	}
+	if setValue.MonthlyQuota == 0 {
+		quotaReturned.MonthlyQuota = deafultValue.MonthlyQuota
+	}
+	return quotaReturned
+}
+
+func (t *Transport) checkQuotas() {
 	hour := time.Now().Hour()
-	transport.Lock()
-	for key, value := range transport.dataCashe {
+	t.Lock()
+	for key, value := range t.dataCashe {
 		if key.Alias == "Всего" {
 			continue
 		}
@@ -95,10 +109,10 @@ func (transport *Transport) checkQuota() {
 			value.ShouldBeBlocked = false
 			log.Tracef("Login (%v)has been enabled, the quota(%v) has not been exceeded", key.Alias, value.HourlyQuota)
 		}
-		transport.data[key] = value
+		t.data[key] = value
 
 	}
-	transport.Unlock()
+	t.Unlock()
 }
 
 func (t *Transport) updateStatusDevicesToMT(cfg *Config) {
@@ -108,7 +122,7 @@ func (t *Transport) updateStatusDevicesToMT(cfg *Config) {
 	data := t.dataCashe
 	Quota := t.QuotaType
 	p := parseType{
-		SSHCredetinals:   t.sshCredetinals,
+		SSHCredentials:   t.sshCredentials,
 		QuotaType:        t.QuotaType,
 		BlockAddressList: t.BlockAddressList,
 		Location:         t.Location,
