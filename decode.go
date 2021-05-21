@@ -94,7 +94,7 @@ func decodeRecord(header *header, binRecord *binaryRecord, remoteAddr *net.UDPAd
 	return decodedRecord
 }
 
-func (data *Transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) (string, string) {
+func (t *Transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) (string, string) {
 	binRecord := record.binaryRecord
 	header := record.header
 	remoteAddr := record.Host
@@ -123,7 +123,7 @@ func (data *Transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) (
 	ok2 := cfg.CheckEntryInSubNet(intToIPv4Addr(binRecord.Ipv4SrcAddrInt))
 
 	if ok && !ok2 {
-		response := data.GetInfo(&request{
+		response := t.GetInfo(&request{
 			IP:   intToIPv4Addr(binRecord.Ipv4DstAddrInt).String(),
 			Time: fmt.Sprint(header.UnixSec)})
 		message = fmt.Sprintf("%v.000 %6v %v %v/- %v HEAD %v:%v %v FIRSTUP_PARENT/%v packet_netflow/%v/:%v %v %v",
@@ -157,7 +157,7 @@ func (data *Transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) (
 		)
 
 	} else if !ok && ok2 {
-		response := data.GetInfo(&request{
+		response := t.GetInfo(&request{
 			IP:   intToIPv4Addr(binRecord.Ipv4SrcAddrInt).String(),
 			Time: fmt.Sprint(header.UnixSec)})
 		message = fmt.Sprintf("%v.000 %6v %v %v/- %v HEAD %v:%v %v FIRSTUP_PARENT/%v packet_netflow_inverse/%v/:%v %v %v",
@@ -219,24 +219,24 @@ func checkIP(subnet string, ipv4addr net.IP) (bool, error) {
 	return netA.Contains(ipv4addr), nil
 }
 
-func (data *Transport) pipeOutputToSquid(cfg *Config) {
+func (t *Transport) pipeOutputToSquid(cfg *Config) {
 	var record decodedRecord
 	for {
-		record = <-data.outputChannel
+		record = <-t.outputChannel
 		log.Tracef("Get from outputChannel:%v", record)
-		message, csvMessage := data.decodeRecordToSquid(&record, cfg)
+		message, csvMessage := t.decodeRecordToSquid(&record, cfg)
 		log.Tracef("Decoded record (%v) to message (%v)", record, message)
 		message = filtredMessage(message, cfg.IgnorList)
 		if message == "" {
 			continue
 		}
-		if _, err := data.fileDestination.WriteString(message + "\n"); err != nil {
+		if _, err := t.fileDestination.WriteString(message + "\n"); err != nil {
 			log.Errorf("Error writing data buffer:%v", err)
 		} else {
 			log.Tracef("Added to log:%v", message)
 		}
 		if cfg.CSV {
-			if _, err := data.csvFiletDestination.WriteString(csvMessage + "\n"); err != nil {
+			if _, err := t.csvFiletDestination.WriteString(csvMessage + "\n"); err != nil {
 				log.Errorf("Error writing data buffer:%v", err)
 			} else {
 				log.Tracef("Added to CSV:%v", message)
