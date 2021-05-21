@@ -62,12 +62,12 @@ func getExitSignalsChannel() chan os.Signal {
 
 }
 
-func (transport *Transport) Exit() {
-	<-transport.exitChan
-	transport.stopReadFromUDP <- 1
-	transport.clientROS.Close()
-	transport.fileDestination.Close()
-	transport.conn.Close()
+func (t *Transport) Exit() {
+	<-t.exitChan
+	t.stopReadFromUDP <- 1
+	t.clientROS.Close()
+	t.fileDestination.Close()
+	t.conn.Close()
 	log.Println("Shutting down")
 	time.Sleep(5 * time.Second)
 	os.Exit(0)
