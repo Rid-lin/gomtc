@@ -17,9 +17,9 @@ func main() {
 	go transport.loopGetDataFromMT()
 	go transport.loopParse(cfg)
 	go transport.pipeOutputToSquid(cfg)
-	transport.handleRequest(cfg)
 	if !cfg.NoFlow {
-		transport.readsStreamFromMT(cfg)
+		go transport.readsStreamFromMT(cfg)
 	}
+	transport.handleRequest(cfg)
 
 }

@@ -23,13 +23,11 @@ func (transport *Transport) handleRequest(cfg *Config) {
 
 	log.Infof("gomtc listens HTTP on:'%v'", cfg.ListenAddr)
 
-	go func() {
-		err := http.ListenAndServe(cfg.ListenAddr, nil)
-		if err != nil {
-			log.Fatal("http-server returned error:", err)
-			transport.exitChan <- os.Kill
-		}
-	}()
+	err := http.ListenAndServe(cfg.ListenAddr, nil)
+	if err != nil {
+		log.Fatal("http-server returned error:", err)
+		transport.exitChan <- os.Kill
+	}
 
 }
 
