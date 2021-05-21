@@ -67,7 +67,7 @@ func newConfig() *Config {
 		SkipFlags:          false,
 		EnvPrefix:          "GOMTC",
 		FlagPrefix:         "",
-		Files:              []string{"/etc/gomtc/config.toml", "./config/config.toml", "./config.toml"},
+		Files:              []string{"./config.toml", "/etc/gomtc/config.toml", "./config/config.toml"},
 		FileDecoders: map[string]aconfig.FileDecoder{
 			// from `aconfigyaml` submodule
 			// see submodules in repo for more formats

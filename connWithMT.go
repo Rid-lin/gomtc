@@ -52,44 +52,65 @@ func (data *Transport) loopGetDataFromMT() {
 // }
 
 func parseParamertToStr(inpuStr string) string {
-	Arr := strings.Split(inpuStr, "=")
-	if len(Arr) > 1 {
-		return Arr[1]
+	inpuStr = strings.Trim(inpuStr, "=")
+	inpuStr = strings.ReplaceAll(inpuStr, "==", "=")
+	arr := strings.Split(inpuStr, "=")
+	if len(arr) > 1 {
+		return arr[1]
 	} else {
 		log.Errorf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inpuStr)
 	}
 	return ""
 }
 
-func parseParamertToUint(inputValue string) (quota uint64) {
+func parseParamertToUint(inputValue string) uint64 {
 	var err error
+	var quota uint64
+	inputValue = strings.Trim(inputValue, "=")
+	inputValue = strings.ReplaceAll(inputValue, "==", "=")
 	Arr := strings.Split(inputValue, "=")
 	if len(Arr) > 1 {
 		quotaStr := Arr[1]
 		quota, err = strconv.ParseUint(quotaStr, 10, 64)
 		if err != nil {
-			log.Errorf("Error parse quota from:(%v) with:(%v)", quotaStr, err)
+			quotaF, err := strconv.ParseFloat(quotaStr, 64)
+			if err != nil {
+				log.Errorf("Error parse quota from:(%v) with:(%v)", quotaStr, err)
+				return 0
+			}
+			quota = uint64(quotaF)
 		}
-		return
+		return quota
 	} else {
 		log.Errorf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inputValue)
 	}
-	return
+	return quota
 }
 
 func parseParamertToBool(inputValue string) bool {
-	if strings.Contains(inputValue, "true") || strings.Contains(inputValue, "yes") {
-		return true
+	inputValue = strings.Trim(inputValue, "=")
+	inputValue = strings.ReplaceAll(inputValue, "==", "=")
+	arr := strings.Split(inputValue, "=")
+	if len(arr) > 1 {
+		value := arr[1]
+		if value == "true" || value == "yes" {
+			return true
+		}
 	}
 	return false
 }
 
-func paramertToUint(inputValue string) (quota uint64) {
+func paramertToUint(inputValue string) uint64 {
 	quota, err := strconv.ParseUint(inputValue, 10, 64)
 	if err != nil {
-		log.Errorf("Error parse quota from:(%v) with:(%v)", inputValue, err)
+		quotaF, err := strconv.ParseFloat(inputValue, 64)
+		if err != nil {
+			log.Errorf("Error parse quota from:(%v) with:(%v)", inputValue, err)
+			return 0
+		}
+		quota = uint64(quotaF)
 	}
-	return
+	return quota
 }
 
 func paramertToBool(inputValue string) bool {
@@ -97,101 +118,6 @@ func paramertToBool(inputValue string) bool {
 		return true
 	}
 	return false
-}
-
-func isMac(inputStr string) bool {
-	arr := strings.Split(inputStr, ":")
-	for i := range arr {
-		if !isHexColon(arr[i]) {
-			return false
-		}
-	}
-	return len(arr) == 6
-}
-
-func isIP(inputStr string) bool {
-	arr := strings.Split(inputStr, ".")
-	for i := range arr {
-		if !isNumDot(arr[i]) {
-			return false
-		}
-	}
-	return len(arr) == 4
-}
-
-func isNumDot(s string) bool {
-	if len(s) == 0 {
-		return false
-	} else if s == `
-` {
-		return false
-	}
-	dotFound := false
-	for _, v := range s {
-		if v == '.' {
-			if dotFound {
-				return false
-			}
-			dotFound = true
-		} else if v < '0' || v > '9' {
-			return false
-		}
-	}
-	return true
-}
-
-func isHexColon(s string) bool {
-	if len(s) != 2 {
-		return false
-	} else if s == `
-` {
-		return false
-	}
-	colonFound := 5
-	for _, v := range s {
-		if v == ':' {
-			if colonFound < 0 {
-				return false
-			}
-			colonFound = colonFound - 1
-		} else if (v < '0' || v > '9') && (v < 'a' || v > 'f') && (v < 'A' || v > 'F') {
-			return false
-		}
-	}
-	return true
-}
-
-// validateIP Returns the IP address if the first is an IP address,
-// otherwise it checks if the second parameter is an IP address.
-// Otherwise, it returns an empty string.
-func validateIP(ip, altIp string) string {
-	if isIP(ip) {
-		return ip
-	} else if isIP(altIp) {
-		return altIp
-	}
-	return ""
-}
-
-func validateMac(mac, altMac, hopeMac, lastHopeMac string) string {
-	var hopeMacR, lastHopeMacR string
-	if len(hopeMac) > 2 {
-		hopeMacR = hopeMac[2:]
-	}
-	if len(lastHopeMac) > 2 {
-		lastHopeMacR = lastHopeMac[2:]
-	}
-	switch {
-	case mac != "":
-		return mac
-	case altMac != "":
-		return altMac
-	case isMac(hopeMacR):
-		return hopeMacR
-	case isMac(lastHopeMacR):
-		return lastHopeMacR
-	}
-	return ""
 }
 
 func makeCommentFromIodt(d InfoOfDeviceType, quota QuotaType) string {
@@ -248,7 +174,7 @@ func makeCommentFromIodt(d InfoOfDeviceType, quota QuotaType) string {
 	return comment
 }
 
-func parseComments(comment string) (
+func parseComment(comment string) (
 	quotahourly, quotadaily, quotamonthly uint64,
 	name, position, company, typeD, IDUser, Comment string,
 	manual bool) {
@@ -296,47 +222,7 @@ func parseComments(comment string) (
 	}
 	Comment = Comment + comments
 	return
-
 }
-
-// func (infoD *InfoOfDeviceType) fill(d DeviceType) error {
-// 	// InfoOfDevice := *infoD
-// 	var (
-// 		ip, mac, name, position, company, typeD, IDUser, comment string
-// 		hourlyQuota, dailyQuota, monthlyQuota                    uint64
-// 		manual                                                   bool
-// 	)
-// 	ip = validateIP(d.activeAddress, d.address)
-// 	mac = validateMac(d.activeMacAddress, d.macAddress, d.clientId, d.activeClientId)
-// 	hourlyQuota, dailyQuota, monthlyQuota, name, position, company, typeD, IDUser, comment, manual = parseComments(d.comment)
-// 	infoD = &InfoOfDeviceType{
-// 		// InfoOfDevice = InfoOfDeviceType{
-// 		DeviceOldType: DeviceOldType{
-// 			IP:       ip,
-// 			Mac:      mac,
-// 			AMac:     mac,
-// 			HostName: d.hostName,
-// 			Groups:   d.addressLists,
-// 			timeout:  d.timeout,
-// 		},
-// 		QuotaType: QuotaType{
-// 			HourlyQuota:  hourlyQuota,
-// 			DailyQuota:   dailyQuota,
-// 			MonthlyQuota: monthlyQuota,
-// 			Manual:       manual,
-// 		},
-// 		PersonType: PersonType{
-// 			IDUser:   IDUser,
-// 			Name:     name,
-// 			Position: position,
-// 			Company:  company,
-// 			TypeD:    typeD,
-// 			Comment:  comment,
-// 		},
-// 	}
-// 	// infoD = &InfoOfDevice
-// 	return nil
-// }
 
 func (d DeviceType) convertToInfo() InfoOfDeviceType {
 	var (
@@ -346,7 +232,7 @@ func (d DeviceType) convertToInfo() InfoOfDeviceType {
 	)
 	ip = validateIP(d.activeAddress, d.address)
 	mac = validateMac(d.activeMacAddress, d.macAddress, d.clientId, d.activeClientId)
-	hourlyQuota, dailyQuota, monthlyQuota, name, position, company, typeD, IDUser, comment, manual = parseComments(d.comment)
+	hourlyQuota, dailyQuota, monthlyQuota, name, position, company, typeD, IDUser, comment, manual = parseComment(d.comment)
 	infoD := InfoOfDeviceType{
 		DeviceOldType: DeviceOldType{
 			IP:       ip,
@@ -374,25 +260,6 @@ func (d DeviceType) convertToInfo() InfoOfDeviceType {
 	return infoD
 }
 
-func (d1 *DeviceType) compare(d2 *DeviceType) bool {
-	switch {
-	case d1.macAddress == d2.macAddress || d1.activeMacAddress == d2.macAddress || d1.macAddress == d2.activeMacAddress || d1.activeMacAddress == d2.activeMacAddress:
-		return true
-	case d1.activeClientId == d2.activeClientId || d1.activeClientId == d2.clientId || d1.clientId == d2.activeClientId || d1.clientId == d2.clientId:
-		return true
-	}
-	return false
-}
-
-func (ds *DevicesType) find(d *DeviceType) int {
-	for index, device := range *ds {
-		if d.compare(&device) {
-			return index
-		}
-	}
-	return -1
-}
-
 func (dInfo *InfoOfDeviceType) convertToDevice() DeviceType {
 	return DeviceType{
 		activeAddress:    dInfo.IP,
@@ -408,6 +275,37 @@ func (dInfo *InfoOfDeviceType) convertToDevice() DeviceType {
 		ShouldBeBlocked:  dInfo.ShouldBeBlocked,
 		timeout:          dInfo.timeout,
 	}
+}
+
+func (d1 *DeviceType) compare(d2 *DeviceType) bool {
+	switch {
+	case d1.macAddress == d2.macAddress:
+		return true
+	case d1.activeMacAddress == d2.macAddress:
+		return true
+	case d1.macAddress == d2.activeMacAddress:
+		return true
+	case d1.activeMacAddress == d2.activeMacAddress:
+		return true
+	case d1.activeClientId == d2.activeClientId:
+		return true
+	case d1.activeClientId == d2.clientId:
+		return true
+	case d1.clientId == d2.activeClientId:
+		return true
+	case d1.clientId == d2.clientId:
+		return true
+	}
+	return false
+}
+
+func (ds *DevicesType) find(d *DeviceType) int {
+	for index, device := range *ds {
+		if d.compare(&device) {
+			return index
+		}
+	}
+	return -1
 }
 
 func (transport *Transport) readsStreamFromMT(cfg *Config) {

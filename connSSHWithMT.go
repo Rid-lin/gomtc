@@ -179,34 +179,6 @@ func saveDeviceToCSV(devices []DeviceType) error {
 	return nil
 }
 
-// func deviceToSlice(d DeviceType) []string {
-// 	var slice []string
-// 	slice = append(slice, d.Id)
-// 	slice = append(slice, d.activeAddress)
-// 	slice = append(slice, d.activeClientId)
-// 	slice = append(slice, d.activeMacAddress)
-// 	slice = append(slice, d.activeServer)
-// 	slice = append(slice, d.address)
-// 	slice = append(slice, d.addressLists)
-// 	slice = append(slice, d.blocked)
-// 	slice = append(slice, d.clientId)
-// 	slice = append(slice, d.comment)
-// 	slice = append(slice, d.dhcpOption)
-// 	slice = append(slice, d.disabled)
-// 	slice = append(slice, d.dynamic)
-// 	slice = append(slice, d.expiresAfter)
-// 	slice = append(slice, d.hostName)
-// 	slice = append(slice, d.lastSeen)
-// 	slice = append(slice, d.macAddress)
-// 	slice = append(slice, d.radius)
-// 	slice = append(slice, d.server)
-// 	slice = append(slice, d.status)
-// 	slice = append(slice, fmt.Sprint(d.Manual))
-// 	slice = append(slice, fmt.Sprint(d.ShouldBeBlocked))
-// 	slice = append(slice, d.timeout.Format("2006-01-02 15:04:05 -0700 MST "))
-// 	return slice
-// }
-
 func (d DeviceType) convertToSlice() []string {
 	var slice []string
 	slice = append(slice, d.Id)
@@ -247,13 +219,14 @@ func (ds *DevicesType) getInfoD(alias string, quota QuotaType) InfoOfDeviceType 
 func (ds *DevicesType) updateInfo(deviceNew DeviceType) error {
 	index := ds.find(&deviceNew)
 	if index == -1 {
-		p := *ds
-		p = append(p, deviceNew)
-		ds = &p
+		// p := *ds
+		// p = append(p, deviceNew)
+		// ds = &p
+		*ds = append(*ds, deviceNew)
 	}
-	p := *ds
-	p[index] = deviceNew
-	ds = &p
+	// p := *ds
+	// p[index] = deviceNew
+	(*ds)[index] = deviceNew
 	return nil
 }
 
