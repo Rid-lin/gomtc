@@ -18,6 +18,7 @@
                 <input type="radio" name="TypeD" value="ap" {{if eq .TypeD "ap" }} checked="checked" {{end}}> Точка доступа
                 <input type="radio" name="TypeD" value="srv" {{if eq .TypeD "srv" }} checked="checked" {{end}}> Сервер
                 <input type="radio" name="TypeD" value="prn" {{if eq .TypeD "prn" }} checked="checked" {{end}}> Принтер
+                <input type="radio" name="TypeD" value="ap" {{if eq .TypeD "ap" }} checked="checked" {{end}}> Точка доступа
                 <input type="radio" name="TypeD" value="other" {{if or (eq .TypeD "other") (eq .TypeD "") }} checked="checked" {{end}}> Другое
             </div>
             <p> IP Адрес: {{.IP}} </p>

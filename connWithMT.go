@@ -234,6 +234,9 @@ func parseComment(comment string) (
 		case strings.Contains(value, "prn="):
 			typeD = "prn"
 			name = parseParamertToStr(value)
+		case strings.Contains(value, "ap="):
+			typeD = "ap"
+			name = parseParamertToStr(value)
 		case strings.Contains(value, "name="):
 			typeD = "other"
 			name = parseParamertToStr(value)
