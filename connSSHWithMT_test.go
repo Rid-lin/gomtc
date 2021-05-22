@@ -124,6 +124,48 @@ func TestDeviceType_parseLine(t *testing.T) {
 	}
 }
 
+func Test_parseInfoFromMTToSlice2(t *testing.T) {
+	type args struct {
+		p parseType
+	}
+
+	Location, err := time.LoadLocation("Asia/Yekaterinburg")
+	if err != nil {
+		log.Errorf("Error loading Location(%v):%v", "Asia/Yekaterinburg", err)
+		Location = time.UTC
+	}
+
+	tests := []struct {
+		name string
+		args args
+		want []DeviceType
+	}{
+		{
+			name: "1",
+			args: args{
+				p: parseType{
+					QuotaType:        QuotaType{},
+					BlockAddressList: "Block",
+					SSHCredentials: SSHCredentials{
+						SSHHost: "192.168.65.1",
+						SSHPort: "22",
+						SSHUser: "getmac",
+						SSHPass: "getmac_password",
+					},
+					Location: Location,
+				}},
+			want: []DeviceType{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := parseInfoFromMTToSlice2(tt.args.p); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("parseInfoFromMTToSlice2() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func Test_saveDeviceToCSV(t *testing.T) {
 	type args struct {
 		devices []DeviceType

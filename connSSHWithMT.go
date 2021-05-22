@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/csv"
 	"fmt"
@@ -83,8 +84,9 @@ func parseInfoFromMTToSlice(p parseType) []DeviceType {
 	deviceTemp, device := DeviceType{}, DeviceType{}
 	devices := []DeviceType{}
 	var b bytes.Buffer
-	for b.Len() < 1 {
+	for i := 0; b.Len() < 1 && i < 100; i++ {
 		b = getResponseOverSSHfMT(p.SSHCredentials, []string{"/ip dhcp-server lease print detail without-paging"})
+		time.Sleep(5 * time.Second)
 	}
 	inputStr := b.String()
 	inputArr := strings.Split(inputStr, "\n")
@@ -166,6 +168,90 @@ func (d *DeviceType) parseLine(l string) (err error) {
 		}
 	}
 	return err
+}
+
+func parseInfoFromMTToSlice2(p parseType) []DeviceType {
+
+	devices := DevicesType{}
+	var b bytes.Buffer
+	for i := 0; b.Len() < 1 && i < 100; i++ {
+		b = getResponseOverSSHfMT(p.SSHCredentials, []string{"/ip dhcp-server lease print detail without-paging"})
+		time.Sleep(5 * time.Second)
+	}
+	devices.parseBuffer(b)
+	return devices
+}
+
+func (ds *DevicesType) parseBuffer(b bytes.Buffer) (err error) {
+	inputStr := b.String()
+	inputStr = strings.ReplaceAll(inputStr, "\n", "")
+	inputStr = strings.ReplaceAll(inputStr, "\t", "")
+	inputStr = strings.ReplaceAll(inputStr, "\r", "")
+	for i := 1; i >= 0; i = strings.Index(inputStr, "  ") {
+		inputStr = strings.ReplaceAll(inputStr, "  ", " ")
+	}
+	arr := strings.Split(inputStr, " ")
+	// saveStrToFile(arr)
+	d := DeviceType{}
+	for index := 0; index < len(arr)-1; index++ {
+		switch {
+		case arr[index] == "Flags:":
+			continue
+		case strings.Contains(arr[index], "address-lists="):
+			d.addressLists = parseParamertToStr(arr[index])
+		case strings.Contains(arr[index], "server="):
+			d.server = parseParamertToStr(arr[index])
+		case strings.Contains(arr[index], "dhcp-option="):
+			d.dhcpOption = parseParamertToStr(arr[index])
+		case strings.Contains(arr[index], "status="):
+			d.status = parseParamertToStr(arr[index])
+		case strings.Contains(arr[index], "expires-after="):
+			d.expiresAfter = parseParamertToStr(arr[index])
+		case strings.Contains(arr[index], "last-seen="):
+			d.lastSeen = parseParamertToStr(arr[index])
+		case strings.Contains(arr[index], "active-address="):
+			d.activeAddress = parseParamertToStr(arr[index])
+		case strings.Contains(arr[index], "active-mac-address="):
+			d.activeMacAddress = parseParamertToStr(arr[index])
+		case strings.Contains(arr[index], "mac-address="):
+			d.macAddress = parseParamertToStr(arr[index])
+		case strings.Contains(arr[index], "address="):
+			d.address = parseParamertToStr(arr[index])
+		case strings.Contains(arr[index], "mac-address="):
+			d.activeMacAddress = parseParamertToStr(arr[index])
+		case strings.Contains(arr[index], "active-client-id="):
+			d.activeClientId = parseParamertToStr(arr[index])
+		case strings.Contains(arr[index], "client-id="):
+			d.clientId = parseParamertToStr(arr[index])
+		case strings.Contains(arr[index], "active-server="):
+			d.activeServer = parseParamertToStr(arr[index])
+		case strings.Contains(arr[index], "host-name="):
+			d.hostName = parseParamertToStr(arr[index])
+		case strings.Contains(arr[index], "radius="):
+			d.radius = parseParamertToStr(arr[index])
+		case arr[index] == "X":
+			d.disabled = "yes"
+		case arr[index] == "B":
+			d.blocked = "yes"
+		case arr[index] == "D":
+			d.dynamic = "yes"
+		case arr[index] == ";;;":
+			d.comment = strings.Join(arr[index+1:], " ")
+			return err
+		}
+	}
+	return err
+}
+
+func saveStrToFile(arr []string) error {
+	f, _ := os.Create("./temp")
+	defer f.Close()
+	w := bufio.NewWriter(f)
+	for index := 0; index < len(arr)-1; index++ {
+		fmt.Fprintln(w, arr[index])
+	}
+	w.Flush()
+	return nil
 }
 
 func saveDeviceToCSV(devices []DeviceType) error {
