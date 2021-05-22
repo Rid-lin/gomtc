@@ -102,10 +102,6 @@ func (data ReportDataType) percentileCalculation(cub uint8) ReportDataType {
 	return data
 }
 
-// TODO Сделать форматирование вывода как то вместо 0.9 (Мб) использовать 935 Кб
-// TODO вместо 4384 Мб использовать 4,38 Гб или 4.4 Гб
-// TODO Вывод сделать чисто в строковом формате
-
 func (rData ReportDataType) FiltredFriendS(friends []string) ReportDataType {
 	dataLen := len(rData)
 	for index := 0; index < dataLen; index++ {
