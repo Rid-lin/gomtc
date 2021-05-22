@@ -30,7 +30,3 @@ golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# gopkg.in/routeros.v2 v2.0.0-20190905230420-1bbf141cdd91
-## explicit
-gopkg.in/routeros.v2
-gopkg.in/routeros.v2/proto

@@ -84,10 +84,15 @@ func parseInfoFromMTToSlice(p parseType) []DeviceType {
 	deviceTemp, device := DeviceType{}, DeviceType{}
 	devices := []DeviceType{}
 	var b bytes.Buffer
-	for i := 0; b.Len() < 1 && i < 100; i++ {
+	for i := p.NumOfTryingConnectToMT; b.Len() < 1; i-- {
+		if i == 0 {
+			os.Exit(1)
+		}
+		fmt.Printf("Trying connect to MT(%d)\r", i)
 		b = getResponseOverSSHfMT(p.SSHCredentials, []string{"/ip dhcp-server lease print detail without-paging"})
-		time.Sleep(5 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
+	fmt.Println("Connection successful.Get data.\r")
 	inputStr := b.String()
 	inputArr := strings.Split(inputStr, "\n")
 	for _, line := range inputArr {
@@ -174,10 +179,15 @@ func parseInfoFromMTToSlice2(p parseType) []DeviceType {
 
 	devices := DevicesType{}
 	var b bytes.Buffer
-	for i := 0; b.Len() < 1 && i < 100; i++ {
+	for i := p.NumOfTryingConnectToMT; b.Len() < 1; i-- {
+		if i == 0 {
+			os.Exit(1)
+		}
+		fmt.Printf("Trying connect to MT(%d)\r", i)
 		b = getResponseOverSSHfMT(p.SSHCredentials, []string{"/ip dhcp-server lease print detail without-paging"})
-		time.Sleep(5 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
+	fmt.Println("Connection successful.Get data.\r")
 	devices.parseBuffer(b)
 	return devices
 }

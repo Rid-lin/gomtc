@@ -65,7 +65,8 @@ func getExitSignalsChannel() chan os.Signal {
 func (t *Transport) Exit() {
 	<-t.exitChan
 	t.stopReadFromUDP <- 1
-	t.clientROS.Close()
+	// t.clientROS.Close()
+	t.fileDestination.Sync()
 	t.fileDestination.Close()
 	t.conn.Close()
 	log.Println("Shutting down")

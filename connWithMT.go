@@ -19,6 +19,7 @@ func (t *Transport) loopGetDataFromMT() {
 		p.BlockAddressList = t.BlockAddressList
 		p.QuotaType = t.QuotaType
 		p.Location = t.Location
+		p.NumOfTryingConnectToMT = t.NumOfTryingConnectToMT
 		// data.devices = parseInfoFromMTToSlice(p)
 		t.RUnlock()
 		t.updateDevices(p)

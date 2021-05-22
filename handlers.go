@@ -165,16 +165,17 @@ func (data *Transport) handleWithFriends(w http.ResponseWriter, r *http.Request)
 // 	}
 // }
 
-func (data *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
-	data.RLock()
-	assetsPath := data.AssetsPath
-	SizeOneKilobyte := data.SizeOneKilobyte
-	devices := data.devices
-	quota := data.QuotaType
-	BlockAddressList := data.BlockAddressList
-	sshCredetinals := data.sshCredentials
-	Location := data.Location
-	data.RUnlock()
+func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
+	t.RLock()
+	assetsPath := t.AssetsPath
+	SizeOneKilobyte := t.SizeOneKilobyte
+	devices := t.devices
+	quota := t.QuotaType
+	BlockAddressList := t.BlockAddressList
+	sshCredetinals := t.sshCredentials
+	Location := t.Location
+	NumOfTryingConnectToMT := t.NumOfTryingConnectToMT
+	t.RUnlock()
 
 	if r.Method == "GET" {
 		alias := r.FormValue("alias")
@@ -225,11 +226,12 @@ func (data *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/", 302)
 			return
 		}
-		data.updateDevices(parseType{
-			QuotaType:        quota,
-			BlockAddressList: BlockAddressList,
-			SSHCredentials:   sshCredetinals,
-			Location:         Location,
+		t.updateDevices(parseType{
+			QuotaType:              quota,
+			BlockAddressList:       BlockAddressList,
+			SSHCredentials:         sshCredetinals,
+			Location:               Location,
+			NumOfTryingConnectToMT: NumOfTryingConnectToMT,
 		})
 		http.Redirect(w, r, "/", 302)
 		log.Printf("%v(%v)%v", alias, deviceInfo, params)

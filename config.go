@@ -37,7 +37,7 @@ type Config struct {
 	Interval               string   `default:"10m" usage:"Interval to getting info from Mikrotik"`
 	BlockGroup             string   `default:"Block" usage:"The name of the address list in MicrotiK with which access is blocked to users who have exceeded the quota."`
 	ReceiveBufferSizeBytes int      `default:"" usage:"Size of RxQueue, i.e. value for SO_RCVBUF in bytes"`
-	NumOfTryingConnectToMT int      `default:"10" usage:"The number of attempts to connect to the microtik router"`
+	NumOfTryingConnectToMT int      `default:"60" usage:"The number of attempts to connect to the microtik router"`
 	DefaultQuotaHourly     uint64   `default:"0" usage:"Default hourly traffic consumption quota"`
 	DefaultQuotaDaily      uint64   `default:"0" usage:"Default daily traffic consumption quota"`
 	DefaultQuotaMonthly    uint64   `default:"0" usage:"Default monthly traffic consumption quota"`

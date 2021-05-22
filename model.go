@@ -7,35 +7,35 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/routeros.v2"
 )
 
 type Transport struct {
-	infoOfDevices       map[string]InfoOfDeviceType
-	data                MapOfReports
-	dataCashe           MapOfReports
-	devices             DevicesType
-	Location            *time.Location
-	fileDestination     *os.File
-	csvFiletDestination *os.File
-	conn                *net.UDPConn
-	sshCredentials      SSHCredentials
-	clientROS           *routeros.Client
-	logs                []LogsOfJob
-	lastUpdated         time.Time
-	lastUpdatedMT       time.Time
-	friends             []string
-	AssetsPath          string
-	BlockAddressList    string
-	SizeOneKilobyte     uint64
-	timer               *time.Timer
-	renewOneMac         chan string
-	stopReadFromUDP     chan uint8
-	exitChan            chan os.Signal
-	parseChan           chan *time.Time
-	newLogChan          chan os.Signal
-	outputChannel       chan decodedRecord
-	Aliases             map[string][]string
+	// clientROS              *routeros.Client
+	Aliases                map[string][]string
+	infoOfDevices          map[string]InfoOfDeviceType
+	data                   MapOfReports
+	dataCashe              MapOfReports
+	devices                DevicesType
+	logs                   []LogsOfJob
+	friends                []string
+	AssetsPath             string
+	BlockAddressList       string
+	SizeOneKilobyte        uint64
+	NumOfTryingConnectToMT int
+	sshCredentials         SSHCredentials
+	fileDestination        *os.File
+	csvFiletDestination    *os.File
+	conn                   *net.UDPConn
+	timer                  *time.Timer
+	Location               *time.Location
+	lastUpdated            time.Time
+	lastUpdatedMT          time.Time
+	renewOneMac            chan string
+	stopReadFromUDP        chan uint8
+	exitChan               chan os.Signal
+	parseChan              chan *time.Time
+	newLogChan             chan os.Signal
+	outputChannel          chan decodedRecord
 	Author
 	QuotaType
 	sync.RWMutex
@@ -239,8 +239,9 @@ type SSHCredentials struct {
 type parseType struct {
 	SSHCredentials
 	QuotaType
-	BlockAddressList string
-	Location         *time.Location
+	BlockAddressList       string
+	NumOfTryingConnectToMT int
+	Location               *time.Location
 }
 
 // TODO to Future
@@ -290,24 +291,25 @@ func NewTransport(cfg *Config) *Transport {
 		// TODO DELETE
 		// clientROS:           clientROS,
 		// infoOfDevices:       make(map[string]InfoOfDeviceType),
-		data:                map[KeyMapOfReports]ValueMapOfReportsType{},
-		dataCashe:           map[KeyMapOfReports]ValueMapOfReportsType{},
-		devices:             DevicesType{},
-		Aliases:             make(map[string][]string),
-		Location:            Location,
-		BlockAddressList:    cfg.BlockGroup,
-		fileDestination:     fileDestination,
-		csvFiletDestination: csvFiletDestination,
-		logs:                []LogsOfJob{},
-		friends:             cfg.Friends,
-		AssetsPath:          cfg.AssetsPath,
-		SizeOneKilobyte:     cfg.SizeOneKilobyte,
-		stopReadFromUDP:     make(chan uint8),
-		parseChan:           make(chan *time.Time),
-		outputChannel:       make(chan decodedRecord, 100),
-		renewOneMac:         make(chan string, 100),
-		newLogChan:          getNewLogSignalsChannel(),
-		exitChan:            getExitSignalsChannel(),
+		data:                   map[KeyMapOfReports]ValueMapOfReportsType{},
+		dataCashe:              map[KeyMapOfReports]ValueMapOfReportsType{},
+		devices:                DevicesType{},
+		Aliases:                make(map[string][]string),
+		NumOfTryingConnectToMT: cfg.NumOfTryingConnectToMT,
+		Location:               Location,
+		BlockAddressList:       cfg.BlockGroup,
+		fileDestination:        fileDestination,
+		csvFiletDestination:    csvFiletDestination,
+		logs:                   []LogsOfJob{},
+		friends:                cfg.Friends,
+		AssetsPath:             cfg.AssetsPath,
+		SizeOneKilobyte:        cfg.SizeOneKilobyte,
+		stopReadFromUDP:        make(chan uint8),
+		parseChan:              make(chan *time.Time),
+		outputChannel:          make(chan decodedRecord, 100),
+		renewOneMac:            make(chan string, 100),
+		newLogChan:             getNewLogSignalsChannel(),
+		exitChan:               getExitSignalsChannel(),
 		sshCredentials: SSHCredentials{
 			SSHHost: cfg.MTAddr,
 			SSHPort: "22",
