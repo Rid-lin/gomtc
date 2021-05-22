@@ -32,3 +32,4 @@ config.toml
 db/*
 *_old
 *.csv
+temp
