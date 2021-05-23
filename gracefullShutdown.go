@@ -79,13 +79,23 @@ func (t *Transport) Exit() {
 
 func (t *Transport) ReOpenLogAfterLogroatate() {
 	<-t.newLogChan
+	var err error
+	t.Lock()
 	log.Println("Received a signal from logrotate, close the file.")
-	// writer.Flush()
-	// t.filetDestination.Close()
+	if err := t.fileDestination.Sync(); err != nil {
+		log.Error(err)
+	}
+	t.fileDestination.Close()
+	if !cfg.NoFlow {
+		t.fileDestination, err = os.OpenFile(cfg.NameFileToLog, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			fileDestination.Close()
+			log.Fatalf("Error, the '%v' file could not be created (there are not enough premissions or it is busy with another program): %v", cfg.NameFileToLog, err)
+		}
+	}
+	t.Unlock()
 	log.Println("Opening a new file.")
 	time.Sleep(2 * time.Second)
-	// writer = openOutputDevice(cfg.NameFileToLog)
-
 }
 
 func getNewLogSignalsChannel() chan os.Signal {
