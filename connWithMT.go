@@ -50,6 +50,7 @@ func (t *Transport) updateDevices() {
 		DevicesRetryDelay: t.DevicesRetryDelay,
 		Location:          t.Location,
 	})
+	t.lastUpdatedMT = time.Now()
 	t.setTimerMT(t.DevicesRetryDelay)
 	t.Unlock()
 }
