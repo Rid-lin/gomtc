@@ -10,7 +10,6 @@ import (
 )
 
 type Transport struct {
-	// clientROS              *routeros.Client
 	Aliases             map[string][]string
 	infoOfDevices       map[string]InfoOfDeviceType
 	data                MapOfReports
@@ -52,10 +51,7 @@ type request struct {
 }
 
 type ResponseType struct {
-	// IP       string `JSON:"IP"`
-	// Mac      string `JSON:"Mac"`
-	// Hostname string `JSON:"Hostname"`
-	Comments string `JSON:"Comment"`
+	Comments string
 	DeviceOldType
 }
 
@@ -242,10 +238,9 @@ type SSHCredentials struct {
 type parseType struct {
 	SSHCredentials
 	QuotaType
-	BlockAddressList       string
-	DevicesRetryDelay      string
-	NumOfTryingConnectToMT int
-	Location               *time.Location
+	BlockAddressList  string
+	DevicesRetryDelay string
+	Location          *time.Location
 }
 
 // TODO to Future
@@ -286,9 +281,6 @@ func NewTransport(cfg *Config) *Transport {
 	}
 
 	return &Transport{
-		// TODO DELETE
-		// clientROS:           clientROS,
-		// infoOfDevices:       make(map[string]InfoOfDeviceType),
 		data:                map[KeyMapOfReports]ValueMapOfReportsType{},
 		dataCashe:           map[KeyMapOfReports]ValueMapOfReportsType{},
 		devices:             DevicesType{},

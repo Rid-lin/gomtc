@@ -39,8 +39,9 @@ func (t *Transport) parseOnce(cfg *Config) {
 
 	setLastdates(1, 1, cfg)
 
-	t.parseAllFilesAndCountingTraffic(cfg)
+	t.updateDevices()
 
+	t.parseAllFilesAndCountingTraffic(cfg)
 	t.totalTrafficСounting()
 
 	t.writeToChasheData()

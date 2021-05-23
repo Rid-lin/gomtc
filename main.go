@@ -14,7 +14,7 @@ func main() {
 	go transport.Exit()
 	go transport.ReOpenLogAfterLogroatate()
 	transport.getAllAliases(cfg)
-	go transport.loopGetDataFromMT()
+	// go transport.loopGetDataFromMT()
 	go transport.loopParse(cfg)
 	go transport.pipeOutputToSquid(cfg)
 	if !cfg.NoFlow {

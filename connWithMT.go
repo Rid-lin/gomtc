@@ -19,35 +19,16 @@ func (t *Transport) loopGetDataFromMT() {
 	}
 }
 
-func (t *Transport) getParseCred() parseType {
-	p := parseType{}
-	t.RLock()
-	p.SSHCredentials = t.sshCredentials
-	p.BlockAddressList = t.BlockAddressList
-	p.QuotaType = t.QuotaType
-	p.Location = t.Location
-	p.DevicesRetryDelay = t.DevicesRetryDelay
-	t.RUnlock()
-	return p
-}
-
-// func (t *Transport) loopGetDataFromMT() {
+// func (t *Transport) getParseCred() parseType {
 // 	p := parseType{}
-// 	for {
-// 		t.RLock()
-// 		p.SSHCredentials = t.sshCredentials
-// 		p.BlockAddressList = t.BlockAddressList
-// 		p.QuotaType = t.QuotaType
-// 		p.Location = t.Location
-// 		t.RUnlock()
-// 		t.updateDevices(p)
-// 		interval, err := time.ParseDuration(cfg.Interval)
-// 		if err != nil {
-// 			interval = 1 * time.Minute
-// 		}
-// 		time.Sleep(interval)
-
-// 	}
+// 	t.RLock()
+// 	p.SSHCredentials = t.sshCredentials
+// 	p.BlockAddressList = t.BlockAddressList
+// 	p.QuotaType = t.QuotaType
+// 	p.Location = t.Location
+// 	p.DevicesRetryDelay = t.DevicesRetryDelay
+// 	t.RUnlock()
+// 	return p
 // }
 
 func (t *Transport) setTimerMT(IntervalStr string) {
@@ -61,11 +42,16 @@ func (t *Transport) setTimerMT(IntervalStr string) {
 }
 
 func (t *Transport) updateDevices() {
-	p := t.getParseCred()
 	t.Lock()
-	t.devices = parseInfoFromMTToSlice(p)
+	t.devices = parseInfoFromMTToSlice(parseType{
+		SSHCredentials:    t.sshCredentials,
+		QuotaType:         t.QuotaType,
+		BlockAddressList:  t.BlockAddressList,
+		DevicesRetryDelay: t.DevicesRetryDelay,
+		Location:          t.Location,
+	})
+	t.setTimerMT(t.DevicesRetryDelay)
 	t.Unlock()
-	t.setTimerMT(p.DevicesRetryDelay)
 }
 
 // func (data *Transport) updateQuotas(p parseType) {
@@ -127,22 +113,24 @@ func parseParamertToStr(inpuStr string) string {
 }
 
 func parseParamertToUint(inputValue string) uint64 {
-	var err error
+	// var err error
 	var quota uint64
 	inputValue = strings.Trim(inputValue, "=")
 	inputValue = strings.ReplaceAll(inputValue, "==", "=")
 	Arr := strings.Split(inputValue, "=")
 	if len(Arr) > 1 {
 		quotaStr := Arr[1]
-		quota, err = strconv.ParseUint(quotaStr, 10, 64)
-		if err != nil {
-			quotaF, err := strconv.ParseFloat(quotaStr, 64)
-			if err != nil {
-				log.Errorf("Error parse quota from:(%v) with:(%v)", quotaStr, err)
-				return 0
-			}
-			quota = uint64(quotaF)
-		}
+		quota = paramertToUint(quotaStr)
+		// quotaStr = strings.Trim(quotaStr, "\r")
+		// quota, err := strconv.ParseUint(quotaStr, 10, 64)
+		// if err != nil {
+		// 	quotaF, err2 := strconv.ParseFloat(quotaStr, 64)
+		// 	if err != nil {
+		// 		log.Errorf("Error parse quota from string(%v):(%v)(%v)", quotaStr, err, err2)
+		// 		return 0
+		// 	}
+		// 	quota = uint64(quotaF)
+		// }
 		return quota
 	} else {
 		log.Warnf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inputValue)
@@ -164,11 +152,12 @@ func parseParamertToBool(inputValue string) bool {
 }
 
 func paramertToUint(inputValue string) uint64 {
+	inputValue = strings.Trim(inputValue, "\r")
 	quota, err := strconv.ParseUint(inputValue, 10, 64)
 	if err != nil {
-		quotaF, err := strconv.ParseFloat(inputValue, 64)
+		quotaF, err2 := strconv.ParseFloat(inputValue, 64)
 		if err != nil {
-			log.Errorf("Error parse quota from:(%v) with:(%v)", inputValue, err)
+			log.Errorf("Error parse quota from input string(%v):(%v)(%v)", inputValue, err, err2)
 			return 0
 		}
 		quota = uint64(quotaF)
