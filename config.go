@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/cristalhq/aconfig"
-	"github.com/cristalhq/aconfig/aconfigtoml"
+	"github.com/cristalhq/aconfig/aconfigyaml"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -62,18 +62,28 @@ func newConfig() *Config {
 	loader := aconfig.LoaderFor(&cfg, aconfig.Config{
 		// feel free to skip some steps :)
 		// SkipEnv:      true,
+		// MergeFiles: true,
 		SkipFiles:          false,
 		AllowUnknownFlags:  true,
 		AllowUnknownFields: true,
 		SkipDefaults:       false,
 		SkipFlags:          false,
+		FailOnFileNotFound: false,
 		EnvPrefix:          "GOMTC",
 		FlagPrefix:         "",
-		Files:              []string{"./config.toml", "./config/config.toml", "/etc/gomtc/config.toml"},
+		Files: []string{
+			"./config.yaml",
+			"./config/config.yaml",
+			"/etc/gomtc/config.yaml",
+			// "./config.toml",
+			// "./config/config.toml",
+			// "/etc/gomtc/config.toml",
+		},
 		FileDecoders: map[string]aconfig.FileDecoder{
 			// from `aconfigyaml` submodule
 			// see submodules in repo for more formats
-			".toml": aconfigtoml.New(),
+			".yaml": aconfigyaml.New(),
+			// ".toml": aconfigtoml.New(),
 		},
 	})
 
