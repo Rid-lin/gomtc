@@ -1,5 +1,11 @@
 package main
 
+import (
+	"bufio"
+	"fmt"
+	"os"
+)
+
 // func isIPnetaddr(inputStr string) bool {
 // 	_, err := netaddr.ParseIP(inputStr)
 // 	return err == nil
@@ -54,3 +60,25 @@ package main
 // 	}
 // 	return len(arr) == 4
 // }
+
+func saveStrToFile(arr []string) error {
+	f, _ := os.Create("./temp")
+	defer f.Close()
+	w := bufio.NewWriter(f)
+	for index := 0; index < len(arr)-1; index++ {
+		fmt.Fprintln(w, arr[index])
+	}
+	w.Flush()
+	return nil
+}
+
+func (ds *DevicesType) findInfoDByAlias(alias string, quota QuotaType) (InfoOfDeviceType, error) {
+	for _, d := range *ds {
+		if d.activeAddress == alias || d.activeMacAddress == alias || d.address == alias || d.macAddress == alias {
+			ifoD := d.convertToInfo()
+			ifoD.QuotaType = checkNULLQuotas(ifoD.QuotaType, quota)
+			return ifoD, nil
+		}
+	}
+	return InfoOfDeviceType{}, fmt.Errorf("NotFound")
+}

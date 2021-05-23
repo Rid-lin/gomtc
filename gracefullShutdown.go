@@ -66,7 +66,9 @@ func (t *Transport) Exit() {
 	<-t.exitChan
 	t.stopReadFromUDP <- 1
 	// t.clientROS.Close()
-	t.fileDestination.Sync()
+	if err := t.fileDestination.Sync(); err != nil {
+		log.Error(err)
+	}
 	t.fileDestination.Close()
 	t.conn.Close()
 	log.Println("Shutting down")

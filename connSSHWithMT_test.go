@@ -11,8 +11,8 @@ import (
 
 func Test_getResponseOverSSHfMT(t *testing.T) {
 	type args struct {
-		SSHCred  SSHCredentials
-		commands []string
+		SSHCred SSHCredentials
+		command string
 	}
 
 	tests := []struct {
@@ -29,32 +29,14 @@ func Test_getResponseOverSSHfMT(t *testing.T) {
 					SSHUser: "getmac",
 					SSHPass: "getmac_password",
 				},
-				commands: []string{
-					"/ip dhcp-server lease print detail without-paging",
-					"exit",
-				},
-			},
-			want: bytes.Buffer{},
-		},
-		{
-			name: "1 without exit",
-			args: args{
-				SSHCred: SSHCredentials{
-					SSHHost: "192.168.65.1",
-					SSHPort: "22",
-					SSHUser: "getmac",
-					SSHPass: "getmac_password",
-				},
-				commands: []string{
-					"/ip dhcp-server lease print detail without-paging",
-				},
+				command: "/ip dhcp-server lease print detail without-paging",
 			},
 			want: bytes.Buffer{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getResponseOverSSHfMT(tt.args.SSHCred, tt.args.commands); !reflect.DeepEqual(got, tt.want) {
+			if got := getResponseOverSSHfMT(tt.args.SSHCred, tt.args.command); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getResponseOverSSHfMT() = %v, want %v", got.String(), tt.want.String())
 			}
 		})

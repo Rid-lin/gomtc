@@ -19,8 +19,6 @@ func (t *Transport) loopGetDataFromMT() {
 		p.BlockAddressList = t.BlockAddressList
 		p.QuotaType = t.QuotaType
 		p.Location = t.Location
-		p.NumOfTryingConnectToMT = t.NumOfTryingConnectToMT
-		// data.devices = parseInfoFromMTToSlice(p)
 		t.RUnlock()
 		t.updateDevices(p)
 		interval, err := time.ParseDuration(cfg.Interval)
@@ -91,7 +89,7 @@ func parseParamertToStr(inpuStr string) string {
 	if len(arr) > 1 {
 		return arr[1]
 	} else {
-		log.Errorf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inpuStr)
+		log.Warnf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inpuStr)
 	}
 	return ""
 }
@@ -115,7 +113,7 @@ func parseParamertToUint(inputValue string) uint64 {
 		}
 		return quota
 	} else {
-		log.Errorf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inputValue)
+		log.Warnf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inputValue)
 	}
 	return quota
 }
@@ -350,17 +348,6 @@ func (ds *DevicesType) findIndexOfDevice(d *DeviceType) int {
 		}
 	}
 	return -1
-}
-
-func (ds *DevicesType) findInfoDByAlias(alias string, quota QuotaType) (InfoOfDeviceType, error) {
-	for _, d := range *ds {
-		if d.activeAddress == alias || d.activeMacAddress == alias || d.address == alias || d.macAddress == alias {
-			ifoD := d.convertToInfo()
-			ifoD.QuotaType = checkNULLQuotas(ifoD.QuotaType, quota)
-			return ifoD, nil
-		}
-	}
-	return InfoOfDeviceType{}, fmt.Errorf("NotFound")
 }
 
 func (t *Transport) readsStreamFromMT(cfg *Config) {

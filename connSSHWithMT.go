@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/csv"
 	"fmt"
@@ -13,69 +12,45 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func getResponseOverSSHfMT(SSHCred SSHCredentials, commands []string) bytes.Buffer {
-	// Add the last command (exit), if not, to reduce the number of commands passed in parameters.
-	if len(commands) > 0 {
-		lastCommand := commands[len(commands)-1]
-		if lastCommand != "exit" {
-			commands = append(commands, "exit")
-		}
-	} else {
-		commands = append(commands, "exit")
-	}
+func getResponseOverSSHfMT(sshCred SSHCredentials, command string) bytes.Buffer {
 	sshConfig := &ssh.ClientConfig{
-		User: SSHCred.SSHUser,
+		User: sshCred.SSHUser,
 		Auth: []ssh.AuthMethod{
-			ssh.Password(SSHCred.SSHPass),
+			ssh.Password(sshCred.SSHPass),
 		},
 		// Non-production only
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 	// Established connection
-	connection, err := ssh.Dial("tcp", SSHCred.SSHHost+":"+SSHCred.SSHPort, sshConfig)
+	client, err := ssh.Dial("tcp", sshCred.SSHHost+":"+sshCred.SSHPort, sshConfig)
 	if err != nil {
 		log.Errorf("Failed to dial: %s", err)
 	}
-	defer connection.Close()
-	// crete ssh session
-	session, err := connection.NewSession()
-	if err != nil {
-		log.Errorf("Failed to ceate session: %s", err)
-	}
-	defer session.Close()
-	// StdinPipe for commands
-	stdin, err := session.StdinPipe()
-	if err != nil {
-		log.Errorf("Failed redirect StdinPipe: %s", err)
-	}
-	// Uncomment to store output in variable
+	defer client.Close()
 	var b bytes.Buffer
-	session.Stdout = &b
-	session.Stderr = &b
-	// Enable system stdout
-	// Comment these if you uncomment to store in variable
-	// session.Stdout = os.Stdout
-	// session.Stderr = os.Stderr
-	// Start remote shell
-	err = session.Shell()
-	if err != nil {
-		log.Errorf("Failed to ceate Shell: %s", err)
-	}
-	// send the commands
-	for _, cmd := range commands {
-		_, err = fmt.Fprintf(stdin, "%s\n", cmd)
-		if err != nil {
-			log.Errorf("Failed to send command(%s): %s", cmd, err)
+	var i uint16 = 1
+	// crete ssh session
+	for b.Len() == 0 {
+		if sshCred.MaxSSHRetries == 1 {
+			os.Exit(2)
 		}
+		fmt.Printf("\rTrying connect to MT(%d) ", i)
+
+		session, err := client.NewSession()
+		if err != nil {
+			log.Errorf("Failed to ceate session: %s", err)
+		}
+		defer session.Close()
+		// Once a Session is created, you can execute a single command on
+		// the remote side using the Run method.
+		session.Stdout = &b
+		if err := session.Run(command); err != nil {
+			log.Error("Failed to run: " + err.Error())
+		}
+		session.Close()
+		i++
 	}
-	// session.Close()
-	// Wait for sess to finish
-	err = session.Wait()
-	if err != nil {
-		log.Errorf("Failed to wait session: %s", err)
-	}
-	// str := b.String()
-	// fmt.Print(str)
+	fmt.Println("Connection successful.Get data.")
 	return b
 }
 
@@ -83,16 +58,8 @@ func parseInfoFromMTToSlice(p parseType) []DeviceType {
 
 	deviceTemp, device := DeviceType{}, DeviceType{}
 	devices := []DeviceType{}
-	var b bytes.Buffer
-	for i := p.NumOfTryingConnectToMT; b.Len() < 1; i-- {
-		if i == 0 {
-			os.Exit(1)
-		}
-		fmt.Printf("Trying connect to MT(%d)\r", i)
-		b = getResponseOverSSHfMT(p.SSHCredentials, []string{"/ip dhcp-server lease print detail without-paging"})
-		time.Sleep(1 * time.Second)
-	}
-	fmt.Println("Connection successful.Get data.\r")
+	// var b bytes.Buffer
+	b := getResponseOverSSHfMT(p.SSHCredentials, "/ip dhcp-server lease print detail without-paging")
 	inputStr := b.String()
 	inputArr := strings.Split(inputStr, "\n")
 	for _, line := range inputArr {
@@ -105,7 +72,7 @@ func parseInfoFromMTToSlice(p parseType) []DeviceType {
 			devices = append(devices, device)
 			// Обнуляем временное хранилище информации об устройстве для дальнейшей кокатенации из распарсенных строк.
 			deviceTemp = DeviceType{}
-			deviceTemp.parseLine(line)
+			_ = deviceTemp.parseLine(line)
 		}
 		device = deviceTemp
 	}
@@ -179,20 +146,20 @@ func parseInfoFromMTToSlice2(p parseType) []DeviceType {
 
 	devices := DevicesType{}
 	var b bytes.Buffer
-	for i := p.NumOfTryingConnectToMT; b.Len() < 1; i-- {
+	for i := p.MaxSSHRetries; b.Len() < 1; i-- {
 		if i == 0 {
 			os.Exit(1)
 		}
 		fmt.Printf("Trying connect to MT(%d)\r", i)
-		b = getResponseOverSSHfMT(p.SSHCredentials, []string{"/ip dhcp-server lease print detail without-paging"})
-		time.Sleep(1 * time.Second)
+		b = getResponseOverSSHfMT(p.SSHCredentials, "/ip dhcp-server lease print detail without-paging")
+		time.Sleep(time.Second * time.Duration(p.SSHRetryDelay))
 	}
 	fmt.Println("Connection successful.Get data.\r")
 	devices.parseBuffer(b)
 	return devices
 }
 
-func (ds *DevicesType) parseBuffer(b bytes.Buffer) (err error) {
+func (ds *DevicesType) parseBuffer(b bytes.Buffer) {
 	inputStr := b.String()
 	inputStr = strings.ReplaceAll(inputStr, "\n", "")
 	inputStr = strings.ReplaceAll(inputStr, "\t", "")
@@ -247,21 +214,9 @@ func (ds *DevicesType) parseBuffer(b bytes.Buffer) (err error) {
 			d.dynamic = "yes"
 		case arr[index] == ";;;":
 			d.comment = strings.Join(arr[index+1:], " ")
-			return err
+			return
 		}
 	}
-	return err
-}
-
-func saveStrToFile(arr []string) error {
-	f, _ := os.Create("./temp")
-	defer f.Close()
-	w := bufio.NewWriter(f)
-	for index := 0; index < len(arr)-1; index++ {
-		fmt.Fprintln(w, arr[index])
-	}
-	w.Flush()
-	return nil
 }
 
 func saveDeviceToCSV(devices []DeviceType) error {

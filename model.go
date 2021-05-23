@@ -230,10 +230,12 @@ type StatType struct {
 }
 
 type SSHCredentials struct {
-	SSHHost string
-	SSHPort string
-	SSHUser string
-	SSHPass string
+	SSHHost       string
+	SSHPort       string
+	SSHUser       string
+	SSHPass       string
+	MaxSSHRetries int
+	SSHRetryDelay uint16
 }
 
 type parseType struct {
@@ -291,30 +293,31 @@ func NewTransport(cfg *Config) *Transport {
 		// TODO DELETE
 		// clientROS:           clientROS,
 		// infoOfDevices:       make(map[string]InfoOfDeviceType),
-		data:                   map[KeyMapOfReports]ValueMapOfReportsType{},
-		dataCashe:              map[KeyMapOfReports]ValueMapOfReportsType{},
-		devices:                DevicesType{},
-		Aliases:                make(map[string][]string),
-		NumOfTryingConnectToMT: cfg.NumOfTryingConnectToMT,
-		Location:               Location,
-		BlockAddressList:       cfg.BlockGroup,
-		fileDestination:        fileDestination,
-		csvFiletDestination:    csvFiletDestination,
-		logs:                   []LogsOfJob{},
-		friends:                cfg.Friends,
-		AssetsPath:             cfg.AssetsPath,
-		SizeOneKilobyte:        cfg.SizeOneKilobyte,
-		stopReadFromUDP:        make(chan uint8),
-		parseChan:              make(chan *time.Time),
-		outputChannel:          make(chan decodedRecord, 100),
-		renewOneMac:            make(chan string, 100),
-		newLogChan:             getNewLogSignalsChannel(),
-		exitChan:               getExitSignalsChannel(),
+		data:                map[KeyMapOfReports]ValueMapOfReportsType{},
+		dataCashe:           map[KeyMapOfReports]ValueMapOfReportsType{},
+		devices:             DevicesType{},
+		Aliases:             make(map[string][]string),
+		Location:            Location,
+		BlockAddressList:    cfg.BlockGroup,
+		fileDestination:     fileDestination,
+		csvFiletDestination: csvFiletDestination,
+		logs:                []LogsOfJob{},
+		friends:             cfg.Friends,
+		AssetsPath:          cfg.AssetsPath,
+		SizeOneKilobyte:     cfg.SizeOneKilobyte,
+		stopReadFromUDP:     make(chan uint8),
+		parseChan:           make(chan *time.Time),
+		outputChannel:       make(chan decodedRecord, 100),
+		renewOneMac:         make(chan string, 100),
+		newLogChan:          getNewLogSignalsChannel(),
+		exitChan:            getExitSignalsChannel(),
 		sshCredentials: SSHCredentials{
-			SSHHost: cfg.MTAddr,
-			SSHPort: "22",
-			SSHUser: cfg.MTUser,
-			SSHPass: cfg.MTPass,
+			SSHHost:       cfg.MTAddr,
+			SSHPort:       "22",
+			SSHUser:       cfg.MTUser,
+			SSHPass:       cfg.MTPass,
+			MaxSSHRetries: cfg.MaxSSHRetries,
+			SSHRetryDelay: cfg.SSHRetryDelay,
 		},
 		QuotaType: QuotaType{
 			HourlyQuota:  cfg.DefaultQuotaHourly * cfg.SizeOneKilobyte * cfg.SizeOneKilobyte,

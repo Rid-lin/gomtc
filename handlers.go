@@ -174,7 +174,6 @@ func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 	BlockAddressList := t.BlockAddressList
 	sshCredetinals := t.sshCredentials
 	Location := t.Location
-	NumOfTryingConnectToMT := t.NumOfTryingConnectToMT
 	t.RUnlock()
 
 	if r.Method == "GET" {
@@ -227,11 +226,10 @@ func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		t.updateDevices(parseType{
-			QuotaType:              quota,
-			BlockAddressList:       BlockAddressList,
-			SSHCredentials:         sshCredetinals,
-			Location:               Location,
-			NumOfTryingConnectToMT: NumOfTryingConnectToMT,
+			QuotaType:        quota,
+			BlockAddressList: BlockAddressList,
+			SSHCredentials:   sshCredetinals,
+			Location:         Location,
 		})
 		http.Redirect(w, r, "/", 302)
 		log.Printf("%v(%v)%v", alias, deviceInfo, params)
