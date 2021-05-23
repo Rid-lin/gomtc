@@ -21,7 +21,7 @@ var count Count
 func (t *Transport) loopParse(cfg *Config) {
 	t.parseOnce(cfg)
 	for {
-		<-t.timer.C
+		<-t.timerParse.C
 		t.parseOnce(cfg)
 	}
 }
@@ -55,25 +55,25 @@ func (t *Transport) parseOnce(cfg *Config) {
 
 	count = Count{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
-	t.setTimer(cfg.Interval)
+	t.setTimerParse(cfg.ParseDelay)
 
 }
 
-func (t *Transport) RunTikerParse(interval string) {
-	for {
+// func (t *Transport) RunTikerParse(interval string) {
+// 	for {
 
-		sleepOnInterval(interval)
+// 		sleepOnInterval(interval)
 
-	}
-}
+// 	}
+// }
 
-func (t *Transport) setTimer(IntervalStr string) {
+func (t *Transport) setTimerParse(IntervalStr string) {
 	interval, err := time.ParseDuration(IntervalStr)
 	if err != nil {
-		t.timer = time.NewTimer(15 * time.Minute)
+		t.timerParse = time.NewTimer(15 * time.Minute)
 
 	} else {
-		t.timer = time.NewTimer(interval)
+		t.timerParse = time.NewTimer(interval)
 
 	}
 
@@ -437,18 +437,18 @@ func (t *Transport) totalTrafficСounting() {
 	}
 }
 
-func sleepOnInterval(IntervalStr string) {
-	// If you cannot parse the interval, set the interval to 15 minutes to exclude collision and collapse in case of an error
-	interval, err := time.ParseDuration(IntervalStr)
-	if err != nil {
-		time.Sleep(15 * time.Minute)
+// func sleepOnInterval(IntervalStr string) {
+// 	// If you cannot parse the interval, set the interval to 15 minutes to exclude collision and collapse in case of an error
+// 	interval, err := time.ParseDuration(IntervalStr)
+// 	if err != nil {
+// 		time.Sleep(15 * time.Minute)
 
-	} else {
-		time.Sleep(interval)
+// 	} else {
+// 		time.Sleep(interval)
 
-	}
+// 	}
 
-}
+// }
 
 func (t *Transport) writeToChasheData() {
 	t.Lock()

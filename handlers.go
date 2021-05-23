@@ -171,9 +171,6 @@ func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 	SizeOneKilobyte := t.SizeOneKilobyte
 	devices := t.devices
 	quota := t.QuotaType
-	BlockAddressList := t.BlockAddressList
-	sshCredetinals := t.sshCredentials
-	Location := t.Location
 	t.RUnlock()
 
 	if r.Method == "GET" {
@@ -225,12 +222,7 @@ func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/", 302)
 			return
 		}
-		t.updateDevices(parseType{
-			QuotaType:        quota,
-			BlockAddressList: BlockAddressList,
-			SSHCredentials:   sshCredetinals,
-			Location:         Location,
-		})
+		t.updateDevices()
 		http.Redirect(w, r, "/", 302)
 		log.Printf("%v(%v)%v", alias, deviceInfo, params)
 	}
@@ -311,8 +303,8 @@ func (t *Transport) handleLog(w http.ResponseWriter, r *http.Request) {
 
 func (t *Transport) handleRunParse(w http.ResponseWriter, r *http.Request) {
 	referURL := r.FormValue("refer")
-	t.timer.Stop()
-	t.timer.Reset(1 * time.Second)
+	t.timerParse.Stop()
+	t.timerParse.Reset(1 * time.Second)
 
 	http.Redirect(w, r, "/"+referURL, 302)
 }

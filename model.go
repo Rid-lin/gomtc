@@ -11,31 +11,32 @@ import (
 
 type Transport struct {
 	// clientROS              *routeros.Client
-	Aliases                map[string][]string
-	infoOfDevices          map[string]InfoOfDeviceType
-	data                   MapOfReports
-	dataCashe              MapOfReports
-	devices                DevicesType
-	logs                   []LogsOfJob
-	friends                []string
-	AssetsPath             string
-	BlockAddressList       string
-	SizeOneKilobyte        uint64
-	NumOfTryingConnectToMT int
-	sshCredentials         SSHCredentials
-	fileDestination        *os.File
-	csvFiletDestination    *os.File
-	conn                   *net.UDPConn
-	timer                  *time.Timer
-	Location               *time.Location
-	lastUpdated            time.Time
-	lastUpdatedMT          time.Time
-	renewOneMac            chan string
-	stopReadFromUDP        chan uint8
-	exitChan               chan os.Signal
-	parseChan              chan *time.Time
-	newLogChan             chan os.Signal
-	outputChannel          chan decodedRecord
+	Aliases             map[string][]string
+	infoOfDevices       map[string]InfoOfDeviceType
+	data                MapOfReports
+	dataCashe           MapOfReports
+	devices             DevicesType
+	logs                []LogsOfJob
+	friends             []string
+	AssetsPath          string
+	BlockAddressList    string
+	SizeOneKilobyte     uint64
+	DevicesRetryDelay   string
+	sshCredentials      SSHCredentials
+	fileDestination     *os.File
+	csvFiletDestination *os.File
+	conn                *net.UDPConn
+	timerParse          *time.Timer
+	timerMT             *time.Timer
+	Location            *time.Location
+	lastUpdated         time.Time
+	lastUpdatedMT       time.Time
+	renewOneMac         chan string
+	stopReadFromUDP     chan uint8
+	exitChan            chan os.Signal
+	parseChan           chan *time.Time
+	newLogChan          chan os.Signal
+	outputChannel       chan decodedRecord
 	Author
 	QuotaType
 	sync.RWMutex
@@ -242,6 +243,7 @@ type parseType struct {
 	SSHCredentials
 	QuotaType
 	BlockAddressList       string
+	DevicesRetryDelay      string
 	NumOfTryingConnectToMT int
 	Location               *time.Location
 }
@@ -260,12 +262,6 @@ type parseType struct {
 
 func NewTransport(cfg *Config) *Transport {
 	var err error
-	// TODO DELETE
-	// clientROS, err := dial(cfg.MTAddr, cfg.MTUser, cfg.MTPass, cfg.UseTLS)
-	// if err != nil {
-	// 	log.Errorf("Error connect to %v:%v", cfg.MTAddr, err)
-	// 	clientROS = tryingToReconnectToMokrotik(cfg.MTAddr, cfg.MTUser, cfg.MTPass, cfg.UseTLS, cfg.NumOfTryingConnectToMT)
-	// }
 
 	if !cfg.NoFlow {
 		fileDestination, err = os.OpenFile(cfg.NameFileToLog, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -298,6 +294,7 @@ func NewTransport(cfg *Config) *Transport {
 		devices:             DevicesType{},
 		Aliases:             make(map[string][]string),
 		Location:            Location,
+		DevicesRetryDelay:   cfg.DevicesRetryDelay,
 		BlockAddressList:    cfg.BlockGroup,
 		fileDestination:     fileDestination,
 		csvFiletDestination: csvFiletDestination,

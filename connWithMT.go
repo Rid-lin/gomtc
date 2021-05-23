@@ -12,28 +12,60 @@ import (
 )
 
 func (t *Transport) loopGetDataFromMT() {
-	p := parseType{}
+	t.updateDevices()
 	for {
-		t.RLock()
-		p.SSHCredentials = t.sshCredentials
-		p.BlockAddressList = t.BlockAddressList
-		p.QuotaType = t.QuotaType
-		p.Location = t.Location
-		t.RUnlock()
-		t.updateDevices(p)
-		interval, err := time.ParseDuration(cfg.Interval)
-		if err != nil {
-			interval = 1 * time.Minute
-		}
-		time.Sleep(interval)
-
+		<-t.timerMT.C
+		t.updateDevices()
 	}
 }
 
-func (t *Transport) updateDevices(p parseType) {
+func (t *Transport) getParseCred() parseType {
+	p := parseType{}
+	t.RLock()
+	p.SSHCredentials = t.sshCredentials
+	p.BlockAddressList = t.BlockAddressList
+	p.QuotaType = t.QuotaType
+	p.Location = t.Location
+	p.DevicesRetryDelay = t.DevicesRetryDelay
+	t.RUnlock()
+	return p
+}
+
+// func (t *Transport) loopGetDataFromMT() {
+// 	p := parseType{}
+// 	for {
+// 		t.RLock()
+// 		p.SSHCredentials = t.sshCredentials
+// 		p.BlockAddressList = t.BlockAddressList
+// 		p.QuotaType = t.QuotaType
+// 		p.Location = t.Location
+// 		t.RUnlock()
+// 		t.updateDevices(p)
+// 		interval, err := time.ParseDuration(cfg.Interval)
+// 		if err != nil {
+// 			interval = 1 * time.Minute
+// 		}
+// 		time.Sleep(interval)
+
+// 	}
+// }
+
+func (t *Transport) setTimerMT(IntervalStr string) {
+	interval, err := time.ParseDuration(IntervalStr)
+	if err != nil {
+		t.timerMT = time.NewTimer(15 * time.Minute)
+	} else {
+		t.timerMT = time.NewTimer(interval)
+	}
+
+}
+
+func (t *Transport) updateDevices() {
+	p := t.getParseCred()
 	t.Lock()
 	t.devices = parseInfoFromMTToSlice(p)
 	t.Unlock()
+	t.setTimerMT(p.DevicesRetryDelay)
 }
 
 // func (data *Transport) updateQuotas(p parseType) {

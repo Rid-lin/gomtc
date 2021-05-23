@@ -26,6 +26,7 @@ type Config struct {
 	AssetsPath             string   `default:"/etc/gomtc/assets"  usage:"The path to the assets folder where the template files are located"`
 	SubNets                []string `default:"" usage:"List of subnets traffic between which will not be counted"`
 	IgnorList              []string `default:"" usage:"List of lines that will be excluded from the final log"`
+	DevicesRetryDelay      string   `default:"1m" usage:"Interval to getting info from Mikrotik"`
 	LogLevel               string   `default:"info" usage:"Log level: panic, fatal, error, warn, info, debug, trace"`
 	FlowAddr               string   `default:"0.0.0.0:2055" usage:"Address and port to listen NetFlow packets"`
 	NameFileToLog          string   `default:"" usage:"The file where logs will be written in the format of squid logs"`
@@ -34,7 +35,7 @@ type Config struct {
 	MTUser                 string   `default:"" usage:"User of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken"`
 	MTPass                 string   `default:"" usage:"The password of the user of the Mikrotik router, from which the data on the comparison of the mac-address and IP-address is taken"`
 	Loc                    string   `default:"Asia/Yekaterinburg" usage:"Location for time"`
-	Interval               string   `default:"10m" usage:"Interval to getting info from Mikrotik"`
+	ParseDelay             string   `default:"10m" usage:"Delay parsing logs"`
 	BlockGroup             string   `default:"Block" usage:"The name of the address list in MicrotiK with which access is blocked to users who have exceeded the quota."`
 	ReceiveBufferSizeBytes int      `default:"" usage:"Size of RxQueue, i.e. value for SO_RCVBUF in bytes"`
 	MaxSSHRetries          int      `default:"-1" usage:"The number of attempts to connect to the microtik router"`
