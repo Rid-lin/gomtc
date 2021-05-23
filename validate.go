@@ -2,6 +2,7 @@ package main
 
 import (
 	"net"
+	"strings"
 )
 
 func isMac(inputStr string) bool {
@@ -88,4 +89,15 @@ func getSwithMac(mac, altMac, hopeMac, lastHopeMac string) string {
 		return lastHopeMacR
 	}
 	return ""
+}
+
+func isParametr(inputStr, parametr string) bool {
+	arrStr := strings.Split(inputStr, "=")
+	if len(arrStr) != 2 {
+		return false
+	}
+	if arrStr[0] != parametr {
+		return false
+	}
+	return true
 }

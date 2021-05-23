@@ -170,12 +170,11 @@ func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 	assetsPath := t.AssetsPath
 	SizeOneKilobyte := t.SizeOneKilobyte
 	devices := t.devices
-	quota := t.QuotaType
 	t.RUnlock()
 
 	if r.Method == "GET" {
 		alias := r.FormValue("alias")
-		InfoOfDevice := devices.getInfoD(alias, quota)
+		InfoOfDevice := t.getInfoD(alias)
 		// InfoOfDevice := data.aliasToDevice(alias)
 
 		DisplayDataUser := DisplayDataUserType{
@@ -209,7 +208,7 @@ func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 		}
 		params := r.Form
 		alias := params["alias"][0]
-		deviceInfo := devices.getInfoD(alias, quota)
+		deviceInfo := t.getInfoD(alias)
 		// device := data.aliasToDevice(alias)
 		parseParamertToDevice(&deviceInfo, params)
 		// if err := data.setDevice(device); err != nil {

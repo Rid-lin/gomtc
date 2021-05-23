@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -31,46 +30,6 @@ func (t *Transport) GetInfo(request *request) ResponseType {
 	return response
 }
 
-func (t *Transport) getStatusDevices(cfg *Config) error {
-
-	// transport.mergeMap()
-
-	t.Lock()
-	resultMap := t.infoOfDevices
-
-	DefaultHourlyQuota := t.HourlyQuota
-	DefaultDailyQuota := t.DailyQuota
-	DefaultMonthlyQuota := t.MonthlyQuota
-
-	for key, value := range t.dataCashe {
-		value.HourlyQuota = checkNULLQuota(0, DefaultHourlyQuota)
-		value.DailyQuota = checkNULLQuota(0, DefaultDailyQuota)
-		value.MonthlyQuota = checkNULLQuota(0, DefaultMonthlyQuota)
-		for _, value2 := range resultMap {
-			if key.Alias == value2.IP || key.Alias == value2.Mac || key.Alias == value2.HostName {
-				value.PersonType = value2.PersonType
-				value.DeviceOldType = value2.DeviceOldType
-				value.QuotaType = value2.QuotaType
-				break
-			}
-
-		}
-		t.dataCashe[key] = value
-	}
-	t.Unlock()
-	return nil
-}
-
-func (t *Transport) GetData(key KeyMapOfReports) (ValueMapOfReportsType, error) {
-	t.RLock()
-	if data, ok := t.dataCashe[key]; ok {
-		t.RUnlock()
-		return data, nil
-	}
-	t.RUnlock()
-	return ValueMapOfReportsType{}, fmt.Errorf("Map element with key(%v) not found", key)
-}
-
 func checkNULLQuota(setValue, deafultValue uint64) uint64 {
 	if setValue == 0 {
 		return uint64(deafultValue)
@@ -96,7 +55,13 @@ func (t *Transport) checkQuotas() {
 	hour := time.Now().Hour()
 	t.Lock()
 	for key, value := range t.dataCashe {
+		// if key.Alias == "E8:D8:D1:47:55:93" {
+		// 	runtime.Breakpoint()
+		// }
 		if key.Alias == "Всего" {
+			continue
+		}
+		if value.Manual {
 			continue
 		}
 		if value.Size >= value.DailyQuota {
@@ -121,12 +86,6 @@ func (t *Transport) updateStatusDevicesToMT(cfg *Config) {
 	BlockGroup := t.BlockAddressList
 	data := t.dataCashe
 	Quota := t.QuotaType
-	p := parseType{
-		SSHCredentials:   t.sshCredentials,
-		QuotaType:        t.QuotaType,
-		BlockAddressList: t.BlockAddressList,
-		Location:         t.Location,
-	}
 	t.RUnlock()
 
 	for _, dInfo := range data {
@@ -139,8 +98,6 @@ func (t *Transport) updateStatusDevicesToMT(cfg *Config) {
 			}
 			dInfo.Groups = dInfo.Groups + "," + BlockGroup
 			dInfo.Groups = strings.Trim(dInfo.Groups, ",")
-			// TODO DELETE
-			// if err := transport.setGroupOfDeviceToMT(device.InfoOfDeviceType); err != nil {
 			if err := dInfo.convertToDevice().send(); err != nil {
 				log.Errorf(`An error occurred while saving the device:%v`, err.Error())
 			}
@@ -151,16 +108,10 @@ func (t *Transport) updateStatusDevicesToMT(cfg *Config) {
 			dInfo.Groups = strings.Replace(dInfo.Groups, BlockGroup, "", 1)
 			dInfo.Groups = strings.ReplaceAll(dInfo.Groups, ",,", ",")
 			dInfo.Groups = strings.Trim(dInfo.Groups, ",")
-			// TODO DELETE
-			// if err := transport.setGroupOfDeviceToMT(dInfo.InfoOfDeviceType); err != nil {
 			if err := dInfo.convertToDevice().send(); err != nil {
 				log.Errorf(`An error occurred while saving the device:%v`, err.Error())
 			}
 		}
 	}
-	// TODO DELETE
-	// transport.updateInfoOfDevicesFromMT()
-	t.Lock()
-	t.devices = parseInfoFromMTToSlice(p)
-	t.Unlock()
+	t.updateDevices()
 }

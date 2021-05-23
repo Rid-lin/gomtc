@@ -4,7 +4,7 @@
 </header>
 
 <body>
-    <form id="edit_device" action="/editalias/" method="post">
+    <form class="edit_alias" id="edit_device" action="/editalias/" method="post">
         <div class="info_of_device">
             <h3>Информация об устройстве</h3>
             <!-- Алиас <input type="text" name="Alias" id="alias" title="Алиас" placeholder="Алиас" value="{{.Alias}}" disabled> -->
@@ -26,14 +26,21 @@
             <p> Имя устройства: {{.HostName}} </p>
             <p> Группы: {{.Groups}} </p>
             <p>
-                Отключен: <input type="checkbox" name="disabled" value="yes" {{if .Disabled}} checked="checked" {{end}}>| Заблокирован: <input type="checkbox" name="blocked" value="yes" {{if .Blocked}} checked="checked" {{end}}>| Должен быть заблокирован:
-                <input type="checkbox" name="shouldbeblocked" value="yes" {{if .ShouldBeBlocked}} checked="checked" {{end}}>| Управление вручную: <input type="checkbox" name="manual" value="yes" {{if .Manual}} checked="checked" {{end}}>
+                <span> Отключен: <input type="checkbox" name="disabled" value="yes" 
+                    {{if .Disabled}} checked="checked" {{end}}></span>
+                <span>Заблокирован: <input type="checkbox" name="blocked" value="yes" 
+                    {{if .Blocked}} checked="checked" {{end}}></span>
+                <span>Должен быть заблокирован:<input type="checkbox" name="shouldbeblocked" value="yes" 
+                    {{if .ShouldBeBlocked}} checked="checked" {{end}}></span>
+                <span>Управление вручную: <input type="checkbox" name="manual" value="yes" 
+                    {{if .Manual}} checked="checked" {{end}}></span>
             </p>
         </div>
         <div class="user">
             <br>
             <h3>Информация о пользователе</h3>
             <p> Имя: <input type="text" name="name" id="name" title="Имя" placeholder="Имя" value="{{.Name}}"></p>
+            <p>ID: <input type="text" name="IDUser" id="IDUser" title="ID" placeholder="ID" value="{{.IDUser}}"></p>
             <p>Должность: <input type="text" name="col" id="col" title="Должность" placeholder="Должность" value="{{.Position}}"></p>
             <p>Компания: <input type=" text " name="com" id="com" title="Компания " placeholder="Компания " value="{{.Company}}"></p>
             <p>Комментарий: <input type="text" name="comment" id="comment" title="Комментарий" placeholder="Комментарий" value="{{.Comment}}"></p>

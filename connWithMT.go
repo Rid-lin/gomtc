@@ -11,13 +11,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (t *Transport) loopGetDataFromMT() {
-	t.updateDevices()
-	for {
-		<-t.timerMT.C
-		t.updateDevices()
-	}
-}
+// func (t *Transport) loopGetDataFromMT() {
+// 	t.updateDevices()
+// 	for {
+// 		<-t.timerMT.C
+// 		t.updateDevices()
+// 	}
+// }
 
 // func (t *Transport) getParseCred() parseType {
 // 	p := parseType{}
@@ -43,7 +43,7 @@ func (t *Transport) setTimerMT(IntervalStr string) {
 
 func (t *Transport) updateDevices() {
 	t.Lock()
-	t.devices = parseInfoFromMTToSlice(parseType{
+	t.devices = parseInfoFromMTToSlice2(parseType{
 		SSHCredentials:    t.sshCredentials,
 		QuotaType:         t.QuotaType,
 		BlockAddressList:  t.BlockAddressList,
@@ -77,7 +77,10 @@ func (t *Transport) updateQuotas(p parseType) {
 		if value.DateStr == "" {
 			value.DateStr = key.DateStr
 		}
-		value.InfoOfDeviceType = t.devices.getInfoD(value.Alias, p.QuotaType)
+		// if value.Alias == "E8:D8:D1:47:55:93" {
+		// 	runtime.Breakpoint()
+		// }
+		value.InfoOfDeviceType = t.devices.findDeviceToConvertInfoD(value.Alias, p.QuotaType)
 		t.dataCashe[key] = value
 	}
 	t.Unlock()

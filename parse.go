@@ -45,7 +45,6 @@ func (t *Transport) parseOnce(cfg *Config) {
 	t.totalTrafficСounting()
 
 	t.writeToChasheData()
-
 	t.updateQuotas(p)
 	t.checkQuotas()
 	// transport.updateStatusDevicesToMT(cfg)
@@ -60,28 +59,16 @@ func (t *Transport) parseOnce(cfg *Config) {
 
 }
 
-// func (t *Transport) RunTikerParse(interval string) {
-// 	for {
-
-// 		sleepOnInterval(interval)
-
-// 	}
-// }
-
 func (t *Transport) setTimerParse(IntervalStr string) {
 	interval, err := time.ParseDuration(IntervalStr)
 	if err != nil {
 		t.timerParse = time.NewTimer(15 * time.Minute)
-
 	} else {
 		t.timerParse = time.NewTimer(interval)
-
 	}
-
 }
 
 func (t *Transport) parseAllFilesAndCountingTraffic(cfg *Config) {
-
 	// Получение текущего времени для расчёта времени работы
 	cfg.startTime = time.Now()
 	fmt.Printf("Parsing has started.\n")
@@ -89,7 +76,6 @@ func (t *Transport) parseAllFilesAndCountingTraffic(cfg *Config) {
 	if err != nil {
 		log.Error(err)
 	}
-
 	ExTime := time.Since(cfg.startTime)
 	ExTimeInSec := uint64(ExTime.Seconds())
 	if ExTimeInSec == 0 {
@@ -107,13 +93,9 @@ func (t *Transport) parseAllFilesAndCountingTraffic(cfg *Config) {
 		cfg.endTime.In(cfg.Location).Format(cfg.dateTimeLayout),
 		ExTime.Seconds(),
 		cfg.totalLineParsed/ExTimeInSec)
-
 }
 
 func (t *Transport) clearingCountedTraffic(cfg *Config, timestamp int64) {
-	// tm := time.Now()
-	// loc, _ := time.LoadLocation("Asia/Yekaterinburg")
-
 	cfg.LastDay = findOutTheCurrentDay(cfg.LastDate, cfg.Location)
 	t.data = MapOfReports{}
 }
@@ -138,7 +120,6 @@ func (t *Transport) ClearDataOfLastDay(cfg *Config) {
 }
 
 func (t *Transport) parseDirToMap(cfg *Config) error {
-
 	// iteration over all files in a folder
 	files, err := ioutil.ReadDir(cfg.LogPath)
 	if err != nil {
@@ -159,7 +140,6 @@ func (t *Transport) parseDirToMap(cfg *Config) error {
 			cfg.LineError)
 		cfg.SumAndReset()
 	}
-
 	fmt.Printf("From all files lines Read:%v/Parsed:%v/Added:%v/Skiped:%v/Error:%v\n",
 		// Lines read:%v, parsed:%v, lines added:%v lines skiped:%v lines error:%v",
 		cfg.totalLineRead,
@@ -178,22 +158,18 @@ func (t *Transport) parseFileToMap(info os.FileInfo, cfg *Config) error {
 		return fmt.Errorf("Error opening squid log file(FullFileName):%v", err)
 	}
 	defer file.Close()
-
 	// Проверить является ли файл архивом
 	_, errGZip := gzip.NewReader(file)
 	// Если файл читается с ошибками и это не ошибка gzip.ErrHeader, то возвращаем ошибку
 	if errGZip != nil && errGZip != gzip.ErrHeader {
 		return errGZip
-
 		// Если нет ошибок, то извлекаем файл во временную папку и передаём в след.шаг имя файла
 	} else if errGZip == nil {
 		dir, err := ioutil.TempDir("", "gomtc")
 		if err != nil {
 			log.Errorf("Error extracting file to temporary folder:%v", err)
 		}
-
 		defer os.RemoveAll(dir) // очистка
-
 		FileName, err := unGzip(FullFileName, dir)
 		if err != nil {
 			return err
@@ -201,7 +177,6 @@ func (t *Transport) parseFileToMap(info os.FileInfo, cfg *Config) error {
 		FullFileName = FileName
 		// FullFileName = filepath.Join(path, FileName)
 	}
-
 	// Если ошибка gzip.ErrHeader, то обрабатываем как текстовый файл.
 	file.Close()
 	file, err = os.Open(FullFileName)
@@ -210,7 +185,6 @@ func (t *Transport) parseFileToMap(info os.FileInfo, cfg *Config) error {
 		return fmt.Errorf("Error opening squid log file(FullFileName):%v", err)
 	}
 	defer file.Close()
-
 	scanner := bufio.NewScanner(file)
 	if err := t.parseLogToArrayByLine(scanner, cfg); err != nil {
 		return err
@@ -224,23 +198,19 @@ func (t *Transport) parseFileToMap(info os.FileInfo, cfg *Config) error {
 func (t *Transport) parseLogToArrayByLine(scanner *bufio.Scanner, cfg *Config) error {
 	for scanner.Scan() { // We go through the entire file to the end
 		cfg.LineRead++
-
 		line := scanner.Text() // get the text from the line, for simplicity
 		if line == "" {
 			cfg.LineSkiped++
 			continue
 		}
 		line = replaceQuotes(line)
-
 		lineOut, err := parseLineToStruct(line, cfg)
 		if err != nil {
 			cfg.LineError++
 			log.Warningf("%v", err)
 			continue
 		}
-
 		cfg.LineParsed++
-
 		if cfg.LastDate > lineOut.timestamp {
 			log.Tracef("line(%v) too old\r", line)
 			cfg.LineSkiped++
@@ -251,12 +221,10 @@ func (t *Transport) parseLogToArrayByLine(scanner *bufio.Scanner, cfg *Config) e
 		t.addLineOutToMapOfReports(&lineOut, cfg)
 		cfg.LineAdded++
 	}
-
 	if err := scanner.Err(); err != nil {
 		log.Errorf("%v\n", err)
 		return err
 	}
-
 	return nil
 }
 
@@ -293,19 +261,16 @@ func parseLineToStruct(line string, cfg *Config) (lineOfLogType, error) {
 		return lineOut, fmt.Errorf("Error, string(%v) is not line of Squid-log", line) // If there is an error, then we stop working to avoid unnecessary transformations
 	}
 	lineOut.date = valueArray[0]
-
 	lineOut.timestamp, lineOut.nsec, err = squidDateToINT64(lineOut.date)
 	if err != nil {
 		return lineOfLogType{}, err
 	}
-
 	timeUnix := time.Unix(lineOut.timestamp, 0)
 	lineOut.year = timeUnix.Year()
 	lineOut.month = timeUnix.Month()
 	lineOut.day = timeUnix.Day()
 	lineOut.hour = timeUnix.Hour()
 	lineOut.minute = timeUnix.Minute()
-
 	lineOut.ipaddress = valueArray[2]
 	lineOut.httpstatus = valueArray[3]
 	sizeInBytes, err := strconv.ParseUint(valueArray[4], 10, 64)
@@ -327,13 +292,11 @@ func parseLineToStruct(line string, cfg *Config) (lineOfLogType, error) {
 	} else {
 		lineOut.comments = ""
 	}
-
 	return lineOut, nil
 }
 
 func (t *Transport) addLineOutToMapOfReports(value *lineOfLogType, cfg *Config) {
 	tm := time.Unix(value.timestamp, value.nsec)
-
 	var alias string
 	if value.alias == "" {
 		if value.login == "" || value.login == "-" {
@@ -350,7 +313,6 @@ func (t *Transport) addLineOutToMapOfReports(value *lineOfLogType, cfg *Config) 
 	if !ok {
 		t.data[key] = ValueMapOfReportsType{}
 	}
-
 	// Подсчёт трафика для пользователя и в определенный час
 	t.trafficСounting(key, value)
 }
@@ -424,36 +386,18 @@ func (t *Transport) totalTrafficСounting() {
 		// Задаём заранее определенный ключ
 		keyTotal.DateStr = key.DateStr
 		keyTotal.Alias = "Всего"
-
 		valueTotal := t.data[keyTotal]
 		value := t.data[key]
-
 		valueTotal.Size += value.Size
-
 		valueTotal.Hits += value.Hits
-
 		for index := range valueTotal.SizeOfHour {
 			valueTotal.SizeOfHour[index] += value.SizeOfHour[index]
 		}
-
 		t.data[keyTotal] = valueTotal
 		t.Unlock()
 
 	}
 }
-
-// func sleepOnInterval(IntervalStr string) {
-// 	// If you cannot parse the interval, set the interval to 15 minutes to exclude collision and collapse in case of an error
-// 	interval, err := time.ParseDuration(IntervalStr)
-// 	if err != nil {
-// 		time.Sleep(15 * time.Minute)
-
-// 	} else {
-// 		time.Sleep(interval)
-
-// 	}
-
-// }
 
 func (t *Transport) writeToChasheData() {
 	t.Lock()

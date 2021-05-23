@@ -37,7 +37,11 @@ func (t *Transport) reportTrafficHourlyByLogins(request RequestForm, showFriends
 	if !showFriends {
 		ReportData = ReportData.FiltredFriendS(t.friends)
 	}
-	// ReportData = ReportData.Format(1)
+	// for _, dl := range ReportData {
+	// 	if dl.Alias == "4C:63:71:75:C6:B6" {
+	// 		runtime.Breakpoint()
+	// 	}
+	// }
 
 	return DisplayDataType{
 		ArrayDisplay:   ReportData,

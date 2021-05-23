@@ -12,21 +12,17 @@ import (
 
 func (t *Transport) getAllAliases(cfg *Config) {
 	aliases := make(map[string][]string)
-
 	path := path.Join(cfg.ConfigPath, "realname.cfg")
-
 	buf, err := os.Open(path)
 	if err != nil {
 		log.Error(err)
 		return
 	}
-
 	defer func() {
 		if err = buf.Close(); err != nil {
 			log.Error(err)
 		}
 	}()
-
 	snl := bufio.NewScanner(buf)
 	for snl.Scan() {
 		line := snl.Text()
