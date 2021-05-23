@@ -268,7 +268,11 @@ func replaceQuotes(lineOld string) string {
 
 func squidDateToINT64(squidDate string) (timestamp, nsec int64, err error) {
 	timestampStr := strings.Split(squidDate, ".")
-	timestamp, err = strconv.ParseInt(timestampStr[0], 10, 64)
+	timestampStrSec := timestampStr[0]
+	if len(timestampStrSec) > 10 {
+		timestampStrSec = timestampStrSec[len(timestampStrSec)-10:]
+	}
+	timestamp, err = strconv.ParseInt(timestampStrSec, 10, 64)
 	if err != nil {
 		return 0, 0, err
 	}
