@@ -94,8 +94,8 @@ func (t *Transport) ReOpenLogAfterLogroatate() {
 		}
 	}
 	t.Unlock()
-	log.Println("Opening a new file.")
-	time.Sleep(2 * time.Second)
+	// log.Println("Opening a new file.")
+	// time.Sleep(2 * time.Second)
 }
 
 func getNewLogSignalsChannel() chan os.Signal {
