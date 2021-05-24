@@ -85,7 +85,7 @@ func (t *Transport) updateAliases(p parseType) {
 				}
 			}
 		}
-
+		value.QuotaType = checkNULLQuotas(value.QuotaType, p.QuotaType)
 		t.dataCasheOld[key] = value
 	}
 	t.Unlock()
