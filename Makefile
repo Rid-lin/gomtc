@@ -60,7 +60,7 @@ pack: ## Packing all executable files using UPX
 
 buildnpack: dep build pack ## Builds the program and packs it with UPX.
 
-buildallnpack: dep build pack ## Builds the program executable for all platform and packs it with UPX.
+buildallnpack: dep build_all pack ## Builds the program executable for all platform and packs it with UPX.
 
 install: ## Install program executable into /usr/bin directory.
 	install -pm 755 bin/${PROGRAM_NAME} /usr/bin/${PROGRAM_NAME}

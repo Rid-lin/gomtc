@@ -93,6 +93,7 @@ type Config struct {
 
 // FileDecoder is used to read config from files. See aconfig submodules.
 type FileDecoder interface {
+	Format() string
 	DecodeFile(filename string) (map[string]interface{}, error)
 }
 
@@ -214,7 +215,7 @@ func (l *Loader) loadSources() error {
 		}
 	}
 	if !l.config.SkipFiles {
-		if err := l.loadFromFile(); err != nil {
+		if err := l.loadFiles(); err != nil {
 			return err
 		}
 	}
@@ -254,16 +255,10 @@ func (l *Loader) loadDefaults() error {
 	return nil
 }
 
-func (l *Loader) loadFromFile() error {
+func (l *Loader) loadFiles() error {
 	if l.config.FileFlag != "" {
-		flag := l.flagSet.Lookup(l.config.FileFlag)
-		if flag != nil {
-			configFile := flag.Value.String()
-			if l.config.MergeFiles {
-				l.config.Files = append(l.config.Files, configFile)
-			} else {
-				l.config.Files = []string{configFile}
-			}
+		if err := l.loadFileFlag(); err != nil {
+			return err
 		}
 	}
 
@@ -275,47 +270,73 @@ func (l *Loader) loadFromFile() error {
 			continue
 		}
 
-		ext := strings.ToLower(filepath.Ext(file))
-		decoder, ok := l.config.FileDecoders[ext]
-		if !ok {
-			return fmt.Errorf("file format '%q' isn't supported", ext)
-		}
-
-		actualFields, err := decoder.DecodeFile(file)
-		if err != nil {
+		if err := l.loadFile(file); err != nil {
 			return err
-		}
-
-		tag := ext[1:]
-
-		for _, field := range l.fields {
-			name := l.fullTag(field, tag)
-			value, ok := actualFields[name]
-			if !ok {
-				actualFields = find(actualFields, name)
-				value, ok = actualFields[name]
-				if !ok {
-					continue
-				}
-			}
-
-			if err := l.setFieldData(field, value); err != nil {
-				return err
-			}
-			field.isSet = true
-			delete(actualFields, name)
-		}
-
-		if !l.config.AllowUnknownFields {
-			for env, value := range actualFields {
-				return fmt.Errorf("unknown field in file %q: %s=%s (see AllowUnknownFields config param)", file, env, value)
-			}
 		}
 
 		if l.config.MergeFiles {
 			continue
 		}
+		break
+	}
+	return nil
+}
+
+func (l *Loader) loadFile(file string) error {
+	ext := strings.ToLower(filepath.Ext(file))
+	decoder, ok := l.config.FileDecoders[ext]
+	if !ok {
+		return fmt.Errorf("file format %q is not supported", ext)
+	}
+
+	actualFields, err := decoder.DecodeFile(file)
+	if err != nil {
+		return err
+	}
+
+	tag := decoder.Format()
+
+	for _, field := range l.fields {
+		name := l.fullTag(field, tag)
+		value, ok := actualFields[name]
+		if !ok {
+			actualFields = find(actualFields, name)
+			value, ok = actualFields[name]
+			if !ok {
+				continue
+			}
+		}
+
+		if err := l.setFieldData(field, value); err != nil {
+			return err
+		}
+		field.isSet = true
+		delete(actualFields, name)
+	}
+
+	if !l.config.AllowUnknownFields {
+		for env, value := range actualFields {
+			return fmt.Errorf("unknown field in file %q: %s=%v (see AllowUnknownFields config param)", file, env, value)
+		}
+	}
+	return nil
+}
+
+func (l *Loader) loadFileFlag() error {
+	fileFlag := getActualFlag(l.config.FileFlag, l.flagSet)
+	if fileFlag == nil {
 		return nil
+	}
+
+	configFile := fileFlag.Value.String()
+	if configFile == "" {
+		return fmt.Errorf("%s should not be empty", l.config.FileFlag)
+	}
+
+	if l.config.MergeFiles {
+		l.config.Files = append(l.config.Files, configFile)
+	} else {
+		l.config.Files = []string{configFile}
 	}
 	return nil
 }
@@ -334,7 +355,7 @@ func (l *Loader) loadEnvironment() error {
 	if !l.config.AllowUnknownEnvs && l.config.EnvPrefix != "" {
 		for env, value := range actualEnvs {
 			if strings.HasPrefix(env, l.config.EnvPrefix) {
-				return fmt.Errorf("unknown environment var %s=%s (see AllowUnknownEnvs config param)", env, value)
+				return fmt.Errorf("unknown environment var %s=%v (see AllowUnknownEnvs config param)", env, value)
 			}
 		}
 	}
@@ -355,7 +376,7 @@ func (l *Loader) loadFlags() error {
 	if !l.config.AllowUnknownFlags && l.config.FlagPrefix != "" {
 		for flag, value := range actualFlags {
 			if strings.HasPrefix(flag, l.config.FlagPrefix) {
-				return fmt.Errorf("unknown flag %s=%s (see AllowUnknownFlags config param)", flag, value)
+				return fmt.Errorf("unknown flag %s=%v (see AllowUnknownFlags config param)", flag, value)
 			}
 		}
 	}

@@ -6,7 +6,8 @@
 }
 
 body {
-    height: 100%;
+    width: min-content;
+    min-width: 100%;
 }
 
 .menu {
@@ -62,21 +63,21 @@ table {
     /* display: block; */
     width: 98%;
     border-spacing: 2px;
-    padding: 2px;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    /* padding: 2px; */
+    /* overflow: hidden; */
+    /* white-space: nowrap; */
+    /* text-overflow: ellipsis; */
 }
 
-tr>td {
+
+/* tr>td {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-}
+} */
 
 table,
 td {
-    /* border: 1px solid #333; */
     margin: 0 auto;
 }
 
@@ -99,11 +100,6 @@ html body div.body_report table tbody {
     font-size: small;
 }
 
-
-/* html body div.body_report table tbody tr:nth-child(odd) {
-    background-color: rgb(231, 225, 202);
-} */
-
 table tbody tr:nth-child(odd) {
     background-color: rgb(231, 225, 202);
 }
@@ -122,7 +118,6 @@ html body div.body_report table tbody tr th:nth-child(4) {
 
 .body_report table tbody tr th:nth-child(7) {
     min-width: 3rem;
-    /* text-align: right; */
     background-color: rgb(252, 210, 186);
 }
 
@@ -132,7 +127,6 @@ html body div.body_report table tbody tr th:nth-child(4) {
 
 .body_report table tbody tr th {
     text-align: right;
-    /* min-width: 3rem; */
 }
 
 html body div.body_report table tbody tr:nth-child(even) {

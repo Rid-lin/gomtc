@@ -13,13 +13,13 @@ func main() {
 
 	go transport.Exit()
 	go transport.ReOpenLogAfterLogroatate()
-	transport.getAllAliases(cfg)
-	go transport.loopGetDataFromMT()
-	go transport.loopParse(cfg)
+	transport.getAliasesArr(cfg)
+	// go transport.loopGetDataFromMT()
+	go transport.mainLoop(cfg)
 	go transport.pipeOutputToSquid(cfg)
-	transport.handleRequest(cfg)
 	if !cfg.NoFlow {
-		transport.readsStreamFromMT(cfg)
+		go transport.readsStreamFromMT(cfg)
 	}
+	transport.handleRequest(cfg)
 
 }

@@ -47,6 +47,16 @@ func getFlags(flagSet *flag.FlagSet) map[string]interface{} {
 	return res
 }
 
+func getActualFlag(name string, flagSet *flag.FlagSet) *flag.Flag {
+	var found *flag.Flag
+	flagSet.Visit(func(f *flag.Flag) {
+		if f.Name == name {
+			found = f
+		}
+	})
+	return found
+}
+
 func makeName(name string, parent *fieldData) string {
 	if parent == nil {
 		return name
@@ -118,6 +128,11 @@ func splitNameByWords(src string) []string {
 }
 
 type jsonDecoder struct{}
+
+// Format of the decoder.
+func (d *jsonDecoder) Format() string {
+	return "json"
+}
 
 // DecodeFile implements FileDecoder.
 func (d *jsonDecoder) DecodeFile(filename string) (map[string]interface{}, error) {
