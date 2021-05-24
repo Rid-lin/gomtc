@@ -282,7 +282,7 @@ func Test_paramertToBool(t *testing.T) {
 
 func Test_makeCommentFromIodt(t *testing.T) {
 	type args struct {
-		d     InfoOfDeviceType
+		d     AliasType
 		quota QuotaType
 	}
 	tests := []struct {
@@ -293,7 +293,7 @@ func Test_makeCommentFromIodt(t *testing.T) {
 		{
 			name: "vlad",
 			args: args{
-				d: InfoOfDeviceType{
+				d: AliasType{
 					QuotaType: QuotaType{
 						HourlyQuota:  500000000,
 						DailyQuota:   50000000000,
@@ -399,7 +399,7 @@ func TestDeviceType_convertToInfo(t *testing.T) {
 	tests := []struct {
 		name string
 		d    DeviceType
-		want InfoOfDeviceType
+		want AliasType
 	}{
 		{
 			name: "vlad",
@@ -427,7 +427,7 @@ func TestDeviceType_convertToInfo(t *testing.T) {
 				ShouldBeBlocked:  false,
 				timeout:          now,
 			},
-			want: InfoOfDeviceType{
+			want: AliasType{
 				QuotaType: QuotaType{
 					HourlyQuota:     500000000,
 					DailyQuota:      50000000000,
@@ -470,9 +470,10 @@ func TestDeviceType_convertToInfo(t *testing.T) {
 func TestInfoOfDeviceType_convertToDevice(t *testing.T) {
 	now := time.Now()
 	tests := []struct {
-		name  string
-		dInfo *InfoOfDeviceType
-		want  DeviceType
+		name     string
+		aliasS   *AliasType
+		quotaDef QuotaType
+		want     DeviceType
 	}{
 		{
 			name: "vlad",
@@ -500,7 +501,7 @@ func TestInfoOfDeviceType_convertToDevice(t *testing.T) {
 				ShouldBeBlocked:  false,
 				timeout:          now,
 			},
-			dInfo: &InfoOfDeviceType{
+			aliasS: &AliasType{
 				QuotaType: QuotaType{
 					HourlyQuota:     500000000,
 					DailyQuota:      50000000000,
@@ -529,11 +530,16 @@ func TestInfoOfDeviceType_convertToDevice(t *testing.T) {
 					timeout:  now,
 				},
 			},
+			quotaDef: QuotaType{
+				HourlyQuota:  50000000,
+				DailyQuota:   300000000,
+				MonthlyQuota: 9000000000,
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.dInfo.convertToDevice(); !tt.want.compare(&got) {
+			if got := tt.aliasS.convertToDevice(tt.quotaDef); !tt.want.compare(&got) {
 				t.Errorf("Test(%s) InfoOfDeviceType.convertToDevice() = \n%#v, \nwant \n%#v", tt.name, got, tt.want)
 			}
 		})

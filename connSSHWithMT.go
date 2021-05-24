@@ -284,45 +284,33 @@ func (d DeviceType) convertToSlice() []string {
 	return slice
 }
 
-func (t *Transport) getInfoD(alias string) InfoOfDeviceType {
+func (t *Transport) getAliasS(alias string) AliasType {
 	key := KeyMapOfReports{
 		Alias:   alias,
 		DateStr: time.Now().In(t.Location).Format("2006-01-02"),
 	}
 	InfoD, ok := t.dataCashe[key]
 	if !ok {
-		return InfoOfDeviceType{}
+		return AliasType{}
 	}
-	return InfoD.InfoOfDeviceType
+	return InfoD.AliasType
 }
 
-func (ds *DevicesType) findDeviceToConvertInfoD(alias string, quota QuotaType) InfoOfDeviceType {
+func (ds *DevicesType) findDeviceToConvertInfoD(alias string, q QuotaType) AliasType {
 	for _, d := range *ds {
 		if d.activeAddress == alias || d.activeMacAddress == alias || d.address == alias || d.macAddress == alias {
 			infoD := d.convertToInfo()
-			infoD.QuotaType = checkNULLQuotas(infoD.QuotaType, quota)
+			infoD.QuotaType = checkNULLQuotas(infoD.QuotaType, q)
 
 			return infoD
 		}
 	}
-	return InfoOfDeviceType{}
+	return AliasType{}
 }
 
-func (ds *DevicesType) updateInfo(deviceNew DeviceType) error {
-	index := ds.findIndexOfDevice(&deviceNew)
-	if index == -1 {
-		// p := *ds
-		// p = append(p, deviceNew)
-		// ds = &p
-		*ds = append(*ds, deviceNew)
-	}
-	// p := *ds
-	// p[index] = deviceNew
-	(*ds)[index] = deviceNew
-	return nil
-}
-
-func (d DeviceType) send() error {
-	// TODO доделать функцию
+func (a AliasType) send(p parseType, qDefault QuotaType) error {
+	aliasStr := a.convetrToString(qDefault)
+	b := getResponseOverSSHfMT(p.SSHCredentials, "/ip dhcp-server lease set "+aliasStr)
+	fmt.Println(b.String())
 	return nil
 }

@@ -9,6 +9,24 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var (
+	cfgTest *Config        = newConfig()
+	sshCred SSHCredentials = SSHCredentials{
+		SSHHost:       cfgTest.MTAddr,
+		SSHPort:       cfgTest.SSHPort,
+		SSHUser:       cfgTest.MTUser,
+		SSHPass:       cfgTest.MTPass,
+		MaxSSHRetries: cfgTest.MaxSSHRetries,
+		SSHRetryDelay: cfgTest.SSHRetryDelay,
+	}
+	qDef QuotaType = QuotaType{
+		HourlyQuota:  cfgTest.DefaultQuotaHourly,
+		DailyQuota:   cfgTest.DefaultQuotaDaily,
+		MonthlyQuota: cfgTest.DefaultQuotaMonthly,
+	}
+	block string = cfg.BlockGroup
+)
+
 func Test_getResponseOverSSHfMT(t *testing.T) {
 	type args struct {
 		SSHCred SSHCredentials
@@ -23,12 +41,7 @@ func Test_getResponseOverSSHfMT(t *testing.T) {
 		{
 			name: "1 with exit",
 			args: args{
-				SSHCred: SSHCredentials{
-					SSHHost: "192.168.65.1",
-					SSHPort: "22",
-					SSHUser: "getmac",
-					SSHPass: "getmac_password",
-				},
+				SSHCred: sshCred,
 				command: "/ip dhcp-server lease print detail without-paging",
 			},
 			want: bytes.Buffer{},
@@ -42,69 +55,6 @@ func Test_getResponseOverSSHfMT(t *testing.T) {
 		})
 	}
 }
-
-// func Test_parseInfoFromMTToSlice(t *testing.T) {
-// 	type args struct {
-// 		p parseType
-// 	}
-
-// 	Location, err := time.LoadLocation("Asia/Yekaterinburg")
-// 	if err != nil {
-// 		log.Errorf("Error loading Location(%v):%v", "Asia/Yekaterinburg", err)
-// 		Location = time.UTC
-// 	}
-
-// 	tests := []struct {
-// 		name string
-// 		args args
-// 		want []DeviceType
-// 	}{
-// 		{
-// 			name: "1",
-// 			args: args{
-// 				p: parseType{
-// 					QuotaType:        QuotaType{},
-// 					BlockAddressList: "Block",
-// 					SSHCredentials: SSHCredentials{
-// 						SSHHost: "192.168.65.1",
-// 						SSHPort: "22",
-// 						SSHUser: "getmac",
-// 						SSHPass: "getmac_password",
-// 					},
-// 					Location: Location,
-// 				}},
-// 			want: []DeviceType{},
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			if got := parseInfoFromMTToSlice(tt.args.p); !reflect.DeepEqual(got, tt.want) {
-// 				t.Errorf("parseInfoFromMTToSlice() = %v, want %v", got, tt.want)
-// 			}
-// 		})
-// 	}
-// }
-
-// func TestDeviceType_parseLine(t *testing.T) {
-// 	type args struct {
-// 		l string
-// 	}
-// 	tests := []struct {
-// 		name    string
-// 		d       *DeviceType
-// 		args    args
-// 		wantErr bool
-// 	}{
-// 		// TODO: Add test cases.
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			if err := tt.d.parseLine(tt.args.l); (err != nil) != tt.wantErr {
-// 				t.Errorf("DeviceType.parseLine() error = %v, wantErr %v", err, tt.wantErr)
-// 			}
-// 		})
-// 	}
-// }
 
 func Test_parseInfoFromMTToSlice2(t *testing.T) {
 	type args struct {
@@ -185,6 +135,48 @@ func Test_deviceToSlice(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.args.d.convertToSlice(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("deviceToSlice() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAliasType_send(t *testing.T) {
+	type args struct {
+		p        parseType
+		qDefault QuotaType
+	}
+	// q := QuotaType{
+	// 	HourlyQuota:     50000000,
+	// 	DailyQuota:      300000000,
+	// 	MonthlyQuota:    9000000000,
+	// 	Disabled:        false,
+	// 	Manual:          false,
+	// 	ShouldBeBlocked: false,
+	// }
+	tests := []struct {
+		name    string
+		a       AliasType
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "1",
+			a:    AliasType{},
+			args: args{
+				p: parseType{
+					SSHCredentials:   sshCred,
+					QuotaType:        qDef,
+					BlockAddressList: block,
+					Location:         cfgTest.Location,
+				},
+				qDefault: QuotaType{},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := tt.a.send(tt.args.p, tt.args.qDefault); (err != nil) != tt.wantErr {
+				t.Errorf("AliasType.send() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

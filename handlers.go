@@ -170,20 +170,27 @@ func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 	assetsPath := t.AssetsPath
 	SizeOneKilobyte := t.SizeOneKilobyte
 	devices := t.devices
+	quotaDef := t.QuotaType
+	p := parseType{
+		SSHCredentials:   t.sshCredentials,
+		QuotaType:        t.QuotaType,
+		BlockAddressList: t.BlockAddressList,
+		Location:         t.Location,
+	}
 	t.RUnlock()
 
 	if r.Method == "GET" {
 		alias := r.FormValue("alias")
-		InfoOfDevice := t.getInfoD(alias)
+		aliasS := t.getAliasS(alias)
 		// InfoOfDevice := data.aliasToDevice(alias)
 
 		DisplayDataUser := DisplayDataUserType{
-			Header:           "Редактирование пользователя",
-			Copyright:        "GoSquidLogAnalyzer <i>© 2020</i> by Vladislav Vegner",
-			Mail:             "mailto:vegner.vs@uttist.ru",
-			Alias:            alias,
-			SizeOneKilobyte:  SizeOneKilobyte,
-			InfoOfDeviceType: InfoOfDevice,
+			Header:          "Редактирование пользователя",
+			Copyright:       "GoSquidLogAnalyzer <i>© 2020</i> by Vladislav Vegner",
+			Mail:            "mailto:vegner.vs@uttist.ru",
+			Alias:           alias,
+			SizeOneKilobyte: SizeOneKilobyte,
+			AliasType:       aliasS,
 		}
 
 		fmap := template.FuncMap{
@@ -208,11 +215,11 @@ func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 		}
 		params := r.Form
 		alias := params["alias"][0]
-		deviceInfo := t.getInfoD(alias)
+		aliasS := t.getAliasS(alias)
 		// device := data.aliasToDevice(alias)
-		parseParamertToDevice(&deviceInfo, params)
+		parseParamertToDevice(&aliasS, params)
 		// if err := data.setDevice(device); err != nil {
-		if err := devices.updateInfo(deviceInfo.convertToDevice()); err != nil {
+		if err := devices.updateInfo(aliasS.convertToDevice(quotaDef)); err != nil {
 			fmt.Fprintf(w, `Произошла ошибка при сохранении. 
 			<br> %v
 			<br> Перенаправление...
@@ -221,13 +228,14 @@ func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/", 302)
 			return
 		}
+		aliasS.send(p, quotaDef)
 		t.updateDevices()
 		http.Redirect(w, r, "/", 302)
-		log.Printf("%v(%v)%v", alias, deviceInfo, params)
+		log.Printf("%v(%v)%v", alias, aliasS, params)
 	}
 }
 
-func parseParamertToDevice(device *InfoOfDeviceType, params url.Values) {
+func parseParamertToDevice(device *AliasType, params url.Values) {
 	if len(params["TypeD"]) > 0 {
 		device.TypeD = params["TypeD"][0]
 	} else {

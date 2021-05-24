@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -44,11 +42,10 @@ func (t *Transport) setTimerMT(IntervalStr string) {
 func (t *Transport) updateDevices() {
 	t.Lock()
 	t.devices = parseInfoFromMTToSlice2(parseType{
-		SSHCredentials:    t.sshCredentials,
-		QuotaType:         t.QuotaType,
-		BlockAddressList:  t.BlockAddressList,
-		DevicesRetryDelay: t.DevicesRetryDelay,
-		Location:          t.Location,
+		SSHCredentials:   t.sshCredentials,
+		QuotaType:        t.QuotaType,
+		BlockAddressList: t.BlockAddressList,
+		Location:         t.Location,
 	})
 	t.lastUpdatedMT = time.Now()
 	t.setTimerMT(t.DevicesRetryDelay)
@@ -81,7 +78,7 @@ func (t *Transport) updateQuotas(p parseType) {
 		// if value.Alias == "E8:D8:D1:47:55:93" {
 		// 	runtime.Breakpoint()
 		// }
-		value.InfoOfDeviceType = t.devices.findDeviceToConvertInfoD(value.Alias, p.QuotaType)
+		value.AliasType = t.devices.findDeviceToConvertInfoD(value.Alias, p.QuotaType)
 		t.dataCashe[key] = value
 	}
 	t.Unlock()
@@ -118,13 +115,13 @@ func parseParamertToStr(inpuStr string) string {
 
 func parseParamertToUint(inputValue string) uint64 {
 	// var err error
-	var quota uint64
+	var q uint64
 	inputValue = strings.Trim(inputValue, "=")
 	inputValue = strings.ReplaceAll(inputValue, "==", "=")
 	Arr := strings.Split(inputValue, "=")
 	if len(Arr) > 1 {
 		quotaStr := Arr[1]
-		quota = paramertToUint(quotaStr)
+		q = paramertToUint(quotaStr)
 		// quotaStr = strings.Trim(quotaStr, "\r")
 		// quota, err := strconv.ParseUint(quotaStr, 10, 64)
 		// if err != nil {
@@ -135,11 +132,11 @@ func parseParamertToUint(inputValue string) uint64 {
 		// 	}
 		// 	quota = uint64(quotaF)
 		// }
-		return quota
+		return q
 	} else {
 		log.Warnf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inputValue)
 	}
-	return quota
+	return q
 }
 
 func parseParamertToBool(inputValue string) bool {
@@ -176,56 +173,115 @@ func paramertToBool(inputValue string) bool {
 	return false
 }
 
-func makeCommentFromIodt(d InfoOfDeviceType, quota QuotaType) string {
+func makeCommentFromIodt(a AliasType, q QuotaType) string {
 	comment := "/"
 
-	if d.TypeD != "" && d.Name != "" {
+	if a.TypeD != "" && a.Name != "" {
 		comment = fmt.Sprintf("%v=%v",
-			d.TypeD,
-			d.Name)
-	} else if d.TypeD == "" && d.Name != "" {
+			a.TypeD,
+			a.Name)
+	} else if a.TypeD == "" && a.Name != "" {
 		comment = fmt.Sprintf("name=%v",
-			d.Name)
+			a.Name)
 	}
-	if d.IDUser != "" {
+	if a.IDUser != "" {
 		comment = fmt.Sprintf("%v/id=%v",
 			comment,
-			d.IDUser)
+			a.IDUser)
 	}
-	if d.Company != "" {
+	if a.Company != "" {
 		comment = fmt.Sprintf("%v/com=%v",
 			comment,
-			d.Company)
+			a.Company)
 	}
-	if d.Position != "" {
+	if a.Position != "" {
 		comment = fmt.Sprintf("%v/pos=%v",
 			comment,
-			d.Position)
+			a.Position)
 	}
-	if d.HourlyQuota != 0 && d.HourlyQuota != quota.HourlyQuota {
+	if a.HourlyQuota != 0 && a.HourlyQuota != q.HourlyQuota {
 		comment = fmt.Sprintf("%v/quotahourly=%v",
 			comment,
-			d.HourlyQuota)
+			a.HourlyQuota)
 	}
-	if d.DailyQuota != 0 && d.DailyQuota != quota.DailyQuota {
+	if a.DailyQuota != 0 && a.DailyQuota != q.DailyQuota {
 		comment = fmt.Sprintf("%v/quotadaily=%v",
 			comment,
-			d.DailyQuota)
+			a.DailyQuota)
 	}
-	if d.MonthlyQuota != 0 && d.MonthlyQuota != quota.MonthlyQuota {
+	if a.MonthlyQuota != 0 && a.MonthlyQuota != q.MonthlyQuota {
 		comment = fmt.Sprintf("%v/quotamonthly=%v",
 			comment,
-			d.MonthlyQuota)
+			a.MonthlyQuota)
 	}
-	if d.Manual {
+	if a.Manual {
 		comment = fmt.Sprintf("%v/manual=%v",
 			comment,
-			d.Manual)
+			a.Manual)
 	}
-	if d.Comment != "" {
+	if a.Comment != "" {
 		comment = fmt.Sprintf("%v/comment=%v",
 			comment,
-			d.Comment)
+			a.Comment)
+	}
+	comment = strings.ReplaceAll(comment, "//", "/")
+	if comment == "/" {
+		comment = ""
+	}
+
+	return comment
+}
+
+func (a *AliasType) convetrToString(q QuotaType) string {
+	comment := "/"
+
+	if a.TypeD != "" && a.Name != "" {
+		comment = fmt.Sprintf("%v=%v",
+			a.TypeD,
+			a.Name)
+	} else if a.TypeD == "" && a.Name != "" {
+		comment = fmt.Sprintf("name=%v",
+			a.Name)
+	}
+	if a.IDUser != "" {
+		comment = fmt.Sprintf("%v/id=%v",
+			comment,
+			a.IDUser)
+	}
+	if a.Company != "" {
+		comment = fmt.Sprintf("%v/com=%v",
+			comment,
+			a.Company)
+	}
+	if a.Position != "" {
+		comment = fmt.Sprintf("%v/pos=%v",
+			comment,
+			a.Position)
+	}
+	if a.HourlyQuota != 0 && a.HourlyQuota != q.HourlyQuota {
+		comment = fmt.Sprintf("%v/quotahourly=%v",
+			comment,
+			a.HourlyQuota)
+	}
+	if a.DailyQuota != 0 && a.DailyQuota != q.DailyQuota {
+		comment = fmt.Sprintf("%v/quotadaily=%v",
+			comment,
+			a.DailyQuota)
+	}
+	if a.MonthlyQuota != 0 && a.MonthlyQuota != q.MonthlyQuota {
+		comment = fmt.Sprintf("%v/quotamonthly=%v",
+			comment,
+			a.MonthlyQuota)
+	}
+	if a.Manual {
+		comment = fmt.Sprintf("%v/manual=%v",
+			comment,
+			a.Manual)
+	}
+	if a.Comment != "" {
+		comment = fmt.Sprintf("%v/comment=%v",
+			comment,
+			a.Comment)
 	}
 	comment = strings.ReplaceAll(comment, "//", "/")
 	if comment == "/" {
@@ -290,7 +346,7 @@ func parseComment(comment string) (
 	return
 }
 
-func (d DeviceType) convertToInfo() InfoOfDeviceType {
+func (d DeviceType) convertToInfo() AliasType {
 	var (
 		ip, mac, name, position, company, typeD, IDUser, comment string
 		hourlyQuota, dailyQuota, monthlyQuota                    uint64
@@ -299,7 +355,7 @@ func (d DeviceType) convertToInfo() InfoOfDeviceType {
 	ip = validateIP(d.activeAddress, d.address)
 	mac = getSwithMac(d.activeMacAddress, d.macAddress, d.clientId, d.activeClientId)
 	hourlyQuota, dailyQuota, monthlyQuota, name, position, company, typeD, IDUser, comment, manual = parseComment(d.comment)
-	infoD := InfoOfDeviceType{
+	infoD := AliasType{
 		DeviceOldType: DeviceOldType{
 			IP:       ip,
 			Mac:      mac,
@@ -327,20 +383,20 @@ func (d DeviceType) convertToInfo() InfoOfDeviceType {
 	return infoD
 }
 
-func (i *InfoOfDeviceType) convertToDevice() DeviceType {
+func (a *AliasType) convertToDevice(quotaDef QuotaType) DeviceType {
 	return DeviceType{
-		activeAddress:    i.IP,
-		address:          i.IP,
-		activeMacAddress: i.AMac,
-		addressLists:     i.Groups,
-		blocked:          fmt.Sprint(i.Blocked),
-		comment:          makeCommentFromIodt(*i, i.QuotaType),
-		disabled:         fmt.Sprint(i.Disabled),
-		hostName:         i.HostName,
-		macAddress:       i.Mac,
-		Manual:           i.Manual,
-		ShouldBeBlocked:  i.ShouldBeBlocked,
-		timeout:          i.timeout,
+		activeAddress:    a.IP,
+		address:          a.IP,
+		activeMacAddress: a.AMac,
+		addressLists:     a.Groups,
+		blocked:          fmt.Sprint(a.Blocked),
+		comment:          a.convetrToString(quotaDef),
+		disabled:         fmt.Sprint(a.Disabled),
+		hostName:         a.HostName,
+		macAddress:       a.Mac,
+		Manual:           a.Manual,
+		ShouldBeBlocked:  a.ShouldBeBlocked,
+		timeout:          a.timeout,
 	}
 }
 
@@ -375,45 +431,53 @@ func (ds *DevicesType) findIndexOfDevice(d *DeviceType) int {
 	return -1
 }
 
-func (t *Transport) readsStreamFromMT(cfg *Config) {
+func (t *Transport) updateStatusDevicesToMT(cfg *Config) {
 
-	addr, err := net.ResolveUDPAddr("udp", cfg.FlowAddr)
-	if err != nil {
-		log.Fatalf("Error: %v\n", err)
+	t.RLock()
+	blockGroup := t.BlockAddressList
+	data := t.dataCashe
+	quota := t.QuotaType
+	p := parseType{
+		SSHCredentials:   t.sshCredentials,
+		QuotaType:        t.QuotaType,
+		BlockAddressList: t.BlockAddressList,
+		Location:         t.Location,
 	}
-	log.Infof("gomtc listen NetFlow on:'%v'", cfg.FlowAddr)
-	for {
-		t.conn, err = net.ListenUDP("udp", addr)
-		if err != nil {
-			log.Errorln(err)
-		} else {
-			err = t.conn.SetReadBuffer(cfg.ReceiveBufferSizeBytes)
-			if err != nil {
-				log.Errorln(err)
-			} else {
-				/* Infinite-loop for reading packets */
-				for {
-					select {
-					case <-t.stopReadFromUDP:
-						time.Sleep(5 * time.Second)
-						return
-					default:
-						bufUDP := make([]byte, 4096)
-						rlen, remote, err := t.conn.ReadFromUDP(bufUDP)
+	t.RUnlock()
 
-						if err != nil {
-							log.Errorf("Error read from UDP: %v\n", err)
-						} else {
-
-							stream := bytes.NewBuffer(bufUDP[:rlen])
-
-							go handlePacket(stream, remote, t.outputChannel, cfg)
-						}
-					}
-				}
+	for _, dInfo := range data {
+		if dInfo.Manual {
+			continue
+		}
+		if dInfo.ShouldBeBlocked && !dInfo.Blocked {
+			if dInfo.QuotaType == quota {
+				dInfo.QuotaType = QuotaType{}
+			}
+			dInfo.Groups = dInfo.Groups + "," + blockGroup
+			dInfo.Groups = strings.Trim(dInfo.Groups, ",")
+			if err := dInfo.send(p, quota); err != nil {
+				log.Errorf(`An error occurred while saving the device:%v`, err.Error())
+			}
+		} else if !dInfo.ShouldBeBlocked && dInfo.Blocked {
+			if dInfo.QuotaType == quota {
+				dInfo.QuotaType = QuotaType{}
+			}
+			dInfo.Groups = strings.Replace(dInfo.Groups, blockGroup, "", 1)
+			dInfo.Groups = strings.ReplaceAll(dInfo.Groups, ",,", ",")
+			dInfo.Groups = strings.Trim(dInfo.Groups, ",")
+			if err := dInfo.send(p, quota); err != nil {
+				log.Errorf(`An error occurred while saving the device:%v`, err.Error())
 			}
 		}
-
 	}
+	t.updateDevices()
+}
 
+func (ds *DevicesType) updateInfo(deviceNew DeviceType) error {
+	index := ds.findIndexOfDevice(&deviceNew)
+	if index == -1 {
+		*ds = append(*ds, deviceNew)
+	}
+	(*ds)[index] = deviceNew
+	return nil
 }
