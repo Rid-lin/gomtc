@@ -96,7 +96,7 @@ func newConfig() *Config {
 			".yaml": aconfigyaml.New(),
 			// ".toml": aconfigtoml.New(),
 		},
-		Args: args, // fix for https://github.com/cristalhq/aconfig/issues/82
+		Args: args[1:], // [1:] важно, см. доку к FlagSet.Parse
 	})
 
 	if err := loader.Load(); err != nil {
