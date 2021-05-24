@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"strings"
 	"time"
 
 	"github.com/cristalhq/aconfig"
@@ -58,6 +60,14 @@ var (
 )
 
 func newConfig() *Config {
+	// fix for https://github.com/cristalhq/aconfig/issues/82
+	args := []string{}
+	for _, a := range os.Args {
+		if !strings.HasPrefix(a, "-test.") {
+			args = append(args, a)
+		}
+	}
+	// fix for https://github.com/cristalhq/aconfig/issues/82
 
 	var cfg Config
 	loader := aconfig.LoaderFor(&cfg, aconfig.Config{
@@ -86,6 +96,7 @@ func newConfig() *Config {
 			".yaml": aconfigyaml.New(),
 			// ".toml": aconfigtoml.New(),
 		},
+		Args: args, // fix for https://github.com/cristalhq/aconfig/issues/82
 	})
 
 	if err := loader.Load(); err != nil {
