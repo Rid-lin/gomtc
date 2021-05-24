@@ -65,7 +65,7 @@
                     <th>{{$v.Precent}}.%</th>
                     {{range $value := $v.SizeOfHour}}
                     <!-- <th>{{$value}}</th> -->
-                    <th {{if and (le $.HourlyQuota $value) (ne $k 0)}} style="background-color: rgb(252, 210, 186);" {{end}} {{if and (le $.SizeOneGigabyte $value) (ne $k 0)}} style="color: rgb(179, 8, 185);" {{else if and (ge $.SizeOneKilobyte $value) (ne $k 0)}} style="color: #12c470"
+                    <th {{if and (le $v.HourlyQuota $value) (ne $k 0)}} style="background-color: rgb(252, 210, 186);" {{end}} {{if and (le $.SizeOneGigabyte $value) (ne $k 0)}} style="color: rgb(179, 8, 185);" {{else if and (ge $.SizeOneKilobyte $value) (ne $k 0)}} style="color: #12c470"
                         {{else if and (ge $.SizeOneMegabyte $value) (ne $k 0)}} style="color: rgb(77, 182, 245);" {{end}}>{{ FormatSize $value $.SizeOneKilobyte}}</th>
                     {{end}}
             </tr>

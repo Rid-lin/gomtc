@@ -1,3 +1,5 @@
+https://goreportcard.com/report/git.vegner.org/vsvegner/gomtcя[![Go Report Card](https://goreportcard.com/report/git.vegner.org/vsvegner/gomtc)](https://goreportcard.com/report/git.vegner.org/vsvegner/gomtc)
+
 # Minimalist Netflow v5 to squid-log collector written in Go
 
 The broker listens on UDP port (default 2055), accepts Netflow traffic, and by default collects records with selected metadata formatted into squid log. Login information replaces the Mac address of the device that receives from the router mikrotik.

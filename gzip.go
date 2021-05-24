@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-func UnGzip(source, target string) (string, error) {
+func unGzip(source, target string) (string, error) {
 	reader, err := os.Open(source)
 	if err != nil {
 		return "", err

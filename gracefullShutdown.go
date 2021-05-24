@@ -62,12 +62,15 @@ func getExitSignalsChannel() chan os.Signal {
 
 }
 
-func (transport *Transport) Exit() {
-	<-transport.exitChan
-	transport.stopReadFromUDP <- 1
-	transport.clientROS.Close()
-	transport.fileDestination.Close()
-	transport.conn.Close()
+func (t *Transport) Exit() {
+	<-t.exitChan
+	t.stopReadFromUDP <- 1
+	// t.clientROS.Close()
+	if err := t.fileDestination.Sync(); err != nil {
+		log.Error(err)
+	}
+	t.fileDestination.Close()
+	t.conn.Close()
 	log.Println("Shutting down")
 	time.Sleep(5 * time.Second)
 	os.Exit(0)
@@ -76,13 +79,23 @@ func (transport *Transport) Exit() {
 
 func (t *Transport) ReOpenLogAfterLogroatate() {
 	<-t.newLogChan
+	var err error
+	t.Lock()
 	log.Println("Received a signal from logrotate, close the file.")
-	// writer.Flush()
-	// t.filetDestination.Close()
-	log.Println("Opening a new file.")
-	time.Sleep(2 * time.Second)
-	// writer = openOutputDevice(cfg.NameFileToLog)
-
+	if err := t.fileDestination.Sync(); err != nil {
+		log.Error(err)
+	}
+	t.fileDestination.Close()
+	if !cfg.NoFlow {
+		t.fileDestination, err = os.OpenFile(cfg.NameFileToLog, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			fileDestination.Close()
+			log.Fatalf("Error, the '%v' file could not be created (there are not enough premissions or it is busy with another program): %v", cfg.NameFileToLog, err)
+		}
+	}
+	t.Unlock()
+	// log.Println("Opening a new file.")
+	// time.Sleep(2 * time.Second)
 }
 
 func getNewLogSignalsChannel() chan os.Signal {

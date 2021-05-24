@@ -23,13 +23,11 @@ func (transport *Transport) handleRequest(cfg *Config) {
 
 	log.Infof("gomtc listens HTTP on:'%v'", cfg.ListenAddr)
 
-	go func() {
-		err := http.ListenAndServe(cfg.ListenAddr, nil)
-		if err != nil {
-			log.Fatal("http-server returned error:", err)
-			transport.exitChan <- os.Kill
-		}
-	}()
+	err := http.ListenAndServe(cfg.ListenAddr, nil)
+	if err != nil {
+		log.Fatal("http-server returned error:", err)
+		transport.exitChan <- os.Kill
+	}
 
 }
 
@@ -167,27 +165,32 @@ func (data *Transport) handleWithFriends(w http.ResponseWriter, r *http.Request)
 // 	}
 // }
 
-func (data *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
+func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
+	t.RLock()
+	assetsPath := t.AssetsPath
+	SizeOneKilobyte := t.SizeOneKilobyte
+	devices := t.devices
+	quotaDef := t.QuotaType
+	p := parseType{
+		SSHCredentials:   t.sshCredentials,
+		QuotaType:        t.QuotaType,
+		BlockAddressList: t.BlockAddressList,
+		Location:         t.Location,
+	}
+	t.RUnlock()
+
 	if r.Method == "GET" {
 		alias := r.FormValue("alias")
-
-		data.RLock()
-		assetsPath := data.AssetsPath
-		SizeOneKilobyte := data.SizeOneKilobyte
-		data.RUnlock()
-
-		InfoOfDevice := data.aliasToDevice(alias)
-		// InfoOfDevice := data.getInfoOfDeviceFromMT(alias)
-		// TempInfoOfDevice := data.aliasToDevice(alias)
-		// InfoOfDevice.ShouldBeBlocked = TempInfoOfDevice.ShouldBeBlocked
+		aliasS := t.getAliasS(alias)
+		// InfoOfDevice := data.aliasToDevice(alias)
 
 		DisplayDataUser := DisplayDataUserType{
-			Header:           "Редактирование пользователя",
-			Copyright:        "GoSquidLogAnalyzer <i>© 2020</i> by Vladislav Vegner",
-			Mail:             "mailto:vegner.vs@uttist.ru",
-			Alias:            alias,
-			SizeOneKilobyte:  SizeOneKilobyte,
-			InfoOfDeviceType: InfoOfDevice,
+			Header:          "Редактирование пользователя",
+			Copyright:       "GoSquidLogAnalyzer <i>© 2020</i> by Vladislav Vegner",
+			Mail:            "mailto:vegner.vs@uttist.ru",
+			Alias:           alias,
+			SizeOneKilobyte: SizeOneKilobyte,
+			InfoType:        aliasS.InfoType,
 		}
 
 		fmap := template.FuncMap{
@@ -209,14 +212,14 @@ func (data *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 			<br> Если ничего не происходит нажмите <a href="/">сюда</a>`, err.Error())
 			time.Sleep(5 * time.Second)
 			http.Redirect(w, r, "/", 302)
-
 		}
 		params := r.Form
 		alias := params["alias"][0]
-		device := data.aliasToDevice(alias)
-		parseParamertToDevice(&device, params)
-
-		if err := data.setDevice(device); err != nil {
+		info := t.getAliasS(alias)
+		// device := data.aliasToDevice(alias)
+		parseParamertToDevice(&info, params)
+		// if err := data.setDevice(device); err != nil {
+		if err := devices.updateInfo(info.convertToDevice(quotaDef)); err != nil {
 			fmt.Fprintf(w, `Произошла ошибка при сохранении. 
 			<br> %v
 			<br> Перенаправление...
@@ -225,15 +228,14 @@ func (data *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/", 302)
 			return
 		}
-
-		data.updateInfoOfDeviceFromMT(alias)
-
+		_ = info.sendByAll(p, quotaDef)
+		t.updateDevices()
 		http.Redirect(w, r, "/", 302)
-		log.Printf("%v(%v)%v", alias, device, params)
+		log.Printf("%v(%v)%v", alias, info, params)
 	}
 }
 
-func parseParamertToDevice(device *InfoOfDeviceType, params url.Values) {
+func parseParamertToDevice(device *AliasOld, params url.Values) {
 	if len(params["TypeD"]) > 0 {
 		device.TypeD = params["TypeD"][0]
 	} else {
@@ -308,8 +310,8 @@ func (t *Transport) handleLog(w http.ResponseWriter, r *http.Request) {
 
 func (t *Transport) handleRunParse(w http.ResponseWriter, r *http.Request) {
 	referURL := r.FormValue("refer")
-	t.timer.Stop()
-	t.timer.Reset(1 * time.Second)
+	t.timerParse.Stop()
+	t.timerParse.Reset(1 * time.Second)
 
 	http.Redirect(w, r, "/"+referURL, 302)
 }
