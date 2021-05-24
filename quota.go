@@ -1,7 +1,6 @@
 package main
 
 import (
-	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -78,40 +77,4 @@ func (t *Transport) checkQuotas() {
 
 	}
 	t.Unlock()
-}
-
-func (t *Transport) updateStatusDevicesToMT(cfg *Config) {
-
-	t.RLock()
-	BlockGroup := t.BlockAddressList
-	data := t.dataCashe
-	Quota := t.QuotaType
-	t.RUnlock()
-
-	for _, dInfo := range data {
-		if dInfo.Manual {
-			continue
-		}
-		if dInfo.ShouldBeBlocked && !dInfo.Blocked {
-			if dInfo.QuotaType == Quota {
-				dInfo.QuotaType = QuotaType{}
-			}
-			dInfo.Groups = dInfo.Groups + "," + BlockGroup
-			dInfo.Groups = strings.Trim(dInfo.Groups, ",")
-			if err := dInfo.convertToDevice().send(); err != nil {
-				log.Errorf(`An error occurred while saving the device:%v`, err.Error())
-			}
-		} else if !dInfo.ShouldBeBlocked && dInfo.Blocked {
-			if dInfo.QuotaType == Quota {
-				dInfo.QuotaType = QuotaType{}
-			}
-			dInfo.Groups = strings.Replace(dInfo.Groups, BlockGroup, "", 1)
-			dInfo.Groups = strings.ReplaceAll(dInfo.Groups, ",,", ",")
-			dInfo.Groups = strings.Trim(dInfo.Groups, ",")
-			if err := dInfo.convertToDevice().send(); err != nil {
-				log.Errorf(`An error occurred while saving the device:%v`, err.Error())
-			}
-		}
-	}
-	t.updateDevices()
 }

@@ -5,8 +5,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
-	"os"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -119,8 +119,8 @@ func (t *Transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) (str
 		protocol = "OTHER_PACKET"
 	}
 
-	ok := cfg.CheckEntryInSubNet(intToIPv4Addr(binRecord.Ipv4DstAddrInt))
-	ok2 := cfg.CheckEntryInSubNet(intToIPv4Addr(binRecord.Ipv4SrcAddrInt))
+	ok := cfg.checkIPsEntry(intToIPv4Addr(binRecord.Ipv4DstAddrInt))
+	ok2 := cfg.checkIPsEntry(intToIPv4Addr(binRecord.Ipv4SrcAddrInt))
 
 	if ok && !ok2 {
 		response := t.GetInfo(&request{
@@ -194,9 +194,9 @@ func (t *Transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) (str
 	return message, message2
 }
 
-func (cfg *Config) CheckEntryInSubNet(ipv4addr net.IP) bool {
+func (cfg *Config) checkIPsEntry(ipv4addr net.IP) bool {
 	for _, subNet := range cfg.SubNets {
-		ok, err := checkIP(subNet, ipv4addr)
+		ok, err := checkIPEntry(subNet, ipv4addr)
 		if err != nil { // если ошибка, то следующая строка
 			log.Error("Error while determining the IP subnet address:", err)
 			return false
@@ -210,7 +210,7 @@ func (cfg *Config) CheckEntryInSubNet(ipv4addr net.IP) bool {
 	return false
 }
 
-func checkIP(subnet string, ipv4addr net.IP) (bool, error) {
+func checkIPEntry(subnet string, ipv4addr net.IP) (bool, error) {
 	_, netA, err := net.ParseCIDR(subnet)
 	if err != nil {
 		return false, err
@@ -255,25 +255,6 @@ func filtredMessage(message string, IgnorList []string) string {
 	return message
 }
 
-// type cacheRecord struct {
-// 	Hostname string
-// 	// timeout  time.Time
-// }
-
-// type Cache struct {
-// 	cache map[string]cacheRecord
-// 	sync.RWMutex
-// }
-
-var (
-	// cache Cache
-	// cache      = map[string]cacheRecord{}
-	// cacheMutex = sync.RWMutex{}
-	// writer           *bufio.Writer
-	fileDestination     *os.File
-	csvFiletDestination *os.File
-)
-
 func handlePacket(buf *bytes.Buffer, remoteAddr *net.UDPAddr, outputChannel chan decodedRecord, cfg *Config) {
 	header := header{}
 	err := binary.Read(buf, binary.BigEndian, &header)
@@ -294,4 +275,47 @@ func handlePacket(buf *bytes.Buffer, remoteAddr *net.UDPAddr, outputChannel chan
 			outputChannel <- decodedRecord
 		}
 	}
+}
+
+func (t *Transport) readsStreamFromMT(cfg *Config) {
+
+	addr, err := net.ResolveUDPAddr("udp", cfg.FlowAddr)
+	if err != nil {
+		log.Fatalf("Error: %v\n", err)
+	}
+	log.Infof("gomtc listen NetFlow on:'%v'", cfg.FlowAddr)
+	for {
+		t.conn, err = net.ListenUDP("udp", addr)
+		if err != nil {
+			log.Errorln(err)
+		} else {
+			err = t.conn.SetReadBuffer(cfg.ReceiveBufferSizeBytes)
+			if err != nil {
+				log.Errorln(err)
+			} else {
+				/* Infinite-loop for reading packets */
+				for {
+					select {
+					case <-t.stopReadFromUDP:
+						time.Sleep(5 * time.Second)
+						return
+					default:
+						bufUDP := make([]byte, 4096)
+						rlen, remote, err := t.conn.ReadFromUDP(bufUDP)
+
+						if err != nil {
+							log.Errorf("Error read from UDP: %v\n", err)
+						} else {
+
+							stream := bytes.NewBuffer(bufUDP[:rlen])
+
+							go handlePacket(stream, remote, t.outputChannel, cfg)
+						}
+					}
+				}
+			}
+		}
+
+	}
+
 }
