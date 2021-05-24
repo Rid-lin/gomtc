@@ -10,8 +10,8 @@ import (
 )
 
 type Transport struct {
-	Aliases             map[string][]string
-	infoOfDevices       map[string]InfoOfDeviceType
+	AliasesStrArr       map[string][]string
+	Aliases             map[string]AliasType
 	data                MapOfReports
 	dataCashe           MapOfReports
 	devices             DevicesType
@@ -137,11 +137,11 @@ type ValueMapOfReportsType struct {
 	Alias   string
 	DateStr string
 	Hits    uint32
-	InfoOfDeviceType
+	AliasType
 	StatType
 }
 
-type InfoOfDeviceType struct {
+type AliasType struct {
 	DeviceOldType
 	PersonType
 	QuotaType
@@ -173,7 +173,7 @@ type Count struct {
 type LineOfDisplay struct {
 	Alias string
 	Login string
-	InfoOfDeviceType
+	AliasType
 	StatType
 }
 
@@ -205,7 +205,7 @@ type DisplayDataUserType struct {
 	Mail            string
 	Alias           string
 	SizeOneKilobyte uint64
-	InfoOfDeviceType
+	AliasType
 }
 
 type RequestForm struct {
@@ -238,9 +238,8 @@ type SSHCredentials struct {
 type parseType struct {
 	SSHCredentials
 	QuotaType
-	BlockAddressList  string
-	DevicesRetryDelay string
-	Location          *time.Location
+	BlockAddressList string
+	Location         *time.Location
 }
 
 // TODO to Future
@@ -254,6 +253,15 @@ type parseType struct {
 // 	Comment  string
 // 	Manual   bool
 // }
+
+var (
+	// cache Cache
+	// cache      = map[string]cacheRecord{}
+	// cacheMutex = sync.RWMutex{}
+	// writer           *bufio.Writer
+	fileDestination     *os.File
+	csvFiletDestination *os.File
+)
 
 func NewTransport(cfg *Config) *Transport {
 	var err error
@@ -284,7 +292,7 @@ func NewTransport(cfg *Config) *Transport {
 		data:                map[KeyMapOfReports]ValueMapOfReportsType{},
 		dataCashe:           map[KeyMapOfReports]ValueMapOfReportsType{},
 		devices:             DevicesType{},
-		Aliases:             make(map[string][]string),
+		AliasesStrArr:       make(map[string][]string),
 		Location:            Location,
 		DevicesRetryDelay:   cfg.DevicesRetryDelay,
 		BlockAddressList:    cfg.BlockGroup,

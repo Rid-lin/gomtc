@@ -70,7 +70,7 @@ func saveStrToFile(arr []string) error {
 	return nil
 }
 
-func (ds *DevicesType) findInfoDByAlias(alias string, quota QuotaType) (InfoOfDeviceType, error) {
+func (ds *DevicesType) findInfoDByAlias(alias string, quota QuotaType) (AliasType, error) {
 	for _, d := range *ds {
 		if d.activeAddress == alias || d.activeMacAddress == alias || d.address == alias || d.macAddress == alias {
 			ifoD := d.convertToInfo()
@@ -78,5 +78,5 @@ func (ds *DevicesType) findInfoDByAlias(alias string, quota QuotaType) (InfoOfDe
 			return ifoD, nil
 		}
 	}
-	return InfoOfDeviceType{}, fmt.Errorf("NotFound")
+	return AliasType{}, fmt.Errorf("NotFound")
 }

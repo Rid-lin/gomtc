@@ -10,14 +10,14 @@ func (t *Transport) GetInfo(request *request) ResponseType {
 	var response ResponseType
 
 	t.RLock()
-	ipStruct, ok := t.infoOfDevices[request.IP]
+	ipStruct, ok := t.Aliases[request.IP]
 	t.RUnlock()
 	if ok {
 		log.Tracef("IP:%v to MAC:%v, hostname:%v, comment:%v", ipStruct.IP, ipStruct.Mac, ipStruct.HostName, ipStruct.Comments)
 		response.DeviceOldType = ipStruct.DeviceOldType
 		response.Comments = ipStruct.Comments
 	} else {
-		log.Tracef("IP:'%v' not find in table lease of router:'%v'", ipStruct.IP, cfg.MTAddr)
+		log.Tracef("IP:'%v' not find in table lease of router", ipStruct.IP)
 		response.Mac = request.IP
 		response.IP = request.IP
 	}

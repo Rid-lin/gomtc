@@ -27,7 +27,7 @@ func (t *Transport) reportTrafficHourlyByLogins(request RequestForm, showFriends
 			continue
 		}
 		line.Alias = key.Alias
-		line.InfoOfDeviceType = value.InfoOfDeviceType
+		line.AliasType = value.AliasType
 		line.StatType = value.StatType
 		ReportData = add(ReportData, line)
 	}

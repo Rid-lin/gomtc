@@ -17,16 +17,16 @@ import (
 
 var count Count
 
-// loopParse endless file parsing loop
-func (t *Transport) loopParse(cfg *Config) {
-	t.parseOnce(cfg)
+// mainLoop endless file parsing loop
+func (t *Transport) mainLoop(cfg *Config) {
+	t.runOnce(cfg)
 	for {
 		<-t.timerParse.C
-		t.parseOnce(cfg)
+		t.runOnce(cfg)
 	}
 }
 
-func (t *Transport) parseOnce(cfg *Config) {
+func (t *Transport) runOnce(cfg *Config) {
 	p := parseType{}
 	t.RLock()
 	p.SSHCredentials = t.sshCredentials
@@ -47,7 +47,7 @@ func (t *Transport) parseOnce(cfg *Config) {
 	t.writeToChasheData()
 	t.updateQuotas(p)
 	t.checkQuotas()
-	// transport.updateStatusDevicesToMT(cfg)
+	t.updateStatusDevicesToMT(cfg)
 
 	t.clearingCountedTraffic(cfg, cfg.LastDate)
 
