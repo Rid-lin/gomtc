@@ -190,7 +190,7 @@ func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 			Mail:            "mailto:vegner.vs@uttist.ru",
 			Alias:           alias,
 			SizeOneKilobyte: SizeOneKilobyte,
-			AliasType:       aliasS,
+			InfoType:        aliasS.InfoType,
 		}
 
 		fmap := template.FuncMap{
@@ -215,11 +215,11 @@ func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 		}
 		params := r.Form
 		alias := params["alias"][0]
-		aliasS := t.getAliasS(alias)
+		info := t.getAliasS(alias)
 		// device := data.aliasToDevice(alias)
-		parseParamertToDevice(&aliasS, params)
+		parseParamertToDevice(&info, params)
 		// if err := data.setDevice(device); err != nil {
-		if err := devices.updateInfo(aliasS.convertToDevice(quotaDef)); err != nil {
+		if err := devices.updateInfo(info.convertToDevice(quotaDef)); err != nil {
 			fmt.Fprintf(w, `Произошла ошибка при сохранении. 
 			<br> %v
 			<br> Перенаправление...
@@ -228,14 +228,14 @@ func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/", 302)
 			return
 		}
-		aliasS.send(p, quotaDef)
+		_ = info.sendByAll(p, quotaDef)
 		t.updateDevices()
 		http.Redirect(w, r, "/", 302)
-		log.Printf("%v(%v)%v", alias, aliasS, params)
+		log.Printf("%v(%v)%v", alias, info, params)
 	}
 }
 
-func parseParamertToDevice(device *AliasType, params url.Values) {
+func parseParamertToDevice(device *AliasOld, params url.Values) {
 	if len(params["TypeD"]) > 0 {
 		device.TypeD = params["TypeD"][0]
 	} else {

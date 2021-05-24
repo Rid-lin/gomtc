@@ -10,7 +10,7 @@ func (t *Transport) GetInfo(request *request) ResponseType {
 	var response ResponseType
 
 	t.RLock()
-	ipStruct, ok := t.Aliases[request.IP]
+	ipStruct, ok := t.Infos[request.IP]
 	t.RUnlock()
 	if ok {
 		log.Tracef("IP:%v to MAC:%v, hostname:%v, comment:%v", ipStruct.IP, ipStruct.Mac, ipStruct.HostName, ipStruct.Comments)
@@ -53,14 +53,14 @@ func checkNULLQuotas(setValue, deafultValue QuotaType) QuotaType {
 func (t *Transport) checkQuotas() {
 	hour := time.Now().Hour()
 	t.Lock()
-	for key, value := range t.dataCashe {
+	for key, value := range t.dataCasheOld {
 		// if key.Alias == "E8:D8:D1:47:55:93" {
 		// 	runtime.Breakpoint()
 		// }
 		if key.Alias == "Всего" {
 			continue
 		}
-		if value.Manual {
+		if value.ManualQ {
 			continue
 		}
 		if value.Size >= value.DailyQuota {
@@ -73,7 +73,7 @@ func (t *Transport) checkQuotas() {
 			value.ShouldBeBlocked = false
 			log.Tracef("Login (%v)has been enabled, the quota(%v) has not been exceeded", key.Alias, value.HourlyQuota)
 		}
-		t.data[key] = value
+		t.dataOld[key] = value
 
 	}
 	t.Unlock()

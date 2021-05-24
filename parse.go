@@ -43,9 +43,10 @@ func (t *Transport) runOnce(cfg *Config) {
 
 	t.parseAllFilesAndCountingTraffic(cfg)
 	t.totalTrafficСounting()
+	// t.checkMac()
 
 	t.writeToChasheData()
-	t.updateQuotas(p)
+	t.updateAliases(p)
 	t.checkQuotas()
 	t.updateStatusDevicesToMT(cfg)
 
@@ -97,7 +98,7 @@ func (t *Transport) parseAllFilesAndCountingTraffic(cfg *Config) {
 
 func (t *Transport) clearingCountedTraffic(cfg *Config, timestamp int64) {
 	cfg.LastDay = findOutTheCurrentDay(cfg.LastDate, cfg.Location)
-	t.data = MapOfReports{}
+	t.dataOld = MapOfReports{}
 }
 
 func (t *Transport) ClearDataOfLastDay(cfg *Config) {
@@ -105,7 +106,7 @@ func (t *Transport) ClearDataOfLastDay(cfg *Config) {
 	cfg.LastDay = findOutTheCurrentDay(cfg.LastDate, cfg.Location)
 
 	t.RLock()
-	data := t.data
+	data := t.dataOld
 	t.RUnlock()
 	for key := range data {
 		if key.DateStr == dateStr {
@@ -114,7 +115,7 @@ func (t *Transport) ClearDataOfLastDay(cfg *Config) {
 		}
 	}
 	t.Lock()
-	t.data = data
+	t.dataOld = data
 	t.Unlock()
 	cfg.LastDate = cfg.LastDay
 }
@@ -218,6 +219,7 @@ func (t *Transport) parseLogToArrayByLine(scanner *bufio.Scanner, cfg *Config) e
 		} else if cfg.LastDate < lineOut.timestamp {
 			cfg.LastDate = lineOut.timestamp
 		}
+		// Adding a row to the database
 		t.addLineOutToMapOfReports(&lineOut, cfg)
 		cfg.LineAdded++
 	}
@@ -295,6 +297,27 @@ func parseLineToStruct(line string, cfg *Config) (lineOfLogType, error) {
 	return lineOut, nil
 }
 
+// TODO не думается. на потом
+// func (t *Transport) addLineOutToMapOfReports(value *lineOfLogType) {
+// 	// tm := time.Unix(value.timestamp, value.nsec)
+// 	value.alias = determiningAlias(*value)
+// 	getStat
+// 	// Подсчёт трафика для пользователя и в определенный час
+// 	t.trafficСounting(key, value)
+// }
+
+// func determiningAlias(value lineOfLogType) string {
+// 	alias := value.alias
+// 	if alias == "" {
+// 		if value.login == "" || value.login == "-" {
+// 			alias = value.ipaddress
+// 		} else {
+// 			alias = value.login
+// 		}
+// 	}
+// 	return alias
+// }
+
 func (t *Transport) addLineOutToMapOfReports(value *lineOfLogType, cfg *Config) {
 	tm := time.Unix(value.timestamp, value.nsec)
 	var alias string
@@ -309,33 +332,33 @@ func (t *Transport) addLineOutToMapOfReports(value *lineOfLogType, cfg *Config) 
 		DateStr: tm.Format(cfg.dateLayout),
 		Alias:   alias,
 	}
-	_, ok := t.data[key]
+	_, ok := t.dataOld[key]
 	if !ok {
-		t.data[key] = ValueMapOfReportsType{}
+		t.dataOld[key] = AliasOld{}
 	}
 	// Подсчёт трафика для пользователя и в определенный час
 	t.trafficСounting(key, value)
 }
 
-func (t *Transport) AddLineToMapData(key KeyMapOfReports, value lineOfLogType) {
-	var SizeOfHour [24]uint64
-	t.Lock()
-	SizeOfHour[value.hour] = value.sizeInBytes
-	valueMapOfReports := ValueMapOfReportsType{
-		Hits: 1,
-		StatType: StatType{
-			SizeOfHour: SizeOfHour,
-			Size:       value.sizeInBytes,
-		},
-	}
-	t.data[key] = valueMapOfReports
-	t.Unlock()
-}
+// func (t *Transport) AddLineToMapData(key KeyMapOfReports, value lineOfLogType) {
+// 	var SizeOfHour [24]uint64
+// 	t.Lock()
+// 	SizeOfHour[value.hour] = value.sizeInBytes
+// 	valueMapOfReports := Alias{
+// 		Hits: 1,
+// 		StatType: StatType{
+// 			SizeOfHour: SizeOfHour,
+// 			Size:       value.sizeInBytes,
+// 		},
+// 	}
+// 	t.dataOld[key] = valueMapOfReports
+// 	t.Unlock()
+// }
 
 func (t *Transport) trafficСounting(key KeyMapOfReports, value *lineOfLogType) {
 	t.RLock()
 	// Приваеваем данные в карте временной переменной для того чтобы предыдущие значения не потерялись
-	valueMapOfReports := t.data[key]
+	valueMapOfReports := t.dataOld[key]
 	t.RUnlock()
 	// Расчет суммы трафика для дальшейшего отображения
 	valueMapOfReports.Size = valueMapOfReports.Size + value.sizeInBytes
@@ -351,7 +374,7 @@ func (t *Transport) trafficСounting(key KeyMapOfReports, value *lineOfLogType) 
 	valueMapOfReports.Alias = key.Alias
 	valueMapOfReports.DateStr = key.DateStr
 	t.Lock()
-	t.data[key] = valueMapOfReports
+	t.dataOld[key] = valueMapOfReports
 	t.Unlock()
 }
 
@@ -375,7 +398,7 @@ func (count *Count) SumAndReset() {
 }
 
 func (t *Transport) totalTrafficСounting() {
-	for key := range t.data {
+	for key := range t.dataOld {
 		if key.Alias == "Всего" {
 			continue
 		}
@@ -386,14 +409,32 @@ func (t *Transport) totalTrafficСounting() {
 		// Задаём заранее определенный ключ
 		keyTotal.DateStr = key.DateStr
 		keyTotal.Alias = "Всего"
-		valueTotal := t.data[keyTotal]
-		value := t.data[key]
+		valueTotal := t.dataOld[keyTotal]
+		value := t.dataOld[key]
 		valueTotal.Size += value.Size
 		valueTotal.Hits += value.Hits
 		for index := range valueTotal.SizeOfHour {
 			valueTotal.SizeOfHour[index] += value.SizeOfHour[index]
 		}
-		t.data[keyTotal] = valueTotal
+		t.dataOld[keyTotal] = valueTotal
+		t.Unlock()
+
+	}
+}
+func (t *Transport) checkMac() {
+	for key := range t.dataOld {
+		t.Lock()
+		value := t.dataOld[key]
+		if value.Mac == "" {
+			if value.AMac != "" {
+				value.Mac = value.AMac
+			} else {
+				if isMac(value.Alias) {
+					value.Mac = value.Alias
+				}
+			}
+		}
+		t.dataOld[key] = value
 		t.Unlock()
 
 	}
@@ -401,7 +442,7 @@ func (t *Transport) totalTrafficСounting() {
 
 func (t *Transport) writeToChasheData() {
 	t.Lock()
-	t.dataCashe = MapOfReports{}
-	t.dataCashe = t.data
+	t.dataCasheOld = MapOfReports{}
+	t.dataCasheOld = t.dataOld
 	t.Unlock()
 }

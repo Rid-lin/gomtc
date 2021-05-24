@@ -13,7 +13,7 @@ func main() {
 
 	go transport.Exit()
 	go transport.ReOpenLogAfterLogroatate()
-	transport.getAllAliases(cfg)
+	transport.getAliasesArr(cfg)
 	// go transport.loopGetDataFromMT()
 	go transport.mainLoop(cfg)
 	go transport.pipeOutputToSquid(cfg)

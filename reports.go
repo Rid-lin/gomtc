@@ -11,7 +11,7 @@ type ReportDataType []LineOfDisplay
 func (t *Transport) reportTrafficHourlyByLogins(request RequestForm, showFriends bool) DisplayDataType {
 	start := time.Now()
 	t.RLock()
-	dataChashe := t.dataCashe
+	dataChashe := t.dataCasheOld
 	SizeOneKilobyte := t.SizeOneKilobyte
 	Quota := t.QuotaType
 	Copyright := t.Copyright
@@ -27,7 +27,7 @@ func (t *Transport) reportTrafficHourlyByLogins(request RequestForm, showFriends
 			continue
 		}
 		line.Alias = key.Alias
-		line.AliasType = value.AliasType
+		line.InfoType = value.InfoType
 		line.StatType = value.StatType
 		ReportData = add(ReportData, line)
 	}

@@ -28,29 +28,20 @@ func getResponseOverSSHfMT(sshCred SSHCredentials, command string) bytes.Buffer 
 	}
 	defer client.Close()
 	var b bytes.Buffer
-	var i uint16 = 1
 	// crete ssh session
-	for b.Len() == 0 {
-		if sshCred.MaxSSHRetries == 1 {
-			os.Exit(2)
-		}
-		fmt.Printf("\rTrying connect to MT(%d) ", i)
 
-		session, err := client.NewSession()
-		if err != nil {
-			log.Errorf("Failed to ceate session: %s", err)
-		}
-		defer session.Close()
-		// Once a Session is created, you can execute a single command on
-		// the remote side using the Run method.
-		session.Stdout = &b
-		if err := session.Run(command); err != nil {
-			log.Error("Failed to run: " + err.Error())
-		}
-		session.Close()
-		i++
+	session, err := client.NewSession()
+	if err != nil {
+		log.Errorf("Failed to ceate session: %s", err)
 	}
-	fmt.Println("Connection successful.Get data.")
+	defer session.Close()
+	// Once a Session is created, you can execute a single command on
+	// the remote side using the Run method.
+	session.Stdout = &b
+	if err := session.Run(command); err != nil {
+		log.Error("Failed to run: " + err.Error())
+	}
+	session.Close()
 	return b
 }
 
@@ -144,20 +135,31 @@ func getResponseOverSSHfMT(sshCred SSHCredentials, command string) bytes.Buffer 
 
 func parseInfoFromMTToSlice2(p parseType) []DeviceType {
 	devices := DevicesType{}
-	b := getResponseOverSSHfMT(p.SSHCredentials, "/ip dhcp-server lease print detail without-paging")
+	var b bytes.Buffer
+	var i int = 1
+
+	for b.Len() == 0 {
+		if (i - p.MaxSSHRetries) == 0 {
+			os.Exit(2)
+		}
+		fmt.Printf("\rTrying connect to MT(%d) ", i)
+		b = getResponseOverSSHfMT(p.SSHCredentials, "/ip dhcp-server lease print detail without-paging")
+		i++
+	}
+	fmt.Println("Connection successful.Get data.")
 	devices.parseBuffer(b)
 	return devices
 }
 
 func (ds *DevicesType) parseBuffer(b bytes.Buffer) {
 	var d, dTemp DeviceType
-	var disabled, radius, dynamic, blocked string
+	var disabled, radius, dynamic, blocked, n string
 	var indexN int
 	inputStr := b.String()
 	inputStr = strings.ReplaceAll(inputStr, "\n", "")
 	inputStr = strings.ReplaceAll(inputStr, "\t", "")
 	inputStr = strings.ReplaceAll(inputStr, "\r", "")
-	for i := 1; i >= 0; i = strings.Index(inputStr, "  ") {
+	for i := 0; i >= 0; i = strings.Index(inputStr, "  ") {
 		inputStr = strings.ReplaceAll(inputStr, "  ", " ")
 	}
 	arr := strings.Split(inputStr, " ")
@@ -178,6 +180,7 @@ func (ds *DevicesType) parseBuffer(b bytes.Buffer) {
 		case arr[index] == "blocked":
 			blocked = arr[index-2]
 		case isNumDot(arr[index]):
+			n = arr[index]
 			indexN = index
 			dTemp = d
 		case isParametr(arr[index], "address"):
@@ -187,6 +190,7 @@ func (ds *DevicesType) parseBuffer(b bytes.Buffer) {
 				d.comment = strings.Join(arr[indexN+2:index], " ")
 				// fmt.Printf("indexN(%v), arr[indexN:index](%v), d.comment(%v)\n", indexN, arr[indexN:index], d.comment)
 			}
+			dTemp.Id = n
 			*(ds) = append(*(ds), dTemp)
 		case isParametr(arr[index], "address-lists"):
 			d.addressLists = parseParamertToStr(arr[index])
@@ -284,33 +288,140 @@ func (d DeviceType) convertToSlice() []string {
 	return slice
 }
 
-func (t *Transport) getAliasS(alias string) AliasType {
+func (t *Transport) getAliasS(alias string) AliasOld {
 	key := KeyMapOfReports{
 		Alias:   alias,
 		DateStr: time.Now().In(t.Location).Format("2006-01-02"),
 	}
-	InfoD, ok := t.dataCashe[key]
+	InfoD, ok := t.dataCasheOld[key]
 	if !ok {
-		return AliasType{}
+		return AliasOld{}
 	}
-	return InfoD.AliasType
+	return InfoD
 }
 
-func (ds *DevicesType) findDeviceToConvertInfoD(alias string, q QuotaType) AliasType {
+func (ds *DevicesType) findDeviceToConvertInfoD(alias, blockGroup string, q QuotaType) InfoType {
 	for _, d := range *ds {
 		if d.activeAddress == alias || d.activeMacAddress == alias || d.address == alias || d.macAddress == alias {
-			infoD := d.convertToInfo()
+			infoD := d.convertToInfo(blockGroup)
 			infoD.QuotaType = checkNULLQuotas(infoD.QuotaType, q)
 
 			return infoD
 		}
 	}
-	return AliasType{}
+	return InfoType{}
 }
 
-func (a AliasType) send(p parseType, qDefault QuotaType) error {
-	aliasStr := a.convetrToString(qDefault)
-	b := getResponseOverSSHfMT(p.SSHCredentials, "/ip dhcp-server lease set "+aliasStr)
-	fmt.Println(b.String())
+func (a AliasOld) sendByAll(p parseType, qDefault QuotaType) error {
+	var err error
+	var idStr string
+	comments := a.convertToComment(qDefault)
+
+	switch {
+	case a.Mac != "":
+		idStr, err = reciveIDByMac(p, a.Mac)
+		if err != nil {
+			return err
+		}
+	case a.AMac != "":
+		idStr, err = reciveIDByMac(p, a.AMac)
+		if err != nil {
+			return err
+		}
+	case a.IP != "":
+		idStr, err = reciveIDByIP(p, a.IP)
+		if err != nil {
+			return err
+		}
+	case a.Alias != "" && isMac(a.Alias):
+		idStr, err = reciveIDByMac(p, a.Alias)
+		if err != nil {
+			return err
+		}
+	case a.Alias != "" && isIP(a.Alias):
+		idStr, err = reciveIDByIP(p, a.Alias)
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("Mac and IP addres canot be empty")
+	}
+	if idStr == "" {
+		return fmt.Errorf("Device not found")
+	}
+	idArr := strings.Split(idStr, ";")
+	for _, id := range idArr {
+		command := fmt.Sprintf(`/ip dhcp-server lease set number="%s" address-lists="%s" disabled="%s" comment="%s"`,
+			id,
+			a.Groups,
+			boolToParamert(a.Disabled),
+			comments)
+		b := getResponseOverSSHfMT(p.SSHCredentials, command)
+		result := b.String()
+		fmt.Printf("command:'%s',result:'%s'\n", command, result)
+		if b.Len() > 0 {
+			return fmt.Errorf(b.String())
+		}
+	}
 	return nil
+}
+
+// func (a AliasType) sendByMacAndIP(p parseType, qDefault QuotaType) error {
+// 	var err2 error
+// 	comments := a.convertToComment(qDefault)
+
+// 	idStr, err := reciveIDByMac(p, a.Mac)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	if idStr == "" {
+// 		// return fmt.Errorf("Device not found")
+// 		idStr, err2 = reciveIDByIP(p, a.IP)
+// 		if err2 != nil {
+// 			return err2
+// 		}
+// 		if idStr == "" {
+// 			return fmt.Errorf("Device not found")
+// 		}
+// 	}
+// 	idArr := strings.Split(idStr, ";")
+// 	for _, id := range idArr {
+// 		command := fmt.Sprintf(`/ip dhcp-server lease set number="%s" address-lists="%s" disabled="%s" comment="%s"`,
+// 			id,
+// 			a.Groups,
+// 			boolToParamert(a.Disabled),
+// 			comments)
+// 		b := getResponseOverSSHfMT(p.SSHCredentials, command)
+// 		result := b.String()
+// 		fmt.Printf("command:'%s',result:'%s'\n", command, result)
+// 		if b.Len() > 0 {
+// 			return fmt.Errorf(b.String())
+// 		}
+// 	}
+// 	return nil
+// }
+
+func reciveIDByMac(p parseType, mac string) (string, error) {
+	if mac == "" {
+		return "", fmt.Errorf("MAC address cannot be empty")
+	}
+	return reciveIDBy(p, "mac-address", mac)
+}
+
+func reciveIDBy(p parseType, entity, value string) (string, error) {
+	command := fmt.Sprintf(`:put [/ip dhcp-server lease find %s="%s"]`,
+		entity, value)
+	b := getResponseOverSSHfMT(p.SSHCredentials, command)
+	id := b.String()
+	id = strings.ReplaceAll(id, `"`, "")
+	id = strings.ReplaceAll(id, "\n", "")
+	id = strings.ReplaceAll(id, "\r", "")
+	return id, nil
+}
+
+func reciveIDByIP(p parseType, ip string) (string, error) {
+	if ip == "" {
+		return "", fmt.Errorf("IP address cannot be empty")
+	}
+	return reciveIDBy(p, "active-address", ip)
 }

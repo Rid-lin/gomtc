@@ -282,7 +282,7 @@ func Test_paramertToBool(t *testing.T) {
 
 func Test_makeCommentFromIodt(t *testing.T) {
 	type args struct {
-		d     AliasType
+		d     InfoType
 		quota QuotaType
 	}
 	tests := []struct {
@@ -293,12 +293,12 @@ func Test_makeCommentFromIodt(t *testing.T) {
 		{
 			name: "vlad",
 			args: args{
-				d: AliasType{
+				d: InfoType{
 					QuotaType: QuotaType{
 						HourlyQuota:  500000000,
 						DailyQuota:   50000000000,
 						MonthlyQuota: 0,
-						Manual:       true,
+						ManualQ:      true,
 					},
 					PersonType: PersonType{
 						Name:     "Vlad",
@@ -397,9 +397,10 @@ func Test_parseComment(t *testing.T) {
 func TestDeviceType_convertToInfo(t *testing.T) {
 	now := time.Now()
 	tests := []struct {
-		name string
-		d    DeviceType
-		want AliasType
+		name       string
+		d          DeviceType
+		blockGroup string
+		want       InfoType
 	}{
 		{
 			name: "vlad",
@@ -427,14 +428,14 @@ func TestDeviceType_convertToInfo(t *testing.T) {
 				ShouldBeBlocked:  false,
 				timeout:          now,
 			},
-			want: AliasType{
+			want: InfoType{
 				QuotaType: QuotaType{
 					HourlyQuota:     500000000,
 					DailyQuota:      50000000000,
 					MonthlyQuota:    0,
 					Disabled:        false,
 					Blocked:         false,
-					Manual:          true,
+					ManualQ:         true,
 					ShouldBeBlocked: false,
 				},
 				PersonType: PersonType{
@@ -460,7 +461,7 @@ func TestDeviceType_convertToInfo(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.d.convertToInfo(); !reflect.DeepEqual(got, tt.want) {
+			if got := tt.d.convertToInfo(tt.blockGroup); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Test(%s) DeviceType.convertToInfo() = \n%#v, \nwant \n%#v", tt.name, got, tt.want)
 			}
 		})
@@ -471,7 +472,7 @@ func TestInfoOfDeviceType_convertToDevice(t *testing.T) {
 	now := time.Now()
 	tests := []struct {
 		name     string
-		aliasS   *AliasType
+		aliasS   *InfoType
 		quotaDef QuotaType
 		want     DeviceType
 	}{
@@ -501,14 +502,14 @@ func TestInfoOfDeviceType_convertToDevice(t *testing.T) {
 				ShouldBeBlocked:  false,
 				timeout:          now,
 			},
-			aliasS: &AliasType{
+			aliasS: &InfoType{
 				QuotaType: QuotaType{
 					HourlyQuota:     500000000,
 					DailyQuota:      50000000000,
 					MonthlyQuota:    0,
 					Disabled:        false,
 					Blocked:         false,
-					Manual:          true,
+					ManualQ:         true,
 					ShouldBeBlocked: false,
 				},
 				PersonType: PersonType{

@@ -66,20 +66,27 @@ func (t *Transport) updateDevices() {
 // 	data.Unlock()
 // }
 
-func (t *Transport) updateQuotas(p parseType) {
+func (t *Transport) updateAliases(p parseType) {
 	t.Lock()
-	for key, value := range t.dataCashe {
+	for key, value := range t.dataCasheOld {
 		if value.Alias == "" {
 			value.Alias = key.Alias
 		}
 		if value.DateStr == "" {
 			value.DateStr = key.DateStr
 		}
-		// if value.Alias == "E8:D8:D1:47:55:93" {
-		// 	runtime.Breakpoint()
-		// }
-		value.AliasType = t.devices.findDeviceToConvertInfoD(value.Alias, p.QuotaType)
-		t.dataCashe[key] = value
+		value.InfoType = t.devices.findDeviceToConvertInfoD(value.Alias, p.BlockAddressList, p.QuotaType)
+		if value.Mac == "" {
+			if value.AMac != "" {
+				value.Mac = value.AMac
+			} else {
+				if isMac(value.Alias) {
+					value.Mac = value.Alias
+				}
+			}
+		}
+
+		t.dataCasheOld[key] = value
 	}
 	t.Unlock()
 }
@@ -173,7 +180,7 @@ func paramertToBool(inputValue string) bool {
 	return false
 }
 
-func makeCommentFromIodt(a AliasType, q QuotaType) string {
+func makeCommentFromIodt(a InfoType, q QuotaType) string {
 	comment := "/"
 
 	if a.TypeD != "" && a.Name != "" {
@@ -214,10 +221,10 @@ func makeCommentFromIodt(a AliasType, q QuotaType) string {
 			comment,
 			a.MonthlyQuota)
 	}
-	if a.Manual {
+	if a.ManualQ {
 		comment = fmt.Sprintf("%v/manual=%v",
 			comment,
-			a.Manual)
+			a.ManualQ)
 	}
 	if a.Comment != "" {
 		comment = fmt.Sprintf("%v/comment=%v",
@@ -232,7 +239,7 @@ func makeCommentFromIodt(a AliasType, q QuotaType) string {
 	return comment
 }
 
-func (a *AliasType) convetrToString(q QuotaType) string {
+func (a *InfoType) convertToComment(q QuotaType) string {
 	comment := "/"
 
 	if a.TypeD != "" && a.Name != "" {
@@ -273,10 +280,10 @@ func (a *AliasType) convetrToString(q QuotaType) string {
 			comment,
 			a.MonthlyQuota)
 	}
-	if a.Manual {
+	if a.ManualQ {
 		comment = fmt.Sprintf("%v/manual=%v",
 			comment,
-			a.Manual)
+			a.ManualQ)
 	}
 	if a.Comment != "" {
 		comment = fmt.Sprintf("%v/comment=%v",
@@ -338,15 +345,17 @@ func parseComment(comment string) (
 			manual = parseParamertToBool(value)
 		case strings.Contains(value, "comment="):
 			Comment = parseParamertToStr(value)
-		default:
+		case value != "":
 			comments = comments + "/" + value
+			// default:
+			// 	comments = comments + "/" + value
 		}
 	}
 	Comment = Comment + comments
 	return
 }
 
-func (d DeviceType) convertToInfo() AliasType {
+func (d DeviceType) convertToInfo(blockGroup string) InfoType {
 	var (
 		ip, mac, name, position, company, typeD, IDUser, comment string
 		hourlyQuota, dailyQuota, monthlyQuota                    uint64
@@ -355,7 +364,8 @@ func (d DeviceType) convertToInfo() AliasType {
 	ip = validateIP(d.activeAddress, d.address)
 	mac = getSwithMac(d.activeMacAddress, d.macAddress, d.clientId, d.activeClientId)
 	hourlyQuota, dailyQuota, monthlyQuota, name, position, company, typeD, IDUser, comment, manual = parseComment(d.comment)
-	infoD := AliasType{
+	blocked := strings.Contains(d.addressLists, blockGroup)
+	infoD := InfoType{
 		DeviceOldType: DeviceOldType{
 			IP:       ip,
 			Mac:      mac,
@@ -368,7 +378,8 @@ func (d DeviceType) convertToInfo() AliasType {
 			HourlyQuota:  hourlyQuota,
 			DailyQuota:   dailyQuota,
 			MonthlyQuota: monthlyQuota,
-			Manual:       manual,
+			ManualQ:      manual,
+			Blocked:      blocked,
 		},
 		PersonType: PersonType{
 			IDUser:   IDUser,
@@ -383,18 +394,18 @@ func (d DeviceType) convertToInfo() AliasType {
 	return infoD
 }
 
-func (a *AliasType) convertToDevice(quotaDef QuotaType) DeviceType {
+func (a *InfoType) convertToDevice(quotaDef QuotaType) DeviceType {
 	return DeviceType{
 		activeAddress:    a.IP,
 		address:          a.IP,
 		activeMacAddress: a.AMac,
 		addressLists:     a.Groups,
 		blocked:          fmt.Sprint(a.Blocked),
-		comment:          a.convetrToString(quotaDef),
+		comment:          a.convertToComment(quotaDef),
 		disabled:         fmt.Sprint(a.Disabled),
 		hostName:         a.HostName,
 		macAddress:       a.Mac,
-		Manual:           a.Manual,
+		Manual:           a.ManualQ,
 		ShouldBeBlocked:  a.ShouldBeBlocked,
 		timeout:          a.timeout,
 	}
@@ -435,7 +446,7 @@ func (t *Transport) updateStatusDevicesToMT(cfg *Config) {
 
 	t.RLock()
 	blockGroup := t.BlockAddressList
-	data := t.dataCashe
+	dataCashe := t.dataCasheOld
 	quota := t.QuotaType
 	p := parseType{
 		SSHCredentials:   t.sshCredentials,
@@ -444,29 +455,32 @@ func (t *Transport) updateStatusDevicesToMT(cfg *Config) {
 		Location:         t.Location,
 	}
 	t.RUnlock()
+	tn := time.Now().Format("2006-01-02")
 
-	for _, dInfo := range data {
-		if dInfo.Manual {
+	for key, alias := range dataCashe {
+		if alias.ManualQ {
 			continue
 		}
-		if dInfo.ShouldBeBlocked && !dInfo.Blocked {
-			if dInfo.QuotaType == quota {
-				dInfo.QuotaType = QuotaType{}
+		if key.DateStr != tn {
+			continue
+		}
+		// key := KeyMapOfReports{
+		// 	Alias:   alias,
+		// 	DateStr: time.Now().In(t.Location).Format("2006-01-02"),
+		// }
+		if alias.ShouldBeBlocked && !alias.Blocked {
+			alias.removeDefaultQuotas(quota)
+			alias.addBlockGroup(blockGroup)
+			if err := alias.sendByAll(p, quota); err != nil {
+				log.Errorf(`An error occurred while saving the device(%v::%v::%v):%v`,
+					alias.Alias, alias.Mac, alias.AMac, err.Error())
 			}
-			dInfo.Groups = dInfo.Groups + "," + blockGroup
-			dInfo.Groups = strings.Trim(dInfo.Groups, ",")
-			if err := dInfo.send(p, quota); err != nil {
-				log.Errorf(`An error occurred while saving the device:%v`, err.Error())
-			}
-		} else if !dInfo.ShouldBeBlocked && dInfo.Blocked {
-			if dInfo.QuotaType == quota {
-				dInfo.QuotaType = QuotaType{}
-			}
-			dInfo.Groups = strings.Replace(dInfo.Groups, blockGroup, "", 1)
-			dInfo.Groups = strings.ReplaceAll(dInfo.Groups, ",,", ",")
-			dInfo.Groups = strings.Trim(dInfo.Groups, ",")
-			if err := dInfo.send(p, quota); err != nil {
-				log.Errorf(`An error occurred while saving the device:%v`, err.Error())
+		} else if !alias.ShouldBeBlocked && alias.Blocked {
+			alias.removeDefaultQuotas(quota)
+			alias.delBlockGroup(blockGroup)
+			if err := alias.sendByAll(p, quota); err != nil {
+				log.Errorf(`An error occurred while saving the device(%v::%v::%v):%v`,
+					alias.Alias, alias.Mac, alias.AMac, err.Error())
 			}
 		}
 	}
@@ -480,4 +494,37 @@ func (ds *DevicesType) updateInfo(deviceNew DeviceType) error {
 	}
 	(*ds)[index] = deviceNew
 	return nil
+}
+
+func boolToParamert(trigger bool) string {
+	if trigger {
+		return "yes"
+	}
+	return "no"
+}
+
+func removeDefaultQuota(setValue, deafultValue uint64) uint64 {
+	if setValue == deafultValue {
+		return uint64(0)
+	}
+	return uint64(setValue)
+}
+
+func (a *InfoType) removeDefaultQuotas(qDef QuotaType) {
+	a.HourlyQuota = removeDefaultQuota(a.HourlyQuota, qDef.MonthlyQuota)
+	a.DailyQuota = removeDefaultQuota(a.DailyQuota, qDef.DailyQuota)
+	a.MonthlyQuota = removeDefaultQuota(a.MonthlyQuota, qDef.MonthlyQuota)
+}
+
+func (a *InfoType) addBlockGroup(group string) {
+	a.Groups = a.Groups + "," + group
+	a.Groups = strings.Trim(a.Groups, ",")
+	a.Groups = strings.ReplaceAll(a.Groups, `"`, "")
+}
+
+func (a *InfoType) delBlockGroup(group string) {
+	a.Groups = strings.Replace(a.Groups, group, "", 1)
+	a.Groups = strings.ReplaceAll(a.Groups, ",,", ",")
+	a.Groups = strings.Trim(a.Groups, ",")
+	a.Groups = strings.ReplaceAll(a.Groups, `"`, "")
 }

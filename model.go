@@ -10,11 +10,13 @@ import (
 )
 
 type Transport struct {
+	data                map[string]AliasesType
 	AliasesStrArr       map[string][]string
-	Aliases             map[string]AliasType
-	data                MapOfReports
-	dataCashe           MapOfReports
+	Infos               map[string]InfoType
+	dataOld             MapOfReports
+	dataCasheOld        MapOfReports
 	devices             DevicesType
+	aliases             AliasesType
 	logs                []LogsOfJob
 	friends             []string
 	AssetsPath          string
@@ -61,7 +63,7 @@ type QuotaType struct {
 	MonthlyQuota    uint64
 	Disabled        bool
 	Blocked         bool
-	Manual          bool
+	ManualQ         bool
 	ShouldBeBlocked bool
 }
 
@@ -104,6 +106,7 @@ type DeviceType struct {
 }
 
 type DevicesType []DeviceType
+type AliasesType []AliasType
 
 type lineOfLogType struct {
 	date        string
@@ -126,23 +129,30 @@ type lineOfLogType struct {
 	sizeInBytes uint64
 }
 
-type MapOfReports map[KeyMapOfReports]ValueMapOfReportsType
+type MapOfReports map[KeyMapOfReports]AliasOld
 
 type KeyMapOfReports struct {
 	DateStr string
 	Alias   string
 }
 
-type ValueMapOfReportsType struct {
+type AliasOld struct {
 	Alias   string
 	DateStr string
 	Hits    uint32
-	AliasType
+	InfoType
 	StatType
 }
 
-type AliasType struct {
+type InfoType struct {
 	DeviceOldType
+	PersonType
+	QuotaType
+}
+
+type AliasType struct {
+	Alias string
+	DeviceType
 	PersonType
 	QuotaType
 }
@@ -173,7 +183,7 @@ type Count struct {
 type LineOfDisplay struct {
 	Alias string
 	Login string
-	AliasType
+	InfoType
 	StatType
 }
 
@@ -205,7 +215,7 @@ type DisplayDataUserType struct {
 	Mail            string
 	Alias           string
 	SizeOneKilobyte uint64
-	AliasType
+	InfoType
 }
 
 type RequestForm struct {
@@ -289,8 +299,8 @@ func NewTransport(cfg *Config) *Transport {
 	}
 
 	return &Transport{
-		data:                map[KeyMapOfReports]ValueMapOfReportsType{},
-		dataCashe:           map[KeyMapOfReports]ValueMapOfReportsType{},
+		dataOld:             map[KeyMapOfReports]AliasOld{},
+		dataCasheOld:        map[KeyMapOfReports]AliasOld{},
 		devices:             DevicesType{},
 		AliasesStrArr:       make(map[string][]string),
 		Location:            Location,

@@ -153,15 +153,42 @@ func TestAliasType_send(t *testing.T) {
 	// 	Manual:          false,
 	// 	ShouldBeBlocked: false,
 	// }
+	tn := time.Now()
 	tests := []struct {
 		name    string
-		a       AliasType
+		a       AliasOld
 		args    args
 		wantErr bool
 	}{
 		{
 			name: "1",
-			a:    AliasType{},
+			a: AliasOld{
+
+				InfoType: InfoType{
+					DeviceOldType{
+						IP:       "192.168.65.85",
+						Mac:      "E8:D8:D1:47:55:93",
+						HostName: "root-hp",
+						Groups:   "inet,Block",
+						timeout:  tn,
+					},
+					PersonType{
+						Name:     "Vlad",
+						Position: "Admin",
+						Company:  "UTTiST",
+						Comment:  "",
+					},
+					QuotaType{
+						HourlyQuota:     600000000,
+						DailyQuota:      6000000000,
+						MonthlyQuota:    60000000000,
+						ManualQ:         false,
+						Blocked:         true,
+						Disabled:        false,
+						ShouldBeBlocked: true,
+					},
+				},
+			},
 			args: args{
 				p: parseType{
 					SSHCredentials:   sshCred,
@@ -169,13 +196,13 @@ func TestAliasType_send(t *testing.T) {
 					BlockAddressList: block,
 					Location:         cfgTest.Location,
 				},
-				qDefault: QuotaType{},
+				qDefault: qDef,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.a.send(tt.args.p, tt.args.qDefault); (err != nil) != tt.wantErr {
+			if err := tt.a.sendByAll(tt.args.p, tt.args.qDefault); (err != nil) != tt.wantErr {
 				t.Errorf("AliasType.send() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
