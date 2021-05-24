@@ -298,7 +298,7 @@ func Test_makeCommentFromIodt(t *testing.T) {
 						HourlyQuota:  500000000,
 						DailyQuota:   50000000000,
 						MonthlyQuota: 0,
-						ManualQ:      true,
+						Manual:       true,
 					},
 					PersonType: PersonType{
 						Name:     "Vlad",
@@ -435,7 +435,7 @@ func TestDeviceType_convertToInfo(t *testing.T) {
 					MonthlyQuota:    0,
 					Disabled:        false,
 					Blocked:         false,
-					ManualQ:         true,
+					Manual:          true,
 					ShouldBeBlocked: false,
 				},
 				PersonType: PersonType{
@@ -509,7 +509,7 @@ func TestInfoOfDeviceType_convertToDevice(t *testing.T) {
 					MonthlyQuota:    0,
 					Disabled:        false,
 					Blocked:         false,
-					ManualQ:         true,
+					Manual:          true,
 					ShouldBeBlocked: false,
 				},
 				PersonType: PersonType{

@@ -221,10 +221,10 @@ func makeCommentFromIodt(a InfoType, q QuotaType) string {
 			comment,
 			a.MonthlyQuota)
 	}
-	if a.ManualQ {
+	if a.Manual {
 		comment = fmt.Sprintf("%v/manual=%v",
 			comment,
-			a.ManualQ)
+			a.Manual)
 	}
 	if a.Comment != "" {
 		comment = fmt.Sprintf("%v/comment=%v",
@@ -280,10 +280,10 @@ func (a *InfoType) convertToComment(q QuotaType) string {
 			comment,
 			a.MonthlyQuota)
 	}
-	if a.ManualQ {
+	if a.Manual {
 		comment = fmt.Sprintf("%v/manual=%v",
 			comment,
-			a.ManualQ)
+			a.Manual)
 	}
 	if a.Comment != "" {
 		comment = fmt.Sprintf("%v/comment=%v",
@@ -365,6 +365,7 @@ func (d DeviceType) convertToInfo(blockGroup string) InfoType {
 	mac = getSwithMac(d.activeMacAddress, d.macAddress, d.clientId, d.activeClientId)
 	hourlyQuota, dailyQuota, monthlyQuota, name, position, company, typeD, IDUser, comment, manual = parseComment(d.comment)
 	blocked := strings.Contains(d.addressLists, blockGroup)
+
 	infoD := InfoType{
 		DeviceOldType: DeviceOldType{
 			IP:       ip,
@@ -378,8 +379,9 @@ func (d DeviceType) convertToInfo(blockGroup string) InfoType {
 			HourlyQuota:  hourlyQuota,
 			DailyQuota:   dailyQuota,
 			MonthlyQuota: monthlyQuota,
-			ManualQ:      manual,
+			Manual:       manual,
 			Blocked:      blocked,
+			Dynamic:      paramertToBool(d.dynamic),
 		},
 		PersonType: PersonType{
 			IDUser:   IDUser,
@@ -405,7 +407,7 @@ func (a *InfoType) convertToDevice(quotaDef QuotaType) DeviceType {
 		disabled:         fmt.Sprint(a.Disabled),
 		hostName:         a.HostName,
 		macAddress:       a.Mac,
-		Manual:           a.ManualQ,
+		Manual:           a.Manual,
 		ShouldBeBlocked:  a.ShouldBeBlocked,
 		timeout:          a.timeout,
 	}
@@ -458,10 +460,10 @@ func (t *Transport) updateStatusDevicesToMT(cfg *Config) {
 	tn := time.Now().Format("2006-01-02")
 
 	for key, alias := range dataCashe {
-		if alias.ManualQ {
+		if alias.Manual {
 			continue
 		}
-		if key.DateStr != tn {
+		if key.DateStr != tn || alias.Dynamic {
 			continue
 		}
 		// key := KeyMapOfReports{

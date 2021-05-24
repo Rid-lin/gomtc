@@ -60,7 +60,7 @@ func (t *Transport) checkQuotas() {
 		if key.Alias == "Всего" {
 			continue
 		}
-		if value.ManualQ {
+		if value.Manual {
 			continue
 		}
 		if value.Size >= value.DailyQuota {

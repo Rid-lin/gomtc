@@ -62,8 +62,9 @@ type QuotaType struct {
 	DailyQuota      uint64
 	MonthlyQuota    uint64
 	Disabled        bool
+	Dynamic         bool
 	Blocked         bool
-	ManualQ         bool
+	Manual          bool
 	ShouldBeBlocked bool
 }
 

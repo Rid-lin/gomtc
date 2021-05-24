@@ -182,7 +182,7 @@ func TestAliasType_send(t *testing.T) {
 						HourlyQuota:     600000000,
 						DailyQuota:      6000000000,
 						MonthlyQuota:    60000000000,
-						ManualQ:         false,
+						Manual:          false,
 						Blocked:         true,
 						Disabled:        false,
 						ShouldBeBlocked: true,
