@@ -28,7 +28,7 @@ func (t *Transport) updateDevices() {
 		Location:         t.Location,
 	})
 	t.lastUpdatedMT = time.Now()
-	t.setTimerMT(t.DevicesRetryDelay)
+	// t.setTimerMT(t.DevicesRetryDelay)
 	t.Unlock()
 }
 
@@ -94,8 +94,8 @@ func parseParamertToStr(inpuStr string) string {
 	arr := strings.Split(inpuStr, "=")
 	if len(arr) > 1 {
 		return arr[1]
-	} else {
-		log.Warnf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inpuStr)
+		// } else {
+		// 	log.Warnf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inpuStr)
 	}
 	return ""
 }
@@ -106,8 +106,8 @@ func parseParamertToComment(inpuStr string) string {
 	arr := strings.Split(inpuStr, "=")
 	if len(arr) > 1 {
 		return strings.Join(arr[1:], "=")
-	} else {
-		log.Warnf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inpuStr)
+		// } else {
+		// 	log.Warnf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inpuStr)
 	}
 	return ""
 }
@@ -122,8 +122,8 @@ func parseParamertToUint(inputValue string) uint64 {
 		quotaStr := Arr[1]
 		q = paramertToUint(quotaStr)
 		return q
-	} else {
-		log.Warnf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inputValue)
+		// } else {
+		// 	log.Warnf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inputValue)
 	}
 	return q
 }
@@ -346,7 +346,8 @@ func (d DeviceType) convertToInfo(blockGroup string) InfoType {
 	ip = validateIP(d.activeAddress, d.address)
 	mac = getSwithMac(d.activeMacAddress, d.macAddress, d.clientId, d.activeClientId)
 	hourlyQuota, dailyQuota, monthlyQuota, name, position, company, typeD, IDUser, comment, manual = parseComment(d.comment)
-	blocked := strings.Contains(d.addressLists, blockGroup)
+	blocked := isBlocked(d.addressLists, blockGroup)
+	// blocked := strings.Contains(d.addressLists, blockGroup)
 
 	infoD := InfoType{
 		DeviceOldType: DeviceOldType{
