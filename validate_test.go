@@ -424,3 +424,80 @@ func Test_isNumDot(t *testing.T) {
 		})
 	}
 }
+
+func Test_isBlocked(t *testing.T) {
+	type args struct {
+		addressLists string
+		blockGroup   string
+	}
+	blockGroup := "Block"
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "1",
+			args: args{
+				addressLists: "",
+				blockGroup:   blockGroup,
+			},
+			want: false,
+		},
+		{
+			name: "2",
+			args: args{
+				addressLists: "vpn",
+				blockGroup:   blockGroup,
+			},
+			want: false,
+		},
+		{
+			name: "3",
+			args: args{
+				addressLists: "Blocking",
+				blockGroup:   blockGroup,
+			},
+			want: false,
+		},
+		{
+			name: "4",
+			args: args{
+				addressLists: "Blocking,",
+				blockGroup:   blockGroup,
+			},
+			want: false,
+		},
+		{
+			name: "5",
+			args: args{
+				addressLists: "Block",
+				blockGroup:   blockGroup,
+			},
+			want: true,
+		},
+		{
+			name: "6",
+			args: args{
+				addressLists: "Blocking",
+				blockGroup:   blockGroup,
+			},
+			want: false,
+		},
+		{
+			name: "7",
+			args: args{
+				addressLists: "Blocking",
+				blockGroup:   blockGroup,
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isBlocked(tt.args.addressLists, tt.args.blockGroup); got != tt.want {
+				t.Errorf("isBlocked() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

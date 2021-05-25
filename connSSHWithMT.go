@@ -2,11 +2,10 @@ package main
 
 import (
 	"bytes"
-	"encoding/csv"
+	_ "embed"
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
@@ -45,95 +44,116 @@ func getResponseOverSSHfMT(sshCred SSHCredentials, command string) bytes.Buffer 
 	return b
 }
 
-// func parseInfoFromMTToSlice(p parseType) []DeviceTyp {
+// func parseInfoFromMTToSlice(p parseType) []DeviceType {
+// 	devices := DevicesType{}
+// 	var b bytes.Buffer
+// 	var i int = 1
 
-// 	deviceTemp, device := DeviceType{}, DeviceTyp{}
-// 	devices := []DeviceTyp{}
-// 	// var b bytes.Bufer
-// 	b := getResponseOverSSHfMT(p.SSHCredentials, "/ip dhcp-server lease print detail without-pagin")
-// 	inputStr := b.Strin()
-// 	inputArr := strings.Split(inputStr, "\")
-// 	for _, line := range inputAr {
-// 		// Если возникает ошибка, то это новое устройсво
-// 		if deviceTemp.parseLine(line) != ni {
-
-// 			// Поэтому мы его дополняем предыдущее значение устройства дополняем..
-// 			device.timeout = time.Now().In(p.Locatin)
-// 			// ... и записываем в массив устройтв
-// 			devices = append(devices, devie)
-// 			// Обнуляем временное хранилище информации об устройстве для дальнейшей кокатенации из распарсенных стрк.
-// 			deviceTemp = DeviceTyp{}
-// 			_ = deviceTemp.parseLine(lie)
+// 	for b.Len() == 0 {
+// 		if (i - p.MaxSSHRetries) == 0 {
+// 			os.Exit(2)
+// 		}
+// 		fmt.Printf("\rTrying connect to MT(%d) ", i)
+// 		b = getResponseOverSSHfMT(p.SSHCredentials, "/ip dhcp-server lease print detail without-paging")
+// 		i++
 // 	}
-// 		device = deviceTmp
-//	}
-// 	return devies
-// / }
+// 	fmt.Println("Connection successful.Get data.")
+// 	devices.parseLeasePrint(b)
+// 	return devices
+// }
 
-// func (d *DeviceType) parseLine(l string) (err error {
-// 	l = strings.Trim(l, "")
-// 	l = strings.ReplaceAll(l, "  ", "")
-// 	arr := strings.Split(l, "")
-// 	if len(arr) > 1 && isNumDot(arr[0] {
-// 		err = fmt.Errorf("New lin")
-//	}
-// 	for index, s := range ar {
-// 		switc {
-// 		case s == "Flags":
-// 			return il
-// 		case strings.Contains(s, "address-lists=):
-// 			d.addressLists = parseParamertToStrs)
-// 		case strings.Contains(s, "server=):
-// 			d.server = parseParamertToStrs)
-// 		case strings.Contains(s, "dhcp-option=):
-// 			d.dhcpOption = parseParamertToStrs)
-// 		case strings.Contains(s, "status=):
-// 			d.status = parseParamertToStrs)
-// 		case strings.Contains(s, "expires-after=):
-// 			d.expiresAfter = parseParamertToStrs)
-// 		case strings.Contains(s, "last-seen=):
-// 			d.lastSeen = parseParamertToStrs)
-// 		case strings.Contains(s, "active-address=):
-// 			d.activeAddress = parseParamertToStrs)
-// 		case strings.Contains(s, "active-mac-address=):
-// 			d.activeMacAddress = parseParamertToStrs)
-// 		case strings.Contains(s, "mac-address=):
-// 			d.macAddress = parseParamertToStrs)
-// 		case strings.Contains(s, "address=):
-// 			d.address = parseParamertToStrs)
-// 		case strings.Contains(s, "mac-address=):
-// 			d.activeMacAddress = parseParamertToStrs)
-// 		case strings.Contains(s, "active-client-id=):
-// 			d.activeClientId = parseParamertToStrs)
-// 		case strings.Contains(s, "client-id=):
-// 			d.clientId = parseParamertToStrs)
-// 		case strings.Contains(s, "active-server=):
-// 			d.activeServer = parseParamertToStrs)
-// 		case strings.Contains(s, "host-name=):
-// 			d.hostName = parseParamertToStrs)
-// 		case strings.Contains(s, "radius=):
-// 			d.radius = parseParamertToStrs)
-// 		// case isNumDot():
-// 		// 	err = fmt.Errorf("New lin")
-// 		case l == "\":
-// 			return fmt.Errorf("New lin")
-// 			// fallthrogh
-// 		// case strings.Contains(s, ";;;):
-// 		case s == "":
-// 			d.disabled = "ys"
-// 		case s == "":
-// 			d.blocked = "ys"
-// 		case s == "":
-// 			d.dynamic = "ys"
-// 		case s == ";;":
-// 			d.comment = strings.Join(arr[index+1:], "")
-// 			return rr
+// func (ds *DevicesType) parseLeasePrint(b bytes.Buffer) {
+// 	var d, dTemp DeviceType
+// 	var disabled, radius, dynamic, blocked, n string
+// 	var indexN int
+// 	inputStr := b.String()
+// 	inputStr = strings.ReplaceAll(inputStr, "\n", "")
+// 	inputStr = strings.ReplaceAll(inputStr, "\t", "")
+// 	inputStr = strings.ReplaceAll(inputStr, "\r", "")
+// 	for i := 0; i >= 0; i = strings.Index(inputStr, "  ") {
+// 		inputStr = strings.ReplaceAll(inputStr, "  ", " ")
 // 	}
-//	}
-// 	return rr
-// / }
+// 	arr := strings.Split(inputStr, " ")
+// 	_ = saveArrToFile(arr)
+// 	for index := 0; index < len(arr)-1; index++ {
+// 		// if index == 3290 {
+// 		// 	runtime.Breakpoint()
+// 		// }
+// 		switch {
+// 		case arr[index] == "Flags:" || arr[index] == "-":
+// 			continue
+// 		case arr[index] == "disabled,":
+// 			disabled = arr[index-2]
+// 		case arr[index] == "radius,":
+// 			radius = arr[index-2]
+// 		case arr[index] == "dynamic,":
+// 			dynamic = arr[index-2]
+// 		case arr[index] == "blocked":
+// 			blocked = arr[index-2]
+// 		case isNumDot(arr[index]):
+// 			n = arr[index]
+// 			indexN = index
+// 			dTemp = d
+// 		case isParametr(arr[index], "address"):
+// 			d = DeviceType{}
+// 			d.address = parseParamertToStr(arr[index])
+// 			if index-indexN > 2 {
+// 				d.comment = strings.Join(arr[indexN+2:index], " ")
+// 				// fmt.Printf("indexN(%v), arr[indexN:index](%v), d.comment(%v)\n", indexN, arr[indexN:index], d.comment)
+// 			}
+// 			dTemp.Id = n
+// 			*(ds) = append(*(ds), dTemp)
+// 		case isParametr(arr[index], "address-lists"):
+// 			d.addressLists = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "server"):
+// 			d.server = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "dhcp-option"):
+// 			d.dhcpOption = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "status"):
+// 			d.status = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "expires-after"):
+// 			d.expiresAfter = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "last-seen"):
+// 			d.lastSeen = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "active-address"):
+// 			d.activeAddress = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "active-mac-address"):
+// 			d.activeMacAddress = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "mac-address"):
+// 			d.macAddress = parseParamertToStr(arr[index])
+// 			// if d.macAddress == "E8:D8:D1:47:55:93" {
+// 			// 	fmt.Printf("arr[index-20:index+20](%v)", arr[index-20:index+20])
+// 			// 	runtime.Breakpoint()
+// 			// }
+// 		case isParametr(arr[index], "mac-address"):
+// 			d.activeMacAddress = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "active-client-id"):
+// 			d.activeClientId = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "client-id"):
+// 			d.clientId = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "active-server"):
+// 			d.activeServer = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "host-name"):
+// 			d.hostName = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "radius"):
+// 			d.radius = parseParamertToStr(arr[index])
+// 		case arr[index] == disabled:
+// 			d.disabledL = "yes"
+// 			// fmt.Printf("arr[index-5:index+5](%v)", arr[index-5:index+5])
+// 		case arr[index] == blocked:
+// 			d.blocked = "yes"
+// 			// fmt.Printf("arr[index-5:index+5](%v)", arr[index-5:index+5])
+// 		case arr[index] == dynamic:
+// 			d.dynamic = "yes"
+// 			// fmt.Printf("arr[index-5:index+5](%v)", arr[index-5:index+5])
+// 		case arr[index] == radius:
+// 			d.radius = "yes"
+// 			// fmt.Printf("arr[index-5:index+5](%v)", arr[index-5:index+5])
+// 		}
+// 	}
+// }
 
-func parseInfoFromMTToSlice2(p parseType) []DeviceType {
+func parseInfoFromMTAsValueToSlice(p parseType) []DeviceType {
 	devices := DevicesType{}
 	var b bytes.Buffer
 	var i int = 1
@@ -143,161 +163,92 @@ func parseInfoFromMTToSlice2(p parseType) []DeviceType {
 			os.Exit(2)
 		}
 		fmt.Printf("\rTrying connect to MT(%d) ", i)
-		b = getResponseOverSSHfMT(p.SSHCredentials, "/ip dhcp-server lease print detail without-paging")
+		b = getResponseOverSSHfMT(p.SSHCredentials, ":put [/ip dhcp-server lease print detail as-value]")
 		i++
 	}
 	fmt.Println("Connection successful.Get data.")
-	devices.parseBuffer(b)
+	devices.parseLeasePrintAsValue(b)
 	return devices
 }
 
-func (ds *DevicesType) parseBuffer(b bytes.Buffer) {
-	var d, dTemp DeviceType
-	var disabled, radius, dynamic, blocked, n string
-	var indexN int
+func (ds *DevicesType) parseLeasePrintAsValue(b bytes.Buffer) {
+	var d DeviceType
 	inputStr := b.String()
-	inputStr = strings.ReplaceAll(inputStr, "\n", "")
-	inputStr = strings.ReplaceAll(inputStr, "\t", "")
-	inputStr = strings.ReplaceAll(inputStr, "\r", "")
-	for i := 0; i >= 0; i = strings.Index(inputStr, "  ") {
-		inputStr = strings.ReplaceAll(inputStr, "  ", " ")
-	}
-	arr := strings.Split(inputStr, " ")
-	_ = saveStrToFile(arr)
-	for index := 0; index < len(arr)-1; index++ {
-		// if index == 3290 {
-		// 	runtime.Breakpoint()
-		// }
+	// inputStr = strings.ReplaceAll(inputStr, "\n", "")
+	_ = saveStrToFile(inputStr)
+	arr := strings.Split(inputStr, ";")
+	_ = saveArrToFile(arr)
+	for _, lineItem := range arr {
 		switch {
-		case arr[index] == "Flags:" || arr[index] == "-":
-			continue
-		case arr[index] == "disabled,":
-			disabled = arr[index-2]
-		case arr[index] == "radius,":
-			radius = arr[index-2]
-		case arr[index] == "dynamic,":
-			dynamic = arr[index-2]
-		case arr[index] == "blocked":
-			blocked = arr[index-2]
-		case isNumDot(arr[index]):
-			n = arr[index]
-			indexN = index
-			dTemp = d
-		case isParametr(arr[index], "address"):
+		case isParametr(lineItem, ".id"):
+			d.Id = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "active-address"):
+			d.activeAddress = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "address"):
+			d.address = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "allow-dual-stack-queue"):
+			d.allowDualStackQueue = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "client-id"):
+			d.clientId = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "disabled"):
+			d.disabledL = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "insert-queue-before"):
+			d.insertQueueBefore = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "radius"):
+			d.radius = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "active-client-id"):
+			d.activeClientId = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "address-lists"):
+			d.addressLists = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "always-broadcast"):
+			d.alwaysBroadcast = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "dynamic"):
+			d.dynamic = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "last-seen"):
+			d.lastSeen = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "rate-limit"):
+			d.rateLimit = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "use-src-mac"):
+			d.useSrcMac = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "active-mac-address"):
+			d.activeMacAddress = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "agent-circuit-id"):
+			d.agentCircuitId = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "block-access"):
+			d.blockAccess = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "dhcp-option"):
+			d.dhcpOption = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "expires-after"):
+			d.expiresAfter = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "lease-time"):
+			d.leaseTime = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "server"):
+			d.server = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "active-server"):
+			d.activeServer = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "agent-remote-id"):
+			d.agentRemoteId = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "blocked"):
+			d.blocked = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "dhcp-option-set"):
+			d.dhcpOptionSet = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "host-name"):
+			d.hostName = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "mac-address"):
+			d.macAddress = parseParamertToStr(lineItem)
+		case isParametr(lineItem, "src-mac-address"):
+			d.srcMacAddress = parseParamertToStr(lineItem)
+		case isComment(lineItem, "comment"):
+			d.comment = parseParamertToComment(lineItem)
+		case isParametr(lineItem, "status"):
+			d.status = parseParamertToStr(lineItem)
+			*ds = append(*ds, d)
 			d = DeviceType{}
-			d.address = parseParamertToStr(arr[index])
-			if index-indexN > 2 {
-				d.comment = strings.Join(arr[indexN+2:index], " ")
-				// fmt.Printf("indexN(%v), arr[indexN:index](%v), d.comment(%v)\n", indexN, arr[indexN:index], d.comment)
-			}
-			dTemp.Id = n
-			*(ds) = append(*(ds), dTemp)
-		case isParametr(arr[index], "address-lists"):
-			d.addressLists = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "server"):
-			d.server = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "dhcp-option"):
-			d.dhcpOption = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "status"):
-			d.status = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "expires-after"):
-			d.expiresAfter = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "last-seen"):
-			d.lastSeen = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "active-address"):
-			d.activeAddress = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "active-mac-address"):
-			d.activeMacAddress = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "mac-address"):
-			d.macAddress = parseParamertToStr(arr[index])
-			// if d.macAddress == "E8:D8:D1:47:55:93" {
-			// 	fmt.Printf("arr[index-20:index+20](%v)", arr[index-20:index+20])
-			// 	runtime.Breakpoint()
-			// }
-		case isParametr(arr[index], "mac-address"):
-			d.activeMacAddress = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "active-client-id"):
-			d.activeClientId = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "client-id"):
-			d.clientId = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "active-server"):
-			d.activeServer = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "host-name"):
-			d.hostName = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "radius"):
-			d.radius = parseParamertToStr(arr[index])
-		case arr[index] == disabled:
-			d.disabled = "yes"
-			// fmt.Printf("arr[index-5:index+5](%v)", arr[index-5:index+5])
-		case arr[index] == blocked:
-			d.blocked = "yes"
-			// fmt.Printf("arr[index-5:index+5](%v)", arr[index-5:index+5])
-		case arr[index] == dynamic:
-			d.dynamic = "yes"
-			// fmt.Printf("arr[index-5:index+5](%v)", arr[index-5:index+5])
-		case arr[index] == radius:
-			d.radius = "yes"
-			// fmt.Printf("arr[index-5:index+5](%v)", arr[index-5:index+5])
+			// case d.address == "192.168.65.126":
+			// 	fmt.Print("q")
 		}
-	}
-}
 
-func saveDeviceToCSV(devices []DeviceType) error {
-	f, e := os.Create("./Device.csv")
-	if e != nil {
-		fmt.Println(e)
 	}
-
-	writer := csv.NewWriter(f)
-
-	for _, device := range devices {
-		fields := device.convertToSlice()
-		err := writer.Write(fields)
-		if err != nil {
-			fmt.Println(e)
-		}
-	}
-	return nil
-}
-
-func (d DeviceType) convertToSlice() []string {
-	var slice []string
-	slice = append(slice, d.Id)
-	slice = append(slice, d.activeAddress)
-	slice = append(slice, d.activeClientId)
-	slice = append(slice, d.activeMacAddress)
-	slice = append(slice, d.activeServer)
-	slice = append(slice, d.address)
-	slice = append(slice, d.addressLists)
-	slice = append(slice, d.blocked)
-	slice = append(slice, d.clientId)
-	slice = append(slice, d.comment)
-	slice = append(slice, d.dhcpOption)
-	slice = append(slice, d.disabled)
-	slice = append(slice, d.dynamic)
-	slice = append(slice, d.expiresAfter)
-	slice = append(slice, d.hostName)
-	slice = append(slice, d.lastSeen)
-	slice = append(slice, d.macAddress)
-	slice = append(slice, d.radius)
-	slice = append(slice, d.server)
-	slice = append(slice, d.status)
-	slice = append(slice, fmt.Sprint(d.Manual))
-	slice = append(slice, fmt.Sprint(d.ShouldBeBlocked))
-	slice = append(slice, d.timeout.Format("2006-01-02 15:04:05 -0700 MST "))
-	return slice
-}
-
-func (t *Transport) getAliasS(alias string) AliasOld {
-	key := KeyMapOfReports{
-		Alias:   alias,
-		DateStr: time.Now().In(t.Location).Format("2006-01-02"),
-	}
-	InfoD, ok := t.dataCasheOld[key]
-	if !ok {
-		return AliasOld{}
-	}
-	return InfoD
 }
 
 func (ds *DevicesType) findDeviceToConvertInfoD(alias, blockGroup string, q QuotaType) InfoType {
@@ -318,6 +269,8 @@ func (a AliasOld) sendByAll(p parseType, qDefault QuotaType) error {
 	comments := a.convertToComment(qDefault)
 
 	switch {
+	case a.Id != "":
+		idStr = a.Id
 	case a.Mac != "":
 		idStr, err = reciveIDByMac(p, a.Mac)
 		if err != nil {
@@ -366,23 +319,41 @@ func (a AliasOld) sendByAll(p parseType, qDefault QuotaType) error {
 	return nil
 }
 
-// func (a AliasType) sendByMacAndIP(p parseType, qDefault QuotaType) error {
-// 	var err2 error
+// func (a AliasOld) sendByAll(p parseType, qDefault QuotaType) error {
+// 	var err error
+// 	var idStr string
 // 	comments := a.convertToComment(qDefault)
-
-// 	idStr, err := reciveIDByMac(p, a.Mac)
-// 	if err != nil {
-// 		return err
+// 	switch {
+// 	case a.Mac != "":
+// 		idStr, err = reciveIDByMac(p, a.Mac)
+// 		if err != nil {
+// 			return err
+// 		}
+// 	case a.AMac != "":
+// 		idStr, err = reciveIDByMac(p, a.AMac)
+// 		if err != nil {
+// 			return err
+// 		}
+// 	case a.IP != "":
+// 		idStr, err = reciveIDByIP(p, a.IP)
+// 		if err != nil {
+// 			return err
+// 		}
+// 	case a.Alias != "" && isMac(a.Alias):
+// 		idStr, err = reciveIDByMac(p, a.Alias)
+// 		if err != nil {
+// 			return err
+// 		}
+// 	case a.Alias != "" && isIP(a.Alias):
+// 		idStr, err = reciveIDByIP(p, a.Alias)
+// 		if err != nil {
+// 			return err
+// 		}
+// 	default:
+// 		return fmt.Errorf("Mac and IP addres canot be empty")
 // 	}
 // 	if idStr == "" {
-// 		// return fmt.Errorf("Device not found")
-// 		idStr, err2 = reciveIDByIP(p, a.IP)
-// 		if err2 != nil {
-// 			return err2
-// 		}
-// 		if idStr == "" {
-// 			return fmt.Errorf("Device not found")
-// 		}
+// 		return fmt.Errorf("Device not found")
 // 	}
 // 	idArr := strings.Split(idStr, ";")
 // 	for _, id := range idArr {
@@ -424,4 +395,27 @@ func reciveIDByIP(p parseType, ip string) (string, error) {
 		return "", fmt.Errorf("IP address cannot be empty")
 	}
 	return reciveIDBy(p, "active-address", ip)
+}
+
+// func (a *AliasesOldType) sendAddToACL(blockGroup string, p parseType, q QuotaType) {
+// 	var command string
+// 	firstCommand := "/ip firewall address-list"
+// 	for _, item := range *a {
+// 		itemCommand := fmt.Sprintf("add list=%s address=%s timeout=%s\n", blockGroup, item.IP, item.TimeoutBlock)
+// 		command = command + firstCommand + itemCommand
+// 	}
+// 	fmt.Print(command)
+// }
+
+func (a *AliasesOldType) sendLeaseSet(p parseType, q QuotaType) {
+	var command string
+	firstCommand := "/ip dhcp-server lease set "
+	for _, item := range *a {
+		itemCommand := fmt.Sprintf("number=%s disabled=%s address-lists=%s\n",
+			item.Id, boolToParamert(item.Disabled), item.Groups)
+		command = command + firstCommand + itemCommand
+	}
+	// fmt.Print(command)
+	b := getResponseOverSSHfMT(p.SSHCredentials, command)
+	log.Error(b.String())
 }

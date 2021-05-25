@@ -9,26 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// func (t *Transport) loopGetDataFromMT() {
-// 	t.updateDevices()
-// 	for {
-// 		<-t.timerMT.C
-// 		t.updateDevices()
-// 	}
-// }
-
-// func (t *Transport) getParseCred() parseType {
-// 	p := parseType{}
-// 	t.RLock()
-// 	p.SSHCredentials = t.sshCredentials
-// 	p.BlockAddressList = t.BlockAddressList
-// 	p.QuotaType = t.QuotaType
-// 	p.Location = t.Location
-// 	p.DevicesRetryDelay = t.DevicesRetryDelay
-// 	t.RUnlock()
-// 	return p
-// }
-
 func (t *Transport) setTimerMT(IntervalStr string) {
 	interval, err := time.ParseDuration(IntervalStr)
 	if err != nil {
@@ -41,14 +21,14 @@ func (t *Transport) setTimerMT(IntervalStr string) {
 
 func (t *Transport) updateDevices() {
 	t.Lock()
-	t.devices = parseInfoFromMTToSlice2(parseType{
+	t.devices = parseInfoFromMTAsValueToSlice(parseType{
 		SSHCredentials:   t.sshCredentials,
 		QuotaType:        t.QuotaType,
 		BlockAddressList: t.BlockAddressList,
 		Location:         t.Location,
 	})
 	t.lastUpdatedMT = time.Now()
-	t.setTimerMT(t.DevicesRetryDelay)
+	// t.setTimerMT(t.DevicesRetryDelay)
 	t.Unlock()
 }
 
@@ -114,8 +94,20 @@ func parseParamertToStr(inpuStr string) string {
 	arr := strings.Split(inpuStr, "=")
 	if len(arr) > 1 {
 		return arr[1]
-	} else {
-		log.Warnf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inpuStr)
+		// } else {
+		// 	log.Warnf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inpuStr)
+	}
+	return ""
+}
+
+func parseParamertToComment(inpuStr string) string {
+	inpuStr = strings.Trim(inpuStr, "=")
+	inpuStr = strings.ReplaceAll(inpuStr, "==", "=")
+	arr := strings.Split(inpuStr, "=")
+	if len(arr) > 1 {
+		return strings.Join(arr[1:], "=")
+		// } else {
+		// 	log.Warnf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inpuStr)
 	}
 	return ""
 }
@@ -129,19 +121,9 @@ func parseParamertToUint(inputValue string) uint64 {
 	if len(Arr) > 1 {
 		quotaStr := Arr[1]
 		q = paramertToUint(quotaStr)
-		// quotaStr = strings.Trim(quotaStr, "\r")
-		// quota, err := strconv.ParseUint(quotaStr, 10, 64)
-		// if err != nil {
-		// 	quotaF, err2 := strconv.ParseFloat(quotaStr, 64)
-		// 	if err != nil {
-		// 		log.Errorf("Error parse quota from string(%v):(%v)(%v)", quotaStr, err, err2)
-		// 		return 0
-		// 	}
-		// 	quota = uint64(quotaF)
-		// }
 		return q
-	} else {
-		log.Warnf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inputValue)
+		// } else {
+		// 	log.Warnf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inputValue)
 	}
 	return q
 }
@@ -364,10 +346,12 @@ func (d DeviceType) convertToInfo(blockGroup string) InfoType {
 	ip = validateIP(d.activeAddress, d.address)
 	mac = getSwithMac(d.activeMacAddress, d.macAddress, d.clientId, d.activeClientId)
 	hourlyQuota, dailyQuota, monthlyQuota, name, position, company, typeD, IDUser, comment, manual = parseComment(d.comment)
-	blocked := strings.Contains(d.addressLists, blockGroup)
+	blocked := isBlocked(d.addressLists, blockGroup)
+	// blocked := strings.Contains(d.addressLists, blockGroup)
 
 	infoD := InfoType{
 		DeviceOldType: DeviceOldType{
+			Id:       d.Id,
 			IP:       ip,
 			Mac:      mac,
 			AMac:     mac,
@@ -404,7 +388,7 @@ func (a *InfoType) convertToDevice(quotaDef QuotaType) DeviceType {
 		addressLists:     a.Groups,
 		blocked:          fmt.Sprint(a.Blocked),
 		comment:          a.convertToComment(quotaDef),
-		disabled:         fmt.Sprint(a.Disabled),
+		disabledL:        fmt.Sprint(a.Disabled),
 		hostName:         a.HostName,
 		macAddress:       a.Mac,
 		Manual:           a.Manual,
@@ -529,4 +513,16 @@ func (a *InfoType) delBlockGroup(group string) {
 	a.Groups = strings.ReplaceAll(a.Groups, ",,", ",")
 	a.Groups = strings.Trim(a.Groups, ",")
 	a.Groups = strings.ReplaceAll(a.Groups, `"`, "")
+}
+
+func (t *Transport) getAliasS(alias string) AliasOld {
+	key := KeyMapOfReports{
+		Alias:   alias,
+		DateStr: time.Now().In(t.Location).Format("2006-01-02"),
+	}
+	InfoD, ok := t.dataCasheOld[key]
+	if !ok {
+		return AliasOld{}
+	}
+	return InfoD
 }

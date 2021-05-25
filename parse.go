@@ -17,15 +17,6 @@ import (
 
 var count Count
 
-// mainLoop endless file parsing loop
-func (t *Transport) mainLoop(cfg *Config) {
-	t.runOnce(cfg)
-	for {
-		<-t.timerParse.C
-		t.runOnce(cfg)
-	}
-}
-
 func (t *Transport) runOnce(cfg *Config) {
 	p := parseType{}
 	t.RLock()
@@ -48,7 +39,7 @@ func (t *Transport) runOnce(cfg *Config) {
 	t.writeToChasheData()
 	t.updateAliases(p)
 	t.checkQuotas()
-	t.updateStatusDevicesToMT(cfg)
+	// t.updateStatusDevicesToMT(cfg)
 
 	t.clearingCountedTraffic(cfg, cfg.LastDate)
 
@@ -417,24 +408,6 @@ func (t *Transport) totalTrafficСounting() {
 			valueTotal.SizeOfHour[index] += value.SizeOfHour[index]
 		}
 		t.dataOld[keyTotal] = valueTotal
-		t.Unlock()
-
-	}
-}
-func (t *Transport) checkMac() {
-	for key := range t.dataOld {
-		t.Lock()
-		value := t.dataOld[key]
-		if value.Mac == "" {
-			if value.AMac != "" {
-				value.Mac = value.AMac
-			} else {
-				if isMac(value.Alias) {
-					value.Mac = value.Alias
-				}
-			}
-		}
-		t.dataOld[key] = value
 		t.Unlock()
 
 	}
