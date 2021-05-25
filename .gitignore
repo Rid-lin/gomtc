@@ -33,3 +33,5 @@ db/*
 *_old
 *.csv
 temp
+*.temp
+scripts/*

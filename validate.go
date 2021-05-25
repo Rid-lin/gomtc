@@ -101,3 +101,24 @@ func isParametr(inputStr, parametr string) bool {
 	}
 	return true
 }
+
+func isComment(inputStr, parametr string) bool {
+	arrStr := strings.Split(inputStr, "=")
+	if len(arrStr) < 2 {
+		return false
+	}
+	if arrStr[0] != parametr {
+		return false
+	}
+	return true
+}
+
+func isBlocked(addressLists, blockGroup string) bool {
+	arr := strings.Split(addressLists, ",")
+	for _, item := range arr {
+		if item == blockGroup {
+			return true
+		}
+	}
+	return false
+}

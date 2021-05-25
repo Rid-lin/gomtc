@@ -5,8 +5,6 @@ import (
 	"reflect"
 	"testing"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -56,49 +54,42 @@ func Test_getResponseOverSSHfMT(t *testing.T) {
 	}
 }
 
-func Test_parseInfoFromMTToSlice2(t *testing.T) {
-	type args struct {
-		p parseType
-	}
+// func Test_parseInfoFromMTToSlice(t *testing.T) {
+// 	type args struct {
+// 		p parseType
+// 	}
 
-	Location, err := time.LoadLocation("Asia/Yekaterinburg")
-	if err != nil {
-		log.Errorf("Error loading Location(%v):%v", "Asia/Yekaterinburg", err)
-		Location = time.UTC
-	}
+// 	Location, err := time.LoadLocation("Asia/Yekaterinburg")
+// 	if err != nil {
+// 		log.Errorf("Error loading Location(%v):%v", "Asia/Yekaterinburg", err)
+// 		Location = time.UTC
+// 	}
 
-	tests := []struct {
-		name string
-		args args
-		want []DeviceType
-	}{
-		{
-			name: "1",
-			args: args{
-				p: parseType{
-					QuotaType:        QuotaType{},
-					BlockAddressList: "Block",
-					SSHCredentials: SSHCredentials{
-						SSHHost:       "192.168.65.1",
-						SSHPort:       "22",
-						SSHUser:       "getmac",
-						SSHPass:       "getmac_password",
-						MaxSSHRetries: 60,
-						SSHRetryDelay: 3,
-					},
-					Location: Location,
-				}},
-			want: []DeviceType{},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := parseInfoFromMTToSlice2(tt.args.p); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("parseInfoFromMTToSlice2() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
+// 	tests := []struct {
+// 		name string
+// 		args args
+// 		want []DeviceType
+// 	}{
+// 		{
+// 			name: "1",
+// 			args: args{
+// 				p: parseType{
+// 					QuotaType:        qDef,
+// 					BlockAddressList: "Block",
+// 					SSHCredentials:   sshCred,
+// 					Location:         Location,
+// 				}},
+// 			want: []DeviceType{},
+// 		},
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			if got := parseInfoFromMTToSlice(tt.args.p); !reflect.DeepEqual(got, tt.want) {
+// 				t.Errorf("parseInfoFromMTToSlice2() = %v, want %v", got, tt.want)
+// 			}
+// 		})
+// 	}
+// }
 
 func Test_saveDeviceToCSV(t *testing.T) {
 	type args struct {
@@ -204,6 +195,35 @@ func TestAliasType_send(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := tt.a.sendByAll(tt.args.p, tt.args.qDefault); (err != nil) != tt.wantErr {
 				t.Errorf("AliasType.send() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_parseInfoFromMTAsValueToSlice(t *testing.T) {
+	type args struct {
+		p parseType
+	}
+	tests := []struct {
+		name string
+		args args
+		want []DeviceType
+	}{
+		{
+			name: "1",
+			args: args{
+				p: parseType{
+					QuotaType:        qDef,
+					BlockAddressList: "Block",
+					SSHCredentials:   sshCred,
+					Location:         cfg.Location,
+				}},
+			want: []DeviceType{},
+		}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := parseInfoFromMTAsValueToSlice(tt.args.p); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("parseInfoFromMTAsValueToSlice() = %v, want %v", got, tt.want)
 			}
 		})
 	}
