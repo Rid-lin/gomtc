@@ -45,12 +45,6 @@ func isHexColon(s string) bool {
 	}
 	// colonFound := 2
 	for _, v := range s {
-		// if v == ':' {
-		// 	if colonFound < 0 {
-		// 		return false
-		// 	}
-		// 	colonFound = colonFound - 1
-		// } else
 		if (v < '0' || v > '9') && (v < 'a' || v > 'f') && (v < 'A' || v > 'F') {
 			return false
 		}

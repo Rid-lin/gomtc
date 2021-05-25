@@ -1,10 +1,8 @@
 https://goreportcard.com/report/git.vegner.org/vsvegner/gomtcя[![Go Report Card](https://goreportcard.com/report/git.vegner.org/vsvegner/gomtc)](https://goreportcard.com/report/git.vegner.org/vsvegner/gomtc)
 
-# Minimalist Netflow v5 to squid-log collector written in Go
+# Netflow collector with saving logs in squid format, and short hourly statistics by day and by logins (users) written in Go
 
 The broker listens on UDP port (default 2055), accepts Netflow traffic, and by default collects records with selected metadata formatted into squid log. Login information replaces the Mac address of the device that receives from the router mikrotik.
-
-To build the report, it uses the [screensquid](https://sourceforge.net/projects/screen-squid/) database and its part (fetch.pl) for parsing and loading the squid log into the database
 
 ## Usage
 
@@ -18,13 +16,17 @@ Copy folder assets to /usr/share/gomtc/
 
 `cp /assets /usr/share/gomtc/`
 
+Copy the config folder to /etc/gomtc
+
+`cp /config /etc/gomtc/`
+
 Build programm:
 
-`make -f make_linux`
+`make build`
 
 Move binary file
 
-`mv ./bin/linux/gomtc /usr/local/bin/`
+`mv ./bin/gomtc_linux_amd64 /usr/local/bin/`
 
 Edit file /usr/share/gomtc/assets/gomtc.service
 
