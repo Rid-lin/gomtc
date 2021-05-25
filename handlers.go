@@ -111,60 +111,6 @@ func (data *Transport) handleWithFriends(w http.ResponseWriter, r *http.Request)
 	data.handleShowReport(w, true, "wf", r)
 }
 
-// func (data *Transport) handleIndex(w http.ResponseWriter, r *http.Request) {
-
-// 	request := parseDataFromURL(r)
-// 	request.referURL = r.Host + r.URL.Path
-// 	request.path = r.URL.Path
-// 	data.RLock()
-// 	assetsPath := data.AssetsPath
-// 	data.RUnlock()
-// 	DisplayData := data.reportTrafficHourlyByLogins(request, false)
-
-// 	fmap := template.FuncMap{
-// 		"FormatSize": FormatSize,
-// 	}
-// 	t := template.Must(template.New("index").Funcs(fmap).ParseFiles(
-// 		assetsPath+"/index.html",
-// 		assetsPath+"/header.html",
-// 		assetsPath+"/footer.html"))
-// 	err := t.Execute(w, DisplayData)
-// 	if err != nil {
-// 		if strings.Contains(fmt.Sprint(err), "index out of range") {
-// 			fmt.Fprintf(w, "Проверьте налиие логов за запрашиваемый период<br> или подождите несколько минут.")
-// 		} else {
-// 			fmt.Fprintf(w, "Что-то пошло не так, произошла ошибка при выполнении запроса. <br> %v", err.Error())
-// 		}
-// 	}
-// }
-
-// func (data *Transport) handleWithFriends(w http.ResponseWriter, r *http.Request) {
-
-// 	request := parseDataFromURL(r)
-// 	request.referURL = r.Host + r.URL.Path
-// 	request.path = r.URL.Path
-// 	data.RLock()
-// 	assetsPath := data.AssetsPath
-// 	data.RUnlock()
-// 	DisplayData := data.reportTrafficHourlyByLogins(request, true)
-
-// 	fmap := template.FuncMap{
-// 		"FormatSize": FormatSize,
-// 	}
-// 	t := template.Must(template.New("indexwf").Funcs(fmap).ParseFiles(
-// 		assetsPath+"/indexwf.html",
-// 		assetsPath+"/header.html",
-// 		assetsPath+"/footer.html"))
-// 	err := t.Execute(w, DisplayData)
-// 	if err != nil {
-// 		if strings.Contains(fmt.Sprint(err), "index out of range") {
-// 			fmt.Fprintf(w, "Проверьте налиие логов за запрашиваемый период<br> или подождите несколько минут.")
-// 		} else {
-// 			fmt.Fprintf(w, "Что-то пошло не так, произошла ошибка при выполнении запроса. <br> %v", err.Error())
-// 		}
-// 	}
-// }
-
 func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 	t.RLock()
 	assetsPath := t.AssetsPath
