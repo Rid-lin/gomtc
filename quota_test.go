@@ -56,3 +56,41 @@ func TestTransport_updateStatusDevicesToMT(t *testing.T) {
 		})
 	}
 }
+
+func Test_setDailyTimeout(t *testing.T) {
+	tests := []struct {
+		name string
+		want string
+	}{
+		{
+			name: "1",
+			want: "00:00:150",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := setDailyTimeout(); got != tt.want {
+				t.Errorf("setDailyTimeout() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_setHourlyTimeout(t *testing.T) {
+	tests := []struct {
+		name string
+		want string
+	}{
+		{
+			name: "1",
+			want: "00:00:150",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := setHourlyTimeout(); got != tt.want {
+				t.Errorf("setHourlyTimeout() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
