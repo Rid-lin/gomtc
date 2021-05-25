@@ -44,114 +44,114 @@ func getResponseOverSSHfMT(sshCred SSHCredentials, command string) bytes.Buffer 
 	return b
 }
 
-func parseInfoFromMTToSlice(p parseType) []DeviceType {
-	devices := DevicesType{}
-	var b bytes.Buffer
-	var i int = 1
+// func parseInfoFromMTToSlice(p parseType) []DeviceType {
+// 	devices := DevicesType{}
+// 	var b bytes.Buffer
+// 	var i int = 1
 
-	for b.Len() == 0 {
-		if (i - p.MaxSSHRetries) == 0 {
-			os.Exit(2)
-		}
-		fmt.Printf("\rTrying connect to MT(%d) ", i)
-		b = getResponseOverSSHfMT(p.SSHCredentials, "/ip dhcp-server lease print detail without-paging")
-		i++
-	}
-	fmt.Println("Connection successful.Get data.")
-	devices.parseLeasePrint(b)
-	return devices
-}
+// 	for b.Len() == 0 {
+// 		if (i - p.MaxSSHRetries) == 0 {
+// 			os.Exit(2)
+// 		}
+// 		fmt.Printf("\rTrying connect to MT(%d) ", i)
+// 		b = getResponseOverSSHfMT(p.SSHCredentials, "/ip dhcp-server lease print detail without-paging")
+// 		i++
+// 	}
+// 	fmt.Println("Connection successful.Get data.")
+// 	devices.parseLeasePrint(b)
+// 	return devices
+// }
 
-func (ds *DevicesType) parseLeasePrint(b bytes.Buffer) {
-	var d, dTemp DeviceType
-	var disabled, radius, dynamic, blocked, n string
-	var indexN int
-	inputStr := b.String()
-	inputStr = strings.ReplaceAll(inputStr, "\n", "")
-	inputStr = strings.ReplaceAll(inputStr, "\t", "")
-	inputStr = strings.ReplaceAll(inputStr, "\r", "")
-	for i := 0; i >= 0; i = strings.Index(inputStr, "  ") {
-		inputStr = strings.ReplaceAll(inputStr, "  ", " ")
-	}
-	arr := strings.Split(inputStr, " ")
-	_ = saveArrToFile(arr)
-	for index := 0; index < len(arr)-1; index++ {
-		// if index == 3290 {
-		// 	runtime.Breakpoint()
-		// }
-		switch {
-		case arr[index] == "Flags:" || arr[index] == "-":
-			continue
-		case arr[index] == "disabled,":
-			disabled = arr[index-2]
-		case arr[index] == "radius,":
-			radius = arr[index-2]
-		case arr[index] == "dynamic,":
-			dynamic = arr[index-2]
-		case arr[index] == "blocked":
-			blocked = arr[index-2]
-		case isNumDot(arr[index]):
-			n = arr[index]
-			indexN = index
-			dTemp = d
-		case isParametr(arr[index], "address"):
-			d = DeviceType{}
-			d.address = parseParamertToStr(arr[index])
-			if index-indexN > 2 {
-				d.comment = strings.Join(arr[indexN+2:index], " ")
-				// fmt.Printf("indexN(%v), arr[indexN:index](%v), d.comment(%v)\n", indexN, arr[indexN:index], d.comment)
-			}
-			dTemp.Id = n
-			*(ds) = append(*(ds), dTemp)
-		case isParametr(arr[index], "address-lists"):
-			d.addressLists = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "server"):
-			d.server = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "dhcp-option"):
-			d.dhcpOption = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "status"):
-			d.status = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "expires-after"):
-			d.expiresAfter = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "last-seen"):
-			d.lastSeen = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "active-address"):
-			d.activeAddress = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "active-mac-address"):
-			d.activeMacAddress = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "mac-address"):
-			d.macAddress = parseParamertToStr(arr[index])
-			// if d.macAddress == "E8:D8:D1:47:55:93" {
-			// 	fmt.Printf("arr[index-20:index+20](%v)", arr[index-20:index+20])
-			// 	runtime.Breakpoint()
-			// }
-		case isParametr(arr[index], "mac-address"):
-			d.activeMacAddress = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "active-client-id"):
-			d.activeClientId = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "client-id"):
-			d.clientId = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "active-server"):
-			d.activeServer = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "host-name"):
-			d.hostName = parseParamertToStr(arr[index])
-		case isParametr(arr[index], "radius"):
-			d.radius = parseParamertToStr(arr[index])
-		case arr[index] == disabled:
-			d.disabledL = "yes"
-			// fmt.Printf("arr[index-5:index+5](%v)", arr[index-5:index+5])
-		case arr[index] == blocked:
-			d.blocked = "yes"
-			// fmt.Printf("arr[index-5:index+5](%v)", arr[index-5:index+5])
-		case arr[index] == dynamic:
-			d.dynamic = "yes"
-			// fmt.Printf("arr[index-5:index+5](%v)", arr[index-5:index+5])
-		case arr[index] == radius:
-			d.radius = "yes"
-			// fmt.Printf("arr[index-5:index+5](%v)", arr[index-5:index+5])
-		}
-	}
-}
+// func (ds *DevicesType) parseLeasePrint(b bytes.Buffer) {
+// 	var d, dTemp DeviceType
+// 	var disabled, radius, dynamic, blocked, n string
+// 	var indexN int
+// 	inputStr := b.String()
+// 	inputStr = strings.ReplaceAll(inputStr, "\n", "")
+// 	inputStr = strings.ReplaceAll(inputStr, "\t", "")
+// 	inputStr = strings.ReplaceAll(inputStr, "\r", "")
+// 	for i := 0; i >= 0; i = strings.Index(inputStr, "  ") {
+// 		inputStr = strings.ReplaceAll(inputStr, "  ", " ")
+// 	}
+// 	arr := strings.Split(inputStr, " ")
+// 	_ = saveArrToFile(arr)
+// 	for index := 0; index < len(arr)-1; index++ {
+// 		// if index == 3290 {
+// 		// 	runtime.Breakpoint()
+// 		// }
+// 		switch {
+// 		case arr[index] == "Flags:" || arr[index] == "-":
+// 			continue
+// 		case arr[index] == "disabled,":
+// 			disabled = arr[index-2]
+// 		case arr[index] == "radius,":
+// 			radius = arr[index-2]
+// 		case arr[index] == "dynamic,":
+// 			dynamic = arr[index-2]
+// 		case arr[index] == "blocked":
+// 			blocked = arr[index-2]
+// 		case isNumDot(arr[index]):
+// 			n = arr[index]
+// 			indexN = index
+// 			dTemp = d
+// 		case isParametr(arr[index], "address"):
+// 			d = DeviceType{}
+// 			d.address = parseParamertToStr(arr[index])
+// 			if index-indexN > 2 {
+// 				d.comment = strings.Join(arr[indexN+2:index], " ")
+// 				// fmt.Printf("indexN(%v), arr[indexN:index](%v), d.comment(%v)\n", indexN, arr[indexN:index], d.comment)
+// 			}
+// 			dTemp.Id = n
+// 			*(ds) = append(*(ds), dTemp)
+// 		case isParametr(arr[index], "address-lists"):
+// 			d.addressLists = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "server"):
+// 			d.server = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "dhcp-option"):
+// 			d.dhcpOption = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "status"):
+// 			d.status = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "expires-after"):
+// 			d.expiresAfter = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "last-seen"):
+// 			d.lastSeen = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "active-address"):
+// 			d.activeAddress = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "active-mac-address"):
+// 			d.activeMacAddress = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "mac-address"):
+// 			d.macAddress = parseParamertToStr(arr[index])
+// 			// if d.macAddress == "E8:D8:D1:47:55:93" {
+// 			// 	fmt.Printf("arr[index-20:index+20](%v)", arr[index-20:index+20])
+// 			// 	runtime.Breakpoint()
+// 			// }
+// 		case isParametr(arr[index], "mac-address"):
+// 			d.activeMacAddress = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "active-client-id"):
+// 			d.activeClientId = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "client-id"):
+// 			d.clientId = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "active-server"):
+// 			d.activeServer = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "host-name"):
+// 			d.hostName = parseParamertToStr(arr[index])
+// 		case isParametr(arr[index], "radius"):
+// 			d.radius = parseParamertToStr(arr[index])
+// 		case arr[index] == disabled:
+// 			d.disabledL = "yes"
+// 			// fmt.Printf("arr[index-5:index+5](%v)", arr[index-5:index+5])
+// 		case arr[index] == blocked:
+// 			d.blocked = "yes"
+// 			// fmt.Printf("arr[index-5:index+5](%v)", arr[index-5:index+5])
+// 		case arr[index] == dynamic:
+// 			d.dynamic = "yes"
+// 			// fmt.Printf("arr[index-5:index+5](%v)", arr[index-5:index+5])
+// 		case arr[index] == radius:
+// 			d.radius = "yes"
+// 			// fmt.Printf("arr[index-5:index+5](%v)", arr[index-5:index+5])
+// 		}
+// 	}
+// }
 
 func parseInfoFromMTAsValueToSlice(p parseType) []DeviceType {
 	devices := DevicesType{}
@@ -269,6 +269,8 @@ func (a AliasOld) sendByAll(p parseType, qDefault QuotaType) error {
 	comments := a.convertToComment(qDefault)
 
 	switch {
+	case a.Id != "":
+		idStr = a.Id
 	case a.Mac != "":
 		idStr, err = reciveIDByMac(p, a.Mac)
 		if err != nil {
@@ -321,7 +323,6 @@ func (a AliasOld) sendByAll(p parseType, qDefault QuotaType) error {
 // 	var err error
 // 	var idStr string
 // 	comments := a.convertToComment(qDefault)
-
 // 	switch {
 // 	case a.Mac != "":
 // 		idStr, err = reciveIDByMac(p, a.Mac)

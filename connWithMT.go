@@ -21,7 +21,7 @@ func (t *Transport) setTimerMT(IntervalStr string) {
 
 func (t *Transport) updateDevices() {
 	t.Lock()
-	t.devices = parseInfoFromMTToSlice(parseType{
+	t.devices = parseInfoFromMTAsValueToSlice(parseType{
 		SSHCredentials:   t.sshCredentials,
 		QuotaType:        t.QuotaType,
 		BlockAddressList: t.BlockAddressList,
@@ -121,16 +121,6 @@ func parseParamertToUint(inputValue string) uint64 {
 	if len(Arr) > 1 {
 		quotaStr := Arr[1]
 		q = paramertToUint(quotaStr)
-		// quotaStr = strings.Trim(quotaStr, "\r")
-		// quota, err := strconv.ParseUint(quotaStr, 10, 64)
-		// if err != nil {
-		// 	quotaF, err2 := strconv.ParseFloat(quotaStr, 64)
-		// 	if err != nil {
-		// 		log.Errorf("Error parse quota from string(%v):(%v)(%v)", quotaStr, err, err2)
-		// 		return 0
-		// 	}
-		// 	quota = uint64(quotaF)
-		// }
 		return q
 	} else {
 		log.Warnf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inputValue)
@@ -360,6 +350,7 @@ func (d DeviceType) convertToInfo(blockGroup string) InfoType {
 
 	infoD := InfoType{
 		DeviceOldType: DeviceOldType{
+			Id:       d.Id,
 			IP:       ip,
 			Mac:      mac,
 			AMac:     mac,
