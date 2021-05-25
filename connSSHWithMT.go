@@ -163,7 +163,7 @@ func parseInfoFromMTAsValueToSlice(p parseType) []DeviceType {
 			os.Exit(2)
 		}
 		fmt.Printf("\rTrying connect to MT(%d) ", i)
-		b = getResponseOverSSHfMT(p.SSHCredentials, ":put [/ip dhcp-server lease print as-value]")
+		b = getResponseOverSSHfMT(p.SSHCredentials, ":put [/ip dhcp-server lease print detail as-value]")
 		i++
 	}
 	fmt.Println("Connection successful.Get data.")
@@ -395,4 +395,27 @@ func reciveIDByIP(p parseType, ip string) (string, error) {
 		return "", fmt.Errorf("IP address cannot be empty")
 	}
 	return reciveIDBy(p, "active-address", ip)
+}
+
+// func (a *AliasesOldType) sendAddToACL(blockGroup string, p parseType, q QuotaType) {
+// 	var command string
+// 	firstCommand := "/ip firewall address-list"
+// 	for _, item := range *a {
+// 		itemCommand := fmt.Sprintf("add list=%s address=%s timeout=%s\n", blockGroup, item.IP, item.TimeoutBlock)
+// 		command = command + firstCommand + itemCommand
+// 	}
+// 	fmt.Print(command)
+// }
+
+func (a *AliasesOldType) sendLeaseSet(p parseType, q QuotaType) {
+	var command string
+	firstCommand := "/ip dhcp-server lease set "
+	for _, item := range *a {
+		itemCommand := fmt.Sprintf("number=%s disabled=%s address-lists=%s\n",
+			item.Id, boolToParamert(item.Disabled), item.Groups)
+		command = command + firstCommand + itemCommand
+	}
+	// fmt.Print(command)
+	b := getResponseOverSSHfMT(p.SSHCredentials, command)
+	log.Error(b.String())
 }
