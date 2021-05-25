@@ -118,32 +118,3 @@ func setDailyTimeout() string {
 	}
 	return fmt.Sprintf("00:00:%.0f", delta)
 }
-
-// func (t *Transport) checkQuotas() {
-// 	hour := time.Now().Hour()
-// 	t.Lock()
-// 	for key, value := range t.dataCasheOld {
-// 		// if key.Alias == "E8:D8:D1:47:55:93" {
-// 		// 	runtime.Breakpoint()
-// 		// }
-// 		if key.Alias == "Всего" {
-// 			continue
-// 		}
-// 		if value.Manual {
-// 			continue
-// 		}
-// 		if value.Size >= value.DailyQuota {
-// 			value.ShouldBeBlocked = true
-// 			log.Tracef("Login (%v) was disabled due to exceeding the daily quota(%v)", key.Alias, value.DailyQuota)
-// 		} else if value.SizeOfHour[hour] >= value.HourlyQuota {
-// 			value.ShouldBeBlocked = true
-// 			log.Tracef("Login (%v) was disabled due to exceeding the hourly quota(%v)", key.Alias, value.DailyQuota)
-// 		} else if value.ShouldBeBlocked {
-// 			value.ShouldBeBlocked = false
-// 			log.Tracef("Login (%v)has been enabled, the quota(%v) has not been exceeded", key.Alias, value.HourlyQuota)
-// 		}
-// 		t.dataOld[key] = value
-
-// 	}
-// 	t.Unlock()
-// }

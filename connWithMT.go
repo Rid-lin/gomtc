@@ -9,16 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (t *Transport) setTimerMT(IntervalStr string) {
-	interval, err := time.ParseDuration(IntervalStr)
-	if err != nil {
-		t.timerMT = time.NewTimer(15 * time.Minute)
-	} else {
-		t.timerMT = time.NewTimer(interval)
-	}
-
-}
-
 func (t *Transport) updateDevices() {
 	t.Lock()
 	t.devices = parseInfoFromMTAsValueToSlice(parseType{
@@ -28,23 +18,8 @@ func (t *Transport) updateDevices() {
 		Location:         t.Location,
 	})
 	t.lastUpdatedMT = time.Now()
-	// t.setTimerMT(t.DevicesRetryDelay)
 	t.Unlock()
 }
-
-// func (data *Transport) updateQuotas(p parseType) {
-// 	data.Lock()
-// 	for key, value := range data.dataCashe {
-// 		infoD, err := data.devices.findInfoDByAlias(value.Alias, p.QuotaType)
-// 		if err != nil {
-// 			continue
-// 		}
-// 		value.InfoOfDeviceType = infoD
-// 		data.dataCashe[key] = value
-// 		// value.InfoOfDeviceType = data.devices.getInfoD(value.Alias, p.QuotaType)
-// 	}
-// 	data.Unlock()
-// }
 
 func (t *Transport) updateAliases(p parseType) {
 	t.Lock()
@@ -70,23 +45,6 @@ func (t *Transport) updateAliases(p parseType) {
 	}
 	t.Unlock()
 }
-
-// func (data *Transport) loopGetDataFromMTOverAPI() {
-// 	for {
-// 		data.updateInfoOfDevicesFromMT()
-// 		if err := data.getStatusallDevices(); err == nil {
-// 			// if err := transport.getStatusDevices(cfg); err == nil {
-// 			data.checkQuota()
-// 			// transport.updateStatusDevicesToMT(cfg)
-// 		}
-// 		interval, err := time.ParseDuration(cfg.Interval)
-// 		if err != nil {
-// 			interval = 1 * time.Minute
-// 		}
-// 		time.Sleep(interval)
-
-// 	}
-// }
 
 func parseParamertToStr(inpuStr string) string {
 	inpuStr = strings.Trim(inpuStr, "=")

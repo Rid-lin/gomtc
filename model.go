@@ -10,14 +10,14 @@ import (
 )
 
 type Transport struct {
-	data                map[string]AliasesType
+	// data                map[string]AliasesType
+	// aliases             AliasesType
 	AliasesStrArr       map[string][]string
 	Infos               map[string]InfoType
 	dataOld             MapOfReports
 	dataCasheOld        MapOfReports
 	change              AliasesOldType
 	devices             DevicesType
-	aliases             AliasesType
 	logs                []LogsOfJob
 	friends             []string
 	AssetsPath          string
@@ -29,7 +29,6 @@ type Transport struct {
 	csvFiletDestination *os.File
 	conn                *net.UDPConn
 	timerParse          *time.Timer
-	timerMT             *time.Timer
 	Location            *time.Location
 	lastUpdated         time.Time
 	lastUpdatedMT       time.Time
@@ -327,7 +326,7 @@ func NewTransport(cfg *Config) *Transport {
 		friends:             cfg.Friends,
 		AssetsPath:          cfg.AssetsPath,
 		SizeOneKilobyte:     cfg.SizeOneKilobyte,
-		stopReadFromUDP:     make(chan uint8),
+		stopReadFromUDP:     make(chan uint8, 2),
 		parseChan:           make(chan *time.Time),
 		outputChannel:       make(chan decodedRecord, 100),
 		renewOneMac:         make(chan string, 100),
