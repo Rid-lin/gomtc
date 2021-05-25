@@ -15,6 +15,7 @@ type Transport struct {
 	Infos               map[string]InfoType
 	dataOld             MapOfReports
 	dataCasheOld        MapOfReports
+	change              AliasesOldType
 	devices             DevicesType
 	aliases             AliasesType
 	logs                []LogsOfJob
@@ -58,6 +59,7 @@ type ResponseType struct {
 }
 
 type QuotaType struct {
+	TimeoutBlock    string
 	HourlyQuota     uint64
 	DailyQuota      uint64
 	MonthlyQuota    uint64
@@ -119,6 +121,7 @@ type DeviceType struct {
 
 type DevicesType []DeviceType
 type AliasesType []AliasType
+type AliasesOldType []AliasOld
 
 type lineOfLogType struct {
 	date        string

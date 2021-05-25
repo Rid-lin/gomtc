@@ -17,15 +17,6 @@ import (
 
 var count Count
 
-// mainLoop endless file parsing loop
-func (t *Transport) mainLoop(cfg *Config) {
-	t.runOnce(cfg)
-	for {
-		<-t.timerParse.C
-		t.runOnce(cfg)
-	}
-}
-
 func (t *Transport) runOnce(cfg *Config) {
 	p := parseType{}
 	t.RLock()
@@ -48,7 +39,7 @@ func (t *Transport) runOnce(cfg *Config) {
 	t.writeToChasheData()
 	t.updateAliases(p)
 	t.checkQuotas()
-	t.updateStatusDevicesToMT(cfg)
+	// t.updateStatusDevicesToMT(cfg)
 
 	t.clearingCountedTraffic(cfg, cfg.LastDate)
 

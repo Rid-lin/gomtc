@@ -17,17 +17,24 @@ func main() {
 
 	// TODO Изменить принцип блоикровки: не менять группы в ip dhcp-server lease, а добавлять утройство с определенным маком в группу блокировки с таймаутом: если превысил часовую норму, то до конца часа, если дневную, то до конца дня и т.д... Что позволит использовать одно соединение на блокировку одного устройства вместо двух, что уменьшит нагрузку на микрот.
 
-	transport := NewTransport(cfg)
+	t := NewTransport(cfg)
 
-	go transport.Exit()
-	go transport.ReOpenLogAfterLogroatate()
-	transport.getAliasesArr(cfg)
-	// go transport.loopGetDataFromMT()
-	go transport.mainLoop(cfg)
-	go transport.pipeOutputToSquid(cfg)
+	go t.Exit()
+	go t.ReOpenLogAfterLogroatate()
+	t.getAliasesArr(cfg)
+
+	// Endless file parsing loop
+	go func(cfg *Config) {
+		t.runOnce(cfg)
+		for {
+			<-t.timerParse.C
+			t.runOnce(cfg)
+		}
+	}(cfg)
+	go t.pipeOutputToSquid(cfg)
 	if !cfg.NoFlow {
-		go transport.readsStreamFromMT(cfg)
+		go t.readsStreamFromMT(cfg)
 	}
-	transport.handleRequest(cfg)
+	t.handleRequest(cfg)
 
 }
