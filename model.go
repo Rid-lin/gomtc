@@ -80,26 +80,37 @@ type DeviceOldType struct {
 
 type DeviceType struct {
 	// From MT
-	Id               string
-	activeAddress    string // 192.168.65.85
-	activeClientId   string // 1:e8:d8:d1:47:55:93
-	activeMacAddress string // E8:D8:D1:47:55:93
-	activeServer     string // dhcp_lan
-	address          string // pool_admin
-	addressLists     string // inet
-	blocked          string // false
-	clientId         string // 1:e8:d8:d1:47:55:93
-	comment          string // nb=Vlad/com=UTTiST/col=Admin/quotahourly=500000000/quotadaily=50000000000
-	dhcpOption       string //
-	disabled         string // false
-	dynamic          string // false
-	expiresAfter     string // 6m32s
-	hostName         string // root-hp
-	lastSeen         string // 3m28s
-	macAddress       string // E8:D8:D1:47:55:93
-	radius           string // false
-	server           string // dhcp_lan
-	status           string // bound
+	Id                  string
+	activeAddress       string // 192.168.65.85
+	activeClientId      string // 1:e8:d8:d1:47:55:93
+	allowDualStackQueue string
+	activeMacAddress    string // E8:D8:D1:47:55:93
+	activeServer        string // dhcp_lan
+	address             string // pool_admin
+	addressLists        string // inet
+	blocked             string // false
+	clientId            string // 1:e8:d8:d1:47:55:93
+	comment             string // nb=Vlad/com=UTTiST/col=Admin/quotahourly=500000000/quotadaily=50000000000
+	dhcpOption          string //
+	disabledL           string // false
+	dynamic             string // false
+	expiresAfter        string // 6m32s
+	hostName            string // root-hp
+	lastSeen            string // 3m28s
+	macAddress          string // E8:D8:D1:47:55:93
+	radius              string // false
+	server              string // dhcp_lan
+	status              string // bound
+	insertQueueBefore   string
+	rateLimit           string
+	useSrcMac           string
+	agentCircuitId      string
+	blockAccess         string
+	leaseTime           string
+	agentRemoteId       string
+	dhcpOptionSet       string
+	srcMacAddress       string
+	alwaysBroadcast     string
 	//User Defined
 	Manual          bool
 	ShouldBeBlocked bool

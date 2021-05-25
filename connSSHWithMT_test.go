@@ -56,7 +56,7 @@ func Test_getResponseOverSSHfMT(t *testing.T) {
 	}
 }
 
-func Test_parseInfoFromMTToSlice2(t *testing.T) {
+func Test_parseInfoFromMTToSlice(t *testing.T) {
 	type args struct {
 		p parseType
 	}
@@ -76,24 +76,17 @@ func Test_parseInfoFromMTToSlice2(t *testing.T) {
 			name: "1",
 			args: args{
 				p: parseType{
-					QuotaType:        QuotaType{},
+					QuotaType:        qDef,
 					BlockAddressList: "Block",
-					SSHCredentials: SSHCredentials{
-						SSHHost:       "192.168.65.1",
-						SSHPort:       "22",
-						SSHUser:       "getmac",
-						SSHPass:       "getmac_password",
-						MaxSSHRetries: 60,
-						SSHRetryDelay: 3,
-					},
-					Location: Location,
+					SSHCredentials:   sshCred,
+					Location:         Location,
 				}},
 			want: []DeviceType{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := parseInfoFromMTToSlice2(tt.args.p); !reflect.DeepEqual(got, tt.want) {
+			if got := parseInfoFromMTToSlice(tt.args.p); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("parseInfoFromMTToSlice2() = %v, want %v", got, tt.want)
 			}
 		})
@@ -204,6 +197,35 @@ func TestAliasType_send(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := tt.a.sendByAll(tt.args.p, tt.args.qDefault); (err != nil) != tt.wantErr {
 				t.Errorf("AliasType.send() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_parseInfoFromMTAsValueToSlice(t *testing.T) {
+	type args struct {
+		p parseType
+	}
+	tests := []struct {
+		name string
+		args args
+		want []DeviceType
+	}{
+		{
+			name: "1",
+			args: args{
+				p: parseType{
+					QuotaType:        qDef,
+					BlockAddressList: "Block",
+					SSHCredentials:   sshCred,
+					Location:         cfg.Location,
+				}},
+			want: []DeviceType{},
+		}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := parseInfoFromMTAsValueToSlice(tt.args.p); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("parseInfoFromMTAsValueToSlice() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -59,14 +59,21 @@ import (
 // 	return len(arr) == 4
 // }
 
-func saveStrToFile(arr []string) error {
-	f, _ := os.Create("./temp")
+func saveArrToFile(arr []string) error {
+	f, _ := os.Create("./arr.temp")
 	defer f.Close()
 	w := bufio.NewWriter(f)
 	for index := 0; index < len(arr)-1; index++ {
 		fmt.Fprintln(w, arr[index])
 	}
 	w.Flush()
+	return nil
+}
+
+func saveStrToFile(str string) error {
+	f, _ := os.Create("./str.temp")
+	defer f.Close()
+	_, _ = f.WriteString(str)
 	return nil
 }
 

@@ -101,3 +101,14 @@ func isParametr(inputStr, parametr string) bool {
 	}
 	return true
 }
+
+func isComment(inputStr, parametr string) bool {
+	arrStr := strings.Split(inputStr, "=")
+	if len(arrStr) < 2 {
+		return false
+	}
+	if arrStr[0] != parametr {
+		return false
+	}
+	return true
+}

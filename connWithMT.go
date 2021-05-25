@@ -9,26 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// func (t *Transport) loopGetDataFromMT() {
-// 	t.updateDevices()
-// 	for {
-// 		<-t.timerMT.C
-// 		t.updateDevices()
-// 	}
-// }
-
-// func (t *Transport) getParseCred() parseType {
-// 	p := parseType{}
-// 	t.RLock()
-// 	p.SSHCredentials = t.sshCredentials
-// 	p.BlockAddressList = t.BlockAddressList
-// 	p.QuotaType = t.QuotaType
-// 	p.Location = t.Location
-// 	p.DevicesRetryDelay = t.DevicesRetryDelay
-// 	t.RUnlock()
-// 	return p
-// }
-
 func (t *Transport) setTimerMT(IntervalStr string) {
 	interval, err := time.ParseDuration(IntervalStr)
 	if err != nil {
@@ -41,7 +21,7 @@ func (t *Transport) setTimerMT(IntervalStr string) {
 
 func (t *Transport) updateDevices() {
 	t.Lock()
-	t.devices = parseInfoFromMTToSlice2(parseType{
+	t.devices = parseInfoFromMTToSlice(parseType{
 		SSHCredentials:   t.sshCredentials,
 		QuotaType:        t.QuotaType,
 		BlockAddressList: t.BlockAddressList,
@@ -114,6 +94,18 @@ func parseParamertToStr(inpuStr string) string {
 	arr := strings.Split(inpuStr, "=")
 	if len(arr) > 1 {
 		return arr[1]
+	} else {
+		log.Warnf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inpuStr)
+	}
+	return ""
+}
+
+func parseParamertToComment(inpuStr string) string {
+	inpuStr = strings.Trim(inpuStr, "=")
+	inpuStr = strings.ReplaceAll(inpuStr, "==", "=")
+	arr := strings.Split(inpuStr, "=")
+	if len(arr) > 1 {
+		return strings.Join(arr[1:], "=")
 	} else {
 		log.Warnf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inpuStr)
 	}
@@ -404,7 +396,7 @@ func (a *InfoType) convertToDevice(quotaDef QuotaType) DeviceType {
 		addressLists:     a.Groups,
 		blocked:          fmt.Sprint(a.Blocked),
 		comment:          a.convertToComment(quotaDef),
-		disabled:         fmt.Sprint(a.Disabled),
+		disabledL:        fmt.Sprint(a.Disabled),
 		hostName:         a.HostName,
 		macAddress:       a.Mac,
 		Manual:           a.Manual,
@@ -529,4 +521,16 @@ func (a *InfoType) delBlockGroup(group string) {
 	a.Groups = strings.ReplaceAll(a.Groups, ",,", ",")
 	a.Groups = strings.Trim(a.Groups, ",")
 	a.Groups = strings.ReplaceAll(a.Groups, `"`, "")
+}
+
+func (t *Transport) getAliasS(alias string) AliasOld {
+	key := KeyMapOfReports{
+		Alias:   alias,
+		DateStr: time.Now().In(t.Location).Format("2006-01-02"),
+	}
+	InfoD, ok := t.dataCasheOld[key]
+	if !ok {
+		return AliasOld{}
+	}
+	return InfoD
 }

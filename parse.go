@@ -421,24 +421,6 @@ func (t *Transport) totalTrafficСounting() {
 
 	}
 }
-func (t *Transport) checkMac() {
-	for key := range t.dataOld {
-		t.Lock()
-		value := t.dataOld[key]
-		if value.Mac == "" {
-			if value.AMac != "" {
-				value.Mac = value.AMac
-			} else {
-				if isMac(value.Alias) {
-					value.Mac = value.Alias
-				}
-			}
-		}
-		t.dataOld[key] = value
-		t.Unlock()
-
-	}
-}
 
 func (t *Transport) writeToChasheData() {
 	t.Lock()
