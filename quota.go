@@ -72,26 +72,42 @@ func (t *Transport) checkQuotas() {
 			continue
 		case alias.Manual:
 			continue
-		case alias.Size >= alias.DailyQuota && key.DateStr == tn && !alias.Blocked:
+		case alias.Size >= alias.DailyQuota && alias.DateStr == tn && !alias.Blocked:
 			alias.ShouldBeBlocked = true
 			// alias.TimeoutBlock = setDailyTimeout()
 			alias.addBlockGroup(p.BlockAddressList)
 			t.change = append(t.change, alias)
-			log.Tracef("Login (%v) was disabled due to exceeding the daily quota(%v)", key.Alias, alias.DailyQuota)
-		case alias.SizeOfHour[hour] >= alias.HourlyQuota && key.DateStr == tn && !alias.Blocked:
+			log.Debugf("Login (%v) was disabled due to exceeding the daily quota(%v)", alias.Alias, alias.DailyQuota)
+		case alias.SizeOfHour[hour] >= alias.HourlyQuota && alias.DateStr == tn && !alias.Blocked:
 			alias.ShouldBeBlocked = true
 			// alias.TimeoutBlock = setHourlyTimeout()
 			alias.addBlockGroup(p.BlockAddressList)
 			t.change = append(t.change, alias)
-			log.Tracef("Login (%v) was disabled due to exceeding the hourly quota(%v)", key.Alias, alias.DailyQuota)
-		case alias.ShouldBeBlocked:
+			log.Debugf("Login (%v) was disabled due to exceeding the hourly quota(%v)", alias.Alias, alias.DailyQuota)
+		case alias.Blocked:
 			alias.ShouldBeBlocked = false
 			alias.delBlockGroup(p.BlockAddressList)
 			t.change = append(t.change, alias)
-			log.Tracef("Login (%v)has been enabled, the quota(%v) has not been exceeded", key.Alias, alias.HourlyQuota)
+			log.Debugf("Login (%v)has been enabled, the quota(%v) has not been exceeded", alias.Alias, alias.HourlyQuota)
 		}
 		t.dataOld[key] = alias
 
+	}
+	for _, device := range t.devices {
+		for _, blockedDevice := range t.change {
+			if device.macAddress == blockedDevice.Mac || device.macAddress == blockedDevice.Alias || device.activeMacAddress == blockedDevice.Mac {
+				break
+			}
+		}
+		if paramertToBool(device.blocked) {
+			device.ShouldBeBlocked = false
+			alias := AliasOld{
+				Alias:   device.macAddress,
+				DateStr: time.Now().In(t.Location).Format("2006-01-02"),
+			}
+			alias.delBlockGroup(p.BlockAddressList)
+			t.change = append(t.change, alias)
+		}
 	}
 	t.Unlock()
 	t.change.sendLeaseSet(p, quota)

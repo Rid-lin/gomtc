@@ -64,6 +64,7 @@ func parseInfoFromMTAsValueToSlice(p parseType) []DeviceType {
 
 func (ds *DevicesType) parseLeasePrintAsValue(b bytes.Buffer) {
 	var d DeviceType
+	var addedTo string
 	inputStr := b.String()
 	arr := strings.Split(inputStr, ";")
 	// For Debug
@@ -80,6 +81,7 @@ func (ds *DevicesType) parseLeasePrintAsValue(b bytes.Buffer) {
 		case isParametr(lineItem, "allow-dual-stack-queue"):
 			d.allowDualStackQueue = parseParamertToStr(lineItem)
 		case isParametr(lineItem, "client-id"):
+			addedTo = "client-id"
 			d.clientId = parseParamertToStr(lineItem)
 		case isParametr(lineItem, "disabled"):
 			d.disabledL = parseParamertToStr(lineItem)
@@ -90,6 +92,7 @@ func (ds *DevicesType) parseLeasePrintAsValue(b bytes.Buffer) {
 		case isParametr(lineItem, "active-client-id"):
 			d.activeClientId = parseParamertToStr(lineItem)
 		case isParametr(lineItem, "address-lists"):
+			addedTo = "address-lists"
 			d.addressLists = parseParamertToStr(lineItem)
 		case isParametr(lineItem, "always-broadcast"):
 			d.alwaysBroadcast = parseParamertToStr(lineItem)
@@ -135,6 +138,8 @@ func (ds *DevicesType) parseLeasePrintAsValue(b bytes.Buffer) {
 			d.status = parseParamertToStr(lineItem)
 			*ds = append(*ds, d)
 			d = DeviceType{}
+		case addedTo == "address-lists":
+			d.addressLists = d.addressLists + "," + lineItem
 		}
 
 	}
