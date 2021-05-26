@@ -69,7 +69,7 @@ func (t *Transport) Exit() {
 		log.Error(err)
 	}
 	t.fileDestination.Close()
-	t.conn.Close()
+	// t.conn.Close()
 	log.Println("Shutting down")
 	time.Sleep(5 * time.Second)
 	os.Exit(0)
