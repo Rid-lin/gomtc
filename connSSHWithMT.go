@@ -65,10 +65,10 @@ func parseInfoFromMTAsValueToSlice(p parseType) []DeviceType {
 func (ds *DevicesType) parseLeasePrintAsValue(b bytes.Buffer) {
 	var d DeviceType
 	inputStr := b.String()
-	// inputStr = strings.ReplaceAll(inputStr, "\n", "")
-	_ = saveStrToFile(inputStr)
 	arr := strings.Split(inputStr, ";")
-	_ = saveArrToFile(arr)
+	// For Debug
+	_ = saveStrToFile("./str.temp", inputStr)
+	_ = saveArrToFile("./arr.temp", arr)
 	for _, lineItem := range arr {
 		switch {
 		case isParametr(lineItem, ".id"):
@@ -241,9 +241,10 @@ func (a *AliasesOldType) sendLeaseSet(p parseType, q QuotaType) {
 			item.Id, boolToParamert(item.Disabled), item.Groups)
 		command = command + firstCommand + itemCommand
 	}
-	// fmt.Print(command)
+	// For Debug
+	_ = saveStrToFile("./command.temp", command)
 	b := getResponseOverSSHfMT(p.SSHCredentials, command)
 	if b.Len() > 0 {
-		log.Error(b.String())
+		log.Errorf("Error save device to Mikrotik(%v) with command (%v)", b.String(), command)
 	}
 }

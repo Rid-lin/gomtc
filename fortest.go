@@ -59,8 +59,8 @@ import (
 // 	return len(arr) == 4
 // }
 
-func saveArrToFile(arr []string) error {
-	f, _ := os.Create("./arr.temp")
+func saveArrToFile(nameFile string, arr []string) error {
+	f, _ := os.Create(nameFile)
 	defer f.Close()
 	w := bufio.NewWriter(f)
 	for index := 0; index < len(arr)-1; index++ {
@@ -70,8 +70,8 @@ func saveArrToFile(arr []string) error {
 	return nil
 }
 
-func saveStrToFile(str string) error {
-	f, _ := os.Create("./str.temp")
+func saveStrToFile(nameFile, str string) error {
+	f, _ := os.Create(nameFile)
 	defer f.Close()
 	_, _ = f.WriteString(str)
 	return nil
