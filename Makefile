@@ -68,9 +68,13 @@ install: ## Install program executable into /usr/bin directory.
 uninstall: ## Uninstall program executable from /usr/bin directory.
 	rm -f /usr/bin/${PROGRAM_NAME}
 
-docker-build: ## Build docker image
-	docker build -t ${DOCKER_ACCOUNT}/${PROGRAM_NAME}:${TAG} .
-	docker image prune --force --filter label=stage=intermediate
+# docker-build: ## Build docker image
+# 	docker build -t ${DOCKER_ACCOUNT}/${PROGRAM_NAME}:${TAG} .
+# 	docker image prune --force --filter label=stage=intermediate
 
-docker-push: ## Push docker image to registry
-	docker push ${DOCKER_ACCOUNT}/${PROGRAM_NAME}:${TAG}
+# docker-push: ## Push docker image to registry
+# 	docker push ${DOCKER_ACCOUNT}/${PROGRAM_NAME}:${TAG}
+
+ci: buildallnpack
+	$(foreach FILE, $(shell busybox find ./bin/ -type f -name "gomtc*"),\
+	$(shell 7z a -tzip -m0=lzma -mx=9 $(PWD)/release/$(shell basename $(FILE)).zip $(PWD)/bin/$(shell basename $(FILE)) $(PWD)/build/for_release/* ))
