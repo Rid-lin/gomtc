@@ -72,6 +72,8 @@ func (t *Transport) checkQuotas() {
 			continue
 		case alias.Manual:
 			continue
+		case (alias.Size >= alias.DailyQuota || alias.SizeOfHour[hour] >= alias.HourlyQuota) && alias.DateStr == tn && alias.Blocked:
+			continue
 		case alias.Size >= alias.DailyQuota && alias.DateStr == tn && !alias.Blocked:
 			alias.ShouldBeBlocked = true
 			// alias.TimeoutBlock = setDailyTimeout()
