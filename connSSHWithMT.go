@@ -64,11 +64,12 @@ func parseInfoFromMTAsValueToSlice(p parseType) []DeviceType {
 
 func (ds *DevicesType) parseLeasePrintAsValue(b bytes.Buffer) {
 	var d DeviceType
+	var addedTo string
 	inputStr := b.String()
-	// inputStr = strings.ReplaceAll(inputStr, "\n", "")
-	_ = saveStrToFile(inputStr)
 	arr := strings.Split(inputStr, ";")
-	_ = saveArrToFile(arr)
+	// For Debug
+	_ = saveStrToFile("./str.temp", inputStr)
+	_ = saveArrToFile("./arr.temp", arr)
 	for _, lineItem := range arr {
 		switch {
 		case isParametr(lineItem, ".id"):
@@ -80,6 +81,7 @@ func (ds *DevicesType) parseLeasePrintAsValue(b bytes.Buffer) {
 		case isParametr(lineItem, "allow-dual-stack-queue"):
 			d.allowDualStackQueue = parseParamertToStr(lineItem)
 		case isParametr(lineItem, "client-id"):
+			addedTo = "client-id"
 			d.clientId = parseParamertToStr(lineItem)
 		case isParametr(lineItem, "disabled"):
 			d.disabledL = parseParamertToStr(lineItem)
@@ -90,6 +92,7 @@ func (ds *DevicesType) parseLeasePrintAsValue(b bytes.Buffer) {
 		case isParametr(lineItem, "active-client-id"):
 			d.activeClientId = parseParamertToStr(lineItem)
 		case isParametr(lineItem, "address-lists"):
+			addedTo = "address-lists"
 			d.addressLists = parseParamertToStr(lineItem)
 		case isParametr(lineItem, "always-broadcast"):
 			d.alwaysBroadcast = parseParamertToStr(lineItem)
@@ -135,6 +138,8 @@ func (ds *DevicesType) parseLeasePrintAsValue(b bytes.Buffer) {
 			d.status = parseParamertToStr(lineItem)
 			*ds = append(*ds, d)
 			d = DeviceType{}
+		case addedTo == "address-lists":
+			d.addressLists = d.addressLists + "," + lineItem
 		}
 
 	}
@@ -241,9 +246,10 @@ func (a *AliasesOldType) sendLeaseSet(p parseType, q QuotaType) {
 			item.Id, boolToParamert(item.Disabled), item.Groups)
 		command = command + firstCommand + itemCommand
 	}
-	// fmt.Print(command)
+	// For Debug
+	_ = saveStrToFile("./command.temp", command)
 	b := getResponseOverSSHfMT(p.SSHCredentials, command)
 	if b.Len() > 0 {
-		log.Error(b.String())
+		log.Errorf("Error save device to Mikrotik(%v) with command (%v)", b.String(), command)
 	}
 }
