@@ -114,6 +114,9 @@ func (t *Transport) checkQuotas() {
 	}
 	t.Unlock()
 	t.change.sendLeaseSet(p, quota)
+	t.Lock()
+	t.change = AliasesOldType{}
+	t.Unlock()
 }
 
 func setHourlyTimeout() string {

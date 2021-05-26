@@ -39,7 +39,8 @@ func (t *Transport) runOnce(cfg *Config) {
 	t.writeToChasheData()
 	t.updateAliases(p)
 	t.checkQuotas()
-	// t.updateStatusDevicesToMT(cfg)
+	t.updateDevices()
+	t.updateAliases(p)
 
 	t.clearingCountedTraffic(cfg, cfg.LastDate)
 
