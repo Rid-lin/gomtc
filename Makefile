@@ -29,9 +29,14 @@ help: ## Display this help screen.
 	@echo "Makefile available targets:"
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  * \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
-clean: ## Clean build directory.
-	rm -f ./bin/${PROGRAM_NAME}*
-	rmdir ./bin
+clean: ## Clean bin directory.
+	rm -f ./bin/*
+#	rm -f ./bin/${PROGRAM_NAME}*
+#	rmdir ./bin
+
+cleanrelease: ## Clean bin directory.
+	rm -f ./release/*
+#	rmdir ./release
 
 dep: ## Download the dependencies.
 	go mod tidy
@@ -64,6 +69,8 @@ buildnpack: dep build pack ## Builds the program and packs it with UPX.
 
 buildallnpack: dep build_all pack ## Builds the program executable for all platform and packs it with UPX.
 
+cbp: clean dep build_all pack ## Builds the program executable for all platform and packs it with UPX.
+
 install: ## Install program executable into /usr/bin directory.
 	install -pm 755 bin/${PROGRAM_NAME} /usr/bin/${PROGRAM_NAME}
 
@@ -80,3 +87,5 @@ uninstall: ## Uninstall program executable from /usr/bin directory.
 ci: 
 	$(foreach FILE, $(shell busybox find ./bin/ -type f -name "gomtc*"),\
 	$(shell 7z a -tzip -m0=lzma -mx=9 $(PWD)/release/$(shell basename $(FILE)).zip $(PWD)/bin/$(shell basename $(FILE)) $(PWD)/build/for_release/* ))
+
+cbpci: clean dep build_all pack cleanrelease ci
