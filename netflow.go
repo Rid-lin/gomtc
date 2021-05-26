@@ -286,6 +286,7 @@ func (t *Transport) readsStreamFromMT(cfg *Config) {
 	log.Infof("gomtc listen NetFlow on:'%v'", cfg.FlowAddr)
 	for {
 		t.conn, err = net.ListenUDP("udp", addr)
+		defer t.conn.Close()
 		if err != nil {
 			log.Errorln(err)
 		} else {
