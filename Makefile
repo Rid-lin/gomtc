@@ -10,8 +10,9 @@ BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
 TAG=$(shell git describe --tags |cut -d- -f1)
 BUILD_TIME?=$(shell date -u '+%Y-%m-%d_%H:%M:%S')
 
-PLATFORMS=darwin linux windows
-ARCHITECTURES=386 amd64 ppc64
+PLATFORMS=linux windows
+# PLATFORMS=darwin linux windows
+ARCHITECTURES=386 amd64 ppc64 arm arm64
 
 LDFLAGS = -ldflags "-w -s -X=main.Version=${VERSION} -X=main.Build=${COMMIT} -X main.gitTag=${TAG} -X main.gitCommit=${COMMIT} -X main.gitBranch=${BRANCH} -X main.buildTime=${BUILD_TIME}"
 
@@ -54,6 +55,7 @@ build_all: dep ## Build program executable for all platform.
 	mkdir -p ./bin
 	$(foreach GOOS, $(PLATFORMS),\
 	$(foreach GOARCH, $(ARCHITECTURES), $(shell export GOOS=$(GOOS); export GOARCH=$(GOARCH); go build -v $(LDFLAGS) -o ./bin/$(PROJECTNAME)_$(VERSION)_$(GOOS)_$(COMMIT)_$(GOARCH))))
+	$(shell find ./bin/ -type f -name '*windows*' -exec mv {} {}.exe \;)
 
 pack: ## Packing all executable files using UPX 
 	upx ./bin/*
@@ -75,6 +77,6 @@ uninstall: ## Uninstall program executable from /usr/bin directory.
 # docker-push: ## Push docker image to registry
 # 	docker push ${DOCKER_ACCOUNT}/${PROGRAM_NAME}:${TAG}
 
-ci: buildallnpack
+ci: 
 	$(foreach FILE, $(shell busybox find ./bin/ -type f -name "gomtc*"),\
 	$(shell 7z a -tzip -m0=lzma -mx=9 $(PWD)/release/$(shell basename $(FILE)).zip $(PWD)/bin/$(shell basename $(FILE)) $(PWD)/build/for_release/* ))
