@@ -1,6 +1,6 @@
 # Netflow collector with saving logs in squid format, and short hourly statistics by day and by logins (users) written in Go
 
-<https://goreportcard.com/report/git.vegner.org/vsvegner/gomtc>[![Go Report Card](https://goreportcard.com/report/git.vegner.org/vsvegner/gomtc)](https://goreportcard.com/report/git.vegner.org/vsvegner/gomtc)
+[![Go Report Card](https://goreportcard.com/report/git.vegner.org/vsvegner/gomtc)](https://goreportcard.com/report/git.vegner.org/vsvegner/gomtc)
 
 The broker listens on UDP port (default 2055), accepts Netflow traffic, and by default collects records with selected metadata formatted into squid log. Login information replaces the Mac address of the device that receives from the router mikrotik.
 
@@ -8,7 +8,7 @@ The broker listens on UDP port (default 2055), accepts Netflow traffic, and by d
 
 Clone repository
 
-`git clone https://github.com/Rid-lin/gomtc.git`
+`git clone https://git.vegner.org/vsvegner/gomtc.git`
 
 `cd gomtc`
 
