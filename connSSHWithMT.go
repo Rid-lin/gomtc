@@ -242,6 +242,9 @@ func (a *AliasesOldType) sendLeaseSet(p parseType, q QuotaType) {
 	var command string
 	firstCommand := "/ip dhcp-server lease set "
 	for _, item := range *a {
+		if item.Id == "" {
+			continue
+		}
 		itemCommand := fmt.Sprintf("number=%s disabled=%s address-lists=%s\n",
 			item.Id, boolToParamert(item.Disabled), item.Groups)
 		command = command + firstCommand + itemCommand
@@ -250,6 +253,6 @@ func (a *AliasesOldType) sendLeaseSet(p parseType, q QuotaType) {
 	_ = saveStrToFile("./command.temp", command)
 	b := getResponseOverSSHfMT(p.SSHCredentials, command)
 	if b.Len() > 0 {
-		log.Errorf("Error save device to Mikrotik(%v) with command (%v)", b.String(), command)
+		log.Errorf("Error save device to Mikrotik(%v) with command:\n%v", b.String(), command)
 	}
 }

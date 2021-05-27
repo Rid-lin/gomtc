@@ -72,23 +72,26 @@ func (t *Transport) checkQuotas() {
 			continue
 		case alias.Manual:
 			continue
+		case (alias.Size >= alias.DailyQuota || alias.SizeOfHour[hour] >= alias.HourlyQuota) && alias.DateStr == tn && alias.Blocked:
+			continue
 		case alias.Size >= alias.DailyQuota && alias.DateStr == tn && !alias.Blocked:
 			alias.ShouldBeBlocked = true
 			// alias.TimeoutBlock = setDailyTimeout()
 			alias.addBlockGroup(p.BlockAddressList)
 			t.change = append(t.change, alias)
-			log.Debugf("Login (%v) was disabled due to exceeding the daily quota(%v)", alias.Alias, alias.DailyQuota)
+			log.Debugf("Login (%17s) was disabled due to exceeding the daily quota(%v)", alias.Alias, alias.DailyQuota)
 		case alias.SizeOfHour[hour] >= alias.HourlyQuota && alias.DateStr == tn && !alias.Blocked:
 			alias.ShouldBeBlocked = true
 			// alias.TimeoutBlock = setHourlyTimeout()
 			alias.addBlockGroup(p.BlockAddressList)
 			t.change = append(t.change, alias)
-			log.Debugf("Login (%v) was disabled due to exceeding the hourly quota(%v)", alias.Alias, alias.DailyQuota)
-		case alias.Blocked:
+			log.Debugf("Login (%17s) was disabled due to exceeding the hourly quota(%v)", alias.Alias, alias.DailyQuota)
+		case alias.Blocked && alias.DateStr == tn:
 			alias.ShouldBeBlocked = false
 			alias.delBlockGroup(p.BlockAddressList)
 			t.change = append(t.change, alias)
-			log.Debugf("Login (%v)has been enabled, the quota(%v) has not been exceeded", alias.Alias, alias.HourlyQuota)
+			log.Debugf("Login (%17s) has been enabled, the quota(%v) has not been exceeded(Blocked:%v)",
+				alias.Alias, alias.HourlyQuota, alias.Blocked)
 		}
 		t.dataOld[key] = alias
 
@@ -111,6 +114,9 @@ func (t *Transport) checkQuotas() {
 	}
 	t.Unlock()
 	t.change.sendLeaseSet(p, quota)
+	t.Lock()
+	t.change = AliasesOldType{}
+	t.Unlock()
 }
 
 func setHourlyTimeout() string {

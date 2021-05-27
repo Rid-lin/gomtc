@@ -435,8 +435,9 @@ func (ds *DevicesType) updateInfo(deviceNew DeviceType) error {
 	index := ds.findIndexOfDevice(&deviceNew)
 	if index == -1 {
 		*ds = append(*ds, deviceNew)
+	} else {
+		(*ds)[index] = deviceNew
 	}
-	(*ds)[index] = deviceNew
 	return nil
 }
 
