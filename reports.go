@@ -28,7 +28,7 @@ func (t *Transport) reportTrafficHourlyByLogins(request RequestForm, showFriends
 		}
 		line.Alias = key.Alias
 		line.InfoType = value.InfoType
-		line.StatType = value.StatType
+		line.StatOldType = value.StatOldType
 		ReportData = add(ReportData, line)
 	}
 
@@ -64,7 +64,7 @@ func (t *Transport) reportTrafficHourlyByLogins(request RequestForm, showFriends
 
 func (a ReportDataType) Len() int           { return len(a) }
 func (a ReportDataType) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ReportDataType) Less(i, j int) bool { return a[i].Size > a[j].Size }
+func (a ReportDataType) Less(i, j int) bool { return a[i].VolumePerDay > a[j].VolumePerDay }
 
 func (data ReportDataType) percentileCalculation(cub uint8) ReportDataType {
 	var maxIndex = 0
@@ -73,8 +73,8 @@ func (data ReportDataType) percentileCalculation(cub uint8) ReportDataType {
 	if len(data) == 0 {
 		return data
 	}
-	SizeOfPrecentil := uint64(float64(data[maxIndex].Size) * 0.9)
-	sumTotal := data[maxIndex].Size // МАксимальная сумма необходима для расчёта претентиля 90
+	SizeOfPrecentil := uint64(float64(data[maxIndex].VolumePerDay) * 0.9)
+	sumTotal := data[maxIndex].VolumePerDay // МАксимальная сумма необходима для расчёта претентиля 90
 	// cubf := math.Pow(10, float64(cub)) // Высчитываем степерь округления
 	// Если сумма скаченного трафика текущего пользователя и тех кого уже прошли будет больше чем размер прецентиля, то мы отмечает порядковый номер данного пользователя для последующей обработки
 	for index := 1; index < len(data)-1; index++ {
@@ -83,18 +83,18 @@ func (data ReportDataType) percentileCalculation(cub uint8) ReportDataType {
 			break
 		} else {
 			// ... инвче прибавляем к текущей сумме объём скаченного пользователем
-			sum = (data[index-1].SizeOfPrecentil + data[index].Size)
-			data[index].SizeOfPrecentil = sum
+			sum = (data[index-1].VolumeOfPrecentil + data[index].VolumePerDay)
+			data[index].VolumeOfPrecentil = sum
 			PrecentilIndex = index
 		}
 	}
-	AverageTotal := data[maxIndex].Size / uint64(PrecentilIndex)
+	AverageTotal := data[maxIndex].VolumePerDay / uint64(PrecentilIndex)
 	data[maxIndex].Average = AverageTotal
 
 	for index := 1; index < PrecentilIndex; index++ {
 		// data[index].Average = math.Round(data[index].Size/float64(PrecentilIndex)*cubf) / cubf
-		data[index].Precent = math.Round(float64(data[index].Size)/float64(sumTotal)*1000) / 10
-		if data[index].Size > AverageTotal {
+		data[index].Precent = math.Round(float64(data[index].VolumePerDay)/float64(sumTotal)*1000) / 10
+		if data[index].VolumePerDay > AverageTotal {
 			data[maxIndex].Count++
 		}
 	}
@@ -132,7 +132,7 @@ func (rData ReportDataType) FiltredFriendS(friends []string) ReportDataType {
 func add(slice []LineOfDisplay, line LineOfDisplay) []LineOfDisplay {
 	for index, item := range slice {
 		if line.Alias == item.Alias {
-			slice[index].SizeOfHour = line.SizeOfHour
+			slice[index].VolumePerHour = line.VolumePerHour
 			return slice
 		}
 	}

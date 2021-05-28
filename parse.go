@@ -103,7 +103,7 @@ func (t *Transport) ClearDataOfLastDay(cfg *Config) {
 	for key := range data {
 		if key.DateStr == dateStr {
 			delete(data, key)
-			log.Tracef("Item key(%v) data(%v)(%v)(%v)) was deleted", key, data[key].Size, data[key].Hits, data[key].SizeOfHour)
+			log.Tracef("Item key(%v) data(%v)(%v)(%v)) was deleted", key, data[key].VolumePerDay, data[key].Hits, data[key].VolumePerHour)
 		}
 	}
 	t.Lock()
@@ -211,8 +211,12 @@ func (t *Transport) parseLogToArrayByLine(scanner *bufio.Scanner, cfg *Config) e
 		} else if cfg.LastDate < lineOut.timestamp {
 			cfg.LastDate = lineOut.timestamp
 		}
-		// Adding a row to the database
-		t.addLineOutToMapOfReports(&lineOut, cfg)
+
+		// The main function of filling the database
+		// Adding a row to the database for counting traffic
+		t.addLineOutToMapOfReportsNew(&lineOut)
+		t.addLineOutToMapOfReportsOld(&lineOut, cfg)
+
 		cfg.LineAdded++
 	}
 	if err := scanner.Err(); err != nil {
@@ -248,126 +252,118 @@ func squidDateToINT64(squidDate string) (timestamp, nsec int64, err error) {
 }
 
 func parseLineToStruct(line string, cfg *Config) (lineOfLogType, error) {
-	var lineOut lineOfLogType
+	var l lineOfLogType
 	var err error
 	valueArray := strings.Fields(line) // split into fields separated by a space to parse into a structure
 	if len(valueArray) < 10 {          // check the length of the resulting array to make sure that the string is parsed normally and there are no errors in its format
-		return lineOut, fmt.Errorf("Error, string(%v) is not line of Squid-log", line) // If there is an error, then we stop working to avoid unnecessary transformations
+		return l, fmt.Errorf("Error, string(%v) is not line of Squid-log", line) // If there is an error, then we stop working to avoid unnecessary transformations
 	}
-	lineOut.date = valueArray[0]
-	lineOut.timestamp, lineOut.nsec, err = squidDateToINT64(lineOut.date)
+	l.date = valueArray[0]
+	l.timestamp, l.nsec, err = squidDateToINT64(l.date)
 	if err != nil {
 		return lineOfLogType{}, err
 	}
-	timeUnix := time.Unix(lineOut.timestamp, 0)
-	lineOut.year = timeUnix.Year()
-	lineOut.month = timeUnix.Month()
-	lineOut.day = timeUnix.Day()
-	lineOut.hour = timeUnix.Hour()
-	lineOut.minute = timeUnix.Minute()
-	lineOut.ipaddress = valueArray[2]
-	lineOut.httpstatus = valueArray[3]
+	timeUnix := time.Unix(l.timestamp, 0)
+	l.year = timeUnix.Year()
+	l.month = timeUnix.Month()
+	l.day = timeUnix.Day()
+	l.hour = timeUnix.Hour()
+	l.minute = timeUnix.Minute()
+	l.ipaddress = valueArray[2]
+	l.httpstatus = valueArray[3]
 	sizeInBytes, err := strconv.ParseUint(valueArray[4], 10, 64)
 	if err != nil {
 		sizeInBytes = 0
 	}
-	lineOut.sizeInBytes = sizeInBytes
-	lineOut.method = valueArray[5]
-	lineOut.siteName = valueArray[6]
-	lineOut.login = valueArray[7]
-	lineOut.mime = valueArray[9]
+	l.sizeInBytes = sizeInBytes
+	l.method = valueArray[5]
+	l.siteName = valueArray[6]
+	l.login = valueArray[7]
+	l.mime = valueArray[9]
 	if len(valueArray) > 10 {
-		lineOut.hostname = valueArray[10]
+		l.hostname = valueArray[10]
 	} else {
-		lineOut.hostname = ""
+		l.hostname = ""
 	}
 	if len(valueArray) > 11 {
-		lineOut.comments = strings.Join(valueArray[11:], " ")
+		l.comments = strings.Join(valueArray[11:], " ")
 	} else {
-		lineOut.comments = ""
+		l.comments = ""
 	}
-	return lineOut, nil
+	return l, nil
 }
 
-// TODO не думается. на потом
-// func (t *Transport) addLineOutToMapOfReports(value *lineOfLogType) {
-// 	// tm := time.Unix(value.timestamp, value.nsec)
-// 	value.alias = determiningAlias(*value)
-// 	getStat
-// 	// Подсчёт трафика для пользователя и в определенный час
-// 	t.trafficСounting(key, value)
-// }
+func (t *Transport) addLineOutToMapOfReportsNew(value *lineOfLogType) {
+	value.alias = determiningAlias(*value)
+	t.trafficСounting(value)
+}
 
-// func determiningAlias(value lineOfLogType) string {
-// 	alias := value.alias
-// 	if alias == "" {
-// 		if value.login == "" || value.login == "-" {
-// 			alias = value.ipaddress
-// 		} else {
-// 			alias = value.login
-// 		}
-// 	}
-// 	return alias
-// }
-
-func (t *Transport) addLineOutToMapOfReports(value *lineOfLogType, cfg *Config) {
-	tm := time.Unix(value.timestamp, value.nsec)
-	var alias string
-	if value.alias == "" {
+func determiningAlias(value lineOfLogType) string {
+	alias := value.alias
+	if alias == "" {
 		if value.login == "" || value.login == "-" {
 			alias = value.ipaddress
 		} else {
 			alias = value.login
 		}
 	}
-	key := KeyMapOfReports{
-		DateStr: tm.Format(cfg.dateLayout),
-		Alias:   alias,
-	}
-	_, ok := t.dataOld[key]
-	if !ok {
-		t.dataOld[key] = AliasOld{}
-	}
-	// Подсчёт трафика для пользователя и в определенный час
-	t.trafficСounting(key, value)
+	return alias
 }
 
-// func (t *Transport) AddLineToMapData(key KeyMapOfReports, value lineOfLogType) {
-// 	var SizeOfHour [24]uint64
-// 	t.Lock()
-// 	SizeOfHour[value.hour] = value.sizeInBytes
-// 	valueMapOfReports := Alias{
-// 		Hits: 1,
-// 		StatType: StatType{
-// 			SizeOfHour: SizeOfHour,
-// 			Size:       value.sizeInBytes,
-// 		},
-// 	}
-// 	t.dataOld[key] = valueMapOfReports
-// 	t.Unlock()
-// }
-
-func (t *Transport) trafficСounting(key KeyMapOfReports, value *lineOfLogType) {
-	t.RLock()
-	// Приваеваем данные в карте временной переменной для того чтобы предыдущие значения не потерялись
-	valueMapOfReports := t.dataOld[key]
-	t.RUnlock()
-	// Расчет суммы трафика для дальшейшего отображения
-	valueMapOfReports.Size = valueMapOfReports.Size + value.sizeInBytes
-	valueMapOfReports.Hits++
-	valueMapOfReports.HostName = value.hostname
-	valueMapOfReports.Comments = value.comments
-	SizeOfHour := valueMapOfReports.SizeOfHour
-	SizeOfHour[value.hour] = SizeOfHour[value.hour] + value.sizeInBytes
-	// Подсчёт окончен
-	// Обработанные данные из временных переменных помещаем в карту....
-	valueMapOfReports.SizeOfHour = SizeOfHour
-	// .... блокируя её для записи во избежании коллизий
-	valueMapOfReports.Alias = key.Alias
-	valueMapOfReports.DateStr = key.DateStr
+func (t *Transport) trafficСounting(l *lineOfLogType) {
+	// Идея такая.
+	// посчитать статистику для каждого отдельного случая, когда:
+	// есть и мак и айпи, есть только айпи, есть только мак
+	// записать это в слайс и привязать к отдельному оборудованию.
+	// при чём по привязка только айпи адресу идёт только в течении сегодняшнего дня, потом не учитывается
+	// привязка по маку и мак+айпи идёт всегда, т.к. устройство опознано.
 	t.Lock()
-	t.dataOld[key] = valueMapOfReports
+	statForDate, iStatDay, _ := t.getStatForDate(l) // статистка за день по всем устройствам и общая
+	// Присваеваем данные в массиве временной переменной для того чтобы предыдущие значения не потерялись
+	devStat, iStatDev, _ := statForDate.findStat(l)
+	// Расчет суммы трафика для устройства для дальшейшего отображения
+	devStat.VolumePerDay = devStat.VolumePerDay + l.sizeInBytes
+	devStat.VolumePerCheck = devStat.VolumePerCheck + l.sizeInBytes
+	devStat.StatPerHour[l.hour].Hour = devStat.StatPerHour[l.hour].Hour + l.sizeInBytes
+	devStat.StatPerHour[l.hour].Minute[l.minute] = devStat.StatPerHour[l.hour].Minute[l.minute] + l.sizeInBytes
+	// Расчет суммы трафика для дня для дальшейшего отображения
+	statForDate.VolumePerDay = statForDate.VolumePerDay + l.sizeInBytes
+	statForDate.VolumePerCheck = statForDate.VolumePerCheck + l.sizeInBytes
+	statForDate.StatPerHour[l.hour].Hour = statForDate.StatPerHour[l.hour].Hour + l.sizeInBytes
+	statForDate.StatPerHour[l.hour].Minute[l.minute] = statForDate.StatPerHour[l.hour].Minute[l.minute] + l.sizeInBytes
+	// Возвращаем данные обратно
+	statForDate.devicesStat[iStatDev] = devStat
+	t.stats[iStatDay] = statForDate
+
 	t.Unlock()
+}
+
+func (t *Transport) getStatForDate(l *lineOfLogType) (StatDayType, int, error) {
+	date := fmt.Sprintf("%d-%s-%d", l.year, l.month.String(), l.day)
+	for index, statForDay := range t.stats {
+		if statForDay.date == date {
+			return statForDay, index, nil
+		}
+	}
+	t.stats = append(t.stats, StatDayType{})
+	return StatDayType{}, len(t.stats) - 1, fmt.Errorf("Not found statistic of Day")
+}
+
+func (ss *StatDayType) findStat(l *lineOfLogType) (StatDeviceType, int, error) {
+	for index, s := range ss.devicesStat {
+		if s.Mac == l.login || s.IP == l.ipaddress {
+			return s, index, nil
+		}
+	}
+	var mac, ip string
+	if isMac(l.login) {
+		mac = l.login
+	}
+	if isIP(l.ipaddress) {
+		ip = l.ipaddress
+	}
+	ss.devicesStat = append(ss.devicesStat, StatDeviceType{Mac: mac, IP: ip})
+	return ss.devicesStat[len(ss.devicesStat)-1], len(ss.devicesStat) - 1, nil
 }
 
 func SortFileByModTime(files []os.FileInfo) {
@@ -403,10 +399,10 @@ func (t *Transport) totalTrafficСounting() {
 		keyTotal.Alias = "Всего"
 		valueTotal := t.dataOld[keyTotal]
 		value := t.dataOld[key]
-		valueTotal.Size += value.Size
+		valueTotal.VolumePerDay += value.VolumePerDay
 		valueTotal.Hits += value.Hits
-		for index := range valueTotal.SizeOfHour {
-			valueTotal.SizeOfHour[index] += value.SizeOfHour[index]
+		for index := range valueTotal.VolumePerHour {
+			valueTotal.VolumePerHour[index] += value.VolumePerHour[index]
 		}
 		t.dataOld[keyTotal] = valueTotal
 		t.Unlock()

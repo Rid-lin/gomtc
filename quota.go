@@ -72,15 +72,15 @@ func (t *Transport) checkQuotas() {
 			continue
 		case alias.Manual:
 			continue
-		case (alias.Size >= alias.DailyQuota || alias.SizeOfHour[hour] >= alias.HourlyQuota) && alias.DateStr == tn && alias.Blocked:
+		case (alias.VolumePerDay >= alias.DailyQuota || alias.VolumePerHour[hour] >= alias.HourlyQuota) && alias.DateStr == tn && alias.Blocked:
 			continue
-		case alias.Size >= alias.DailyQuota && alias.DateStr == tn && !alias.Blocked:
+		case alias.VolumePerDay >= alias.DailyQuota && alias.DateStr == tn && !alias.Blocked:
 			alias.ShouldBeBlocked = true
 			// alias.TimeoutBlock = setDailyTimeout()
 			alias.addBlockGroup(p.BlockAddressList)
 			t.change = append(t.change, alias)
 			log.Debugf("Login (%17s) was disabled due to exceeding the daily quota(%v)", alias.Alias, alias.DailyQuota)
-		case alias.SizeOfHour[hour] >= alias.HourlyQuota && alias.DateStr == tn && !alias.Blocked:
+		case alias.VolumePerHour[hour] >= alias.HourlyQuota && alias.DateStr == tn && !alias.Blocked:
 			alias.ShouldBeBlocked = true
 			// alias.TimeoutBlock = setHourlyTimeout()
 			alias.addBlockGroup(p.BlockAddressList)

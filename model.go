@@ -10,8 +10,9 @@ import (
 )
 
 type Transport struct {
-	// data                map[string]AliasesType
-	// aliases             AliasesType
+	AllDates            map[string]AliasesType
+	aliases             AliasesType
+	stats               []StatDayType
 	AliasesStrArr       map[string][]string
 	Infos               map[string]InfoType
 	dataOld             MapOfReports
@@ -113,9 +114,11 @@ type DeviceType struct {
 	srcMacAddress       string
 	alwaysBroadcast     string
 	//User Defined
+	Hardware        bool
 	Manual          bool
 	ShouldBeBlocked bool
 	timeout         time.Time
+	StatOldType
 }
 
 type DevicesType []DeviceType
@@ -123,7 +126,7 @@ type AliasesType []AliasType
 type AliasesOldType []AliasOld
 
 type lineOfLogType struct {
-	date        string
+	date        string // squid timestamp 1621969229.000
 	ipaddress   string
 	httpstatus  string
 	method      string
@@ -155,7 +158,7 @@ type AliasOld struct {
 	DateStr string
 	Hits    uint32
 	InfoType
-	StatType
+	StatOldType
 }
 
 type InfoType struct {
@@ -198,7 +201,7 @@ type LineOfDisplay struct {
 	Alias string
 	Login string
 	InfoType
-	StatType
+	StatOldType
 }
 
 type DisplayDataType struct {
@@ -240,14 +243,48 @@ type RequestForm struct {
 	report   string
 }
 
+type StatOldType struct {
+	VolumePerHour     [24]uint64
+	Site              string
+	Precent           float64
+	VolumeOfPrecentil uint64
+	Average           uint64
+	VolumePerDay      uint64
+	Count             uint32
+}
+
+type StatDeviceType struct {
+	Mac string
+	IP  string
+	StatType
+}
+
 type StatType struct {
-	SizeOfHour      [24]uint64
-	Site            string
+	StatPerHour     [24]VolumePerType
 	Precent         float64
 	SizeOfPrecentil uint64
 	Average         uint64
-	Size            uint64
+	SpeedPerDay     uint64
+	SpeedPerCheck   uint64
+	VolumePerDay    uint64
+	VolumePerCheck  uint64
 	Count           uint32
+}
+
+type StatDayType struct {
+	devicesStat []StatDeviceType // Statistics of all devices that were seen that day
+	date        string           // date in format YYYY-Month-DD
+	year        int
+	month       time.Month
+	day         int
+	StatType    // General statistics of the day, to speed up access
+}
+
+type VolumePerType struct {
+	Minute      [60]uint64
+	SpeedMinute [60]uint64
+	Hour        uint64
+	SpeedHour   uint64
 }
 
 type SSHCredentials struct {
