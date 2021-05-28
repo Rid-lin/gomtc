@@ -86,9 +86,11 @@ func newConfig() *Config {
 			"./config.yaml",
 			"./config/config.yaml",
 			"/etc/gomtc/config.yaml",
+			"/etc/gomtc/config/config.yaml",
 			// "./config.toml",
 			// "./config/config.toml",
 			// "/etc/gomtc/config.toml",
+			// "/etc/gomtc/config/config.toml",
 		},
 		FileDecoders: map[string]aconfig.FileDecoder{
 			// from `aconfigyaml` submodule
