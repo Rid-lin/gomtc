@@ -39,12 +39,12 @@ func CheckPIDFile(filename string) error {
 func writePID(filename string) error {
 	file, err := os.Create(filename)
 	if err != nil {
-		return log.Errorf("Error open file(%v):%v", filename, err)
+		return fmt.Errorf("Error open PID-file(name=%v):%v", filename, err)
 	}
 	defer file.Close()
 	_, err2 := file.Write([]byte(fmt.Sprint(os.Getpid())))
 	if err2 != nil {
-		return log.Errorf("Error write file=(%v), data=(%v):%v", filename, os.Getpid(), err)
+		return fmt.Errorf("Error write file=(%v), data=(%v):%v", filename, os.Getpid(), err)
 	}
 	return nil
 }

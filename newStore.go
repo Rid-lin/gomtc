@@ -70,7 +70,6 @@ func (t *Transport) delOldData(timestamp int64, Location *time.Location) {
 	day := tn.Day()
 	indexYear, indexMonth, indexDay := t.getIndexesOfDay(&lineOfLogType{year: year, month: month, day: day})
 	t.Lock()
-	defer t.Unlock()
 	t.statYears[indexYear].monthsStat[indexMonth].daysStat[indexDay] = StatDayType{}
 	t.Unlock()
 }

@@ -343,7 +343,7 @@ func NewTransport(cfg *Config) *Transport {
 		devices:             DevicesType{},
 		AliasesStrArr:       make(map[string][]string),
 		Location:            Location,
-		pidfile:             cfg.pidfile,
+		pidfile:             cfg.Pidfile,
 		DevicesRetryDelay:   cfg.DevicesRetryDelay,
 		BlockAddressList:    cfg.BlockGroup,
 		fileDestination:     fileDestination,

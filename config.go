@@ -20,7 +20,7 @@ type Config struct {
 	LastDateStr    string
 
 	GonsquidAddr           string   `default:":3030" usage:"Listen address for HTTP-server"`
-	pidfile                string   `default:"/run/gomtc.pid" usage:"PID-file"`
+	Pidfile                string   `default:"/run/gomtc.pid" usage:"PID-file"`
 	Friends                []string `default:"" usage:"List of aliases, IP addresses, friends' logins"`
 	ConfigPath             string   `default:"/etc/gomtc" usage:"folder path to all config files"`
 	LogPath                string   `default:"/var/log/gomtc" usage:"folder path to logs-file"`
