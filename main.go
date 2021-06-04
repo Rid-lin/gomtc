@@ -1,8 +1,21 @@
 package main
 
+import (
+	"os"
+
+	log "github.com/sirupsen/logrus"
+)
+
 func main() {
 	cfg := newConfig()
-	// TODO проверка на запущенный экземпляр
+
+	if CheckPIDFile(cfg.pidfile) != nil {
+		os.Exit(2)
+	}
+	if err := writePID(cfg.pidfile); err != nil {
+		log.Error(err)
+		os.Exit(2)
+	}
 	// TODO проверка на установленную программу
 	// TODO если программа не установлена, то предложить установить её
 	// TODO в случае согласия раскидать все файлы по папкам и установиться в systemd

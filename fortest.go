@@ -76,14 +76,3 @@ func saveStrToFile(nameFile, str string) error {
 	_, _ = f.WriteString(str)
 	return nil
 }
-
-func (ds *DevicesType) findInfoDByAlias(alias, blockGroup string, quota QuotaType) (InfoType, error) {
-	for _, d := range *ds {
-		if d.activeAddress == alias || d.activeMacAddress == alias || d.address == alias || d.macAddress == alias {
-			ifoD := d.convertToInfo(blockGroup)
-			ifoD.QuotaType = checkNULLQuotas(ifoD.QuotaType, quota)
-			return ifoD, nil
-		}
-	}
-	return InfoType{}, fmt.Errorf("NotFound")
-}

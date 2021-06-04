@@ -13,6 +13,7 @@ type Transport struct {
 	AllDates            map[string]AliasesType
 	aliases             AliasesType
 	stats               []StatDayType
+	statYears           []statYearType
 	AliasesStrArr       map[string][]string
 	Infos               map[string]InfoType
 	dataOld             MapOfReports
@@ -25,6 +26,7 @@ type Transport struct {
 	BlockAddressList    string
 	SizeOneKilobyte     uint64
 	DevicesRetryDelay   string
+	pidfile             string
 	sshCredentials      SSHCredentials
 	fileDestination     *os.File
 	csvFiletDestination *os.File
@@ -39,6 +41,7 @@ type Transport struct {
 	parseChan           chan *time.Time
 	newLogChan          chan os.Signal
 	outputChannel       chan decodedRecord
+	newCount            newContType
 	Author
 	QuotaType
 	sync.RWMutex
@@ -253,12 +256,6 @@ type StatOldType struct {
 	Count             uint32
 }
 
-type StatDeviceType struct {
-	Mac string
-	IP  string
-	StatType
-}
-
 type StatType struct {
 	StatPerHour     [24]VolumePerType
 	Precent         float64
@@ -269,15 +266,6 @@ type StatType struct {
 	VolumePerDay    uint64
 	VolumePerCheck  uint64
 	Count           uint32
-}
-
-type StatDayType struct {
-	devicesStat []StatDeviceType // Statistics of all devices that were seen that day
-	date        string           // date in format YYYY-Month-DD
-	year        int
-	month       time.Month
-	day         int
-	StatType    // General statistics of the day, to speed up access
 }
 
 type VolumePerType struct {
@@ -355,6 +343,7 @@ func NewTransport(cfg *Config) *Transport {
 		devices:             DevicesType{},
 		AliasesStrArr:       make(map[string][]string),
 		Location:            Location,
+		pidfile:             cfg.pidfile,
 		DevicesRetryDelay:   cfg.DevicesRetryDelay,
 		BlockAddressList:    cfg.BlockGroup,
 		fileDestination:     fileDestination,

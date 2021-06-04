@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"compress/gzip"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -48,8 +49,9 @@ func (t *Transport) runOnce(cfg *Config) {
 
 	count = Count{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
-	t.setTimerParse(cfg.ParseDelay)
+	t.parseAllFilesAndCountingTrafficNew(cfg)
 
+	t.setTimerParse(cfg.ParseDelay)
 }
 
 func (t *Transport) setTimerParse(IntervalStr string) {
@@ -214,13 +216,14 @@ func (t *Transport) parseLogToArrayByLine(scanner *bufio.Scanner, cfg *Config) e
 
 		// The main function of filling the database
 		// Adding a row to the database for counting traffic
-		t.addLineOutToMapOfReportsNew(&lineOut)
+		// t.addLineOutToMapOfReportsSuperNew(&lineOut)
+		// t.addLineOutToMapOfReports(&lineOut)
 		t.addLineOutToMapOfReportsOld(&lineOut, cfg)
 
 		cfg.LineAdded++
 	}
-	if err := scanner.Err(); err != nil {
-		log.Errorf("%v\n", err)
+	if err := scanner.Err(); err != nil && err != io.EOF {
+		log.Errorf("Error scanner :%v", err)
 		return err
 	}
 	return nil
@@ -293,7 +296,7 @@ func parseLineToStruct(line string, cfg *Config) (lineOfLogType, error) {
 	return l, nil
 }
 
-func (t *Transport) addLineOutToMapOfReportsNew(value *lineOfLogType) {
+func (t *Transport) addLineOutToMapOfReports(value *lineOfLogType) {
 	value.alias = determiningAlias(*value)
 	t.trafficСounting(value)
 }

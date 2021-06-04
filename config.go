@@ -19,8 +19,8 @@ type Config struct {
 	LastDayStr     string
 	LastDateStr    string
 
-	GonsquidAddr string `default:":3030" usage:"Listen address for HTTP-server"`
-
+	GonsquidAddr           string   `default:":3030" usage:"Listen address for HTTP-server"`
+	pidfile                string   `default:"/run/gomtc.pid" usage:"PID-file"`
 	Friends                []string `default:"" usage:"List of aliases, IP addresses, friends' logins"`
 	ConfigPath             string   `default:"/etc/gomtc" usage:"folder path to all config files"`
 	LogPath                string   `default:"/var/log/gomtc" usage:"folder path to logs-file"`
@@ -52,12 +52,22 @@ type Config struct {
 	Location               *time.Location
 	startTime              time.Time
 	endTime                time.Time
+	newCount               newContType
 	Count
 }
 
 var (
 	cfg Config
 )
+
+type newContType struct {
+	Count
+	startTime   time.Time
+	endTime     time.Time
+	lastUpdated time.Time
+	LastDate    int64
+	LastDayStr  string
+}
 
 func newConfig() *Config {
 	// fix for https://github.com/cristalhq/aconfig/issues/82
