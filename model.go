@@ -10,10 +10,11 @@ import (
 )
 
 type Transport struct {
-	AllDates            map[string]AliasesType
-	aliases             AliasesType
-	stats               []StatDayType
-	statYears           []statYearType
+	AllDates map[string]AliasesType
+	// aliases  AliasesType
+	// stats    []StatDayType
+	// statYears           []statYearType
+	statofYears         map[int]StatOfYearType
 	AliasesStrArr       map[string][]string
 	Infos               map[string]InfoType
 	dataOld             MapOfReports
@@ -334,7 +335,8 @@ func NewTransport(cfg *Config) *Transport {
 	Location, err := time.LoadLocation(cfg.Loc)
 	if err != nil {
 		log.Errorf("Error loading Location(%v):%v", cfg.Loc, err)
-		Location = time.UTC
+		// Location = time.UTC
+		Location = time.FixedZone("Custom timezone", int(cfg.Timezone*60*60))
 	}
 
 	return &Transport{
@@ -343,6 +345,7 @@ func NewTransport(cfg *Config) *Transport {
 		devices:             DevicesType{},
 		AliasesStrArr:       make(map[string][]string),
 		Location:            Location,
+		statofYears:         make(map[int]StatOfYearType),
 		pidfile:             cfg.Pidfile,
 		DevicesRetryDelay:   cfg.DevicesRetryDelay,
 		BlockAddressList:    cfg.BlockGroup,

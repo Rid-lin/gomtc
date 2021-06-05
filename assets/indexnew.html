@@ -1,7 +1,7 @@
-{{ define "indexwf" }} {{ template "header" }}
+{{ define "indexnew" }} {{ template "header" }}
 <header>
     <h2>{{.Header}}</h2>
-    <form action="/wf" method="get" id="report">
+    <form action="/new" method="get" id="report">
         <label for="date_from">Дата: </label>
         <input type="date" id="date_from" name="date_from" value="{{.DateFrom}}" />
         <input type="submit" value="Загрузить" />

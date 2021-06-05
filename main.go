@@ -9,7 +9,8 @@ import (
 func main() {
 	cfg := newConfig()
 
-	if CheckPIDFile(cfg.Pidfile) != nil {
+	if err := CheckPIDFile(cfg.Pidfile); err != nil {
+		log.Error(err)
 		os.Exit(2)
 	}
 	if err := writePID(cfg.Pidfile); err != nil {

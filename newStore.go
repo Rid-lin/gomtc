@@ -13,21 +13,43 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type statYearType struct {
-	monthsStat []StatMonthType // Statistics of all devices that were seen that year
+// type statYearType struct {
+// 	monthsStat []StatMonthType // Statistics of all devices that were seen that year
+// 	year       int
+// }
+
+// type StatMonthType struct {
+// 	daysStat []StatDayType // Statistics of all devices that were seen that month
+// 	month    time.Month
+// }
+
+type StatOfYearType struct {
+	monthsStat map[time.Month]StatOfMonthType // Statistics of all devices that were seen that year
 	year       int
 }
-type StatMonthType struct {
-	daysStat []StatDayType // Statistics of all devices that were seen that month
+
+type StatOfMonthType struct {
+	daysStat map[int]StatOfDayType // Statistics of all devices that were seen that month
 	month    time.Month
 }
 
-type StatDayType struct {
-	devicesStat []StatDeviceType // Statistics of all devices that were seen that day
-	date        string           // date in format YYYY-Month-DD
+type StatOfDayType struct {
+	devicesStat map[KeyDevice]StatDeviceType // Statistics of all devices that were seen that day
 	day         int
 	StatType    // General statistics of the day, to speed up access
 }
+
+type KeyDevice struct {
+	ip  string
+	mac string
+}
+
+// type StatDayType struct {
+// 	devicesStat []StatDeviceType // Statistics of all devices that were seen that day
+// 	date        string           // date in format YYYY-Month-DD
+// 	day         int
+// 	StatType    // General statistics of the day, to speed up access
+// }
 
 type StatDeviceType struct {
 	Mac string
@@ -39,7 +61,9 @@ func (t *Transport) parseAllFilesAndCountingTrafficNew(cfg *Config) {
 	// Getting the current time to calculate the running time
 	t.newCount.startTime = time.Now()
 	fmt.Printf("Parsing has started.\n")
-	t.delOldData(t.newCount.LastDate, t.Location)
+	t.delOldData(t.newCount.LastDateNew, t.Location)
+	// fmt.Printf("After Delete DAta\n")
+	// t.Print()
 	err := t.parseDirToMapNew(cfg)
 	if err != nil {
 		log.Error(err)
@@ -61,6 +85,8 @@ func (t *Transport) parseAllFilesAndCountingTrafficNew(cfg *Config) {
 		t.newCount.endTime.In(cfg.Location).Format(cfg.dateTimeLayout),
 		ExTime.Seconds(),
 		t.newCount.totalLineParsed/ExTimeInSec)
+	t.newCount.Count = Count{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+
 }
 
 func (t *Transport) delOldData(timestamp int64, Location *time.Location) {
@@ -68,10 +94,23 @@ func (t *Transport) delOldData(timestamp int64, Location *time.Location) {
 	year := tn.Year()
 	month := tn.Month()
 	day := tn.Day()
-	indexYear, indexMonth, indexDay := t.getIndexesOfDay(&lineOfLogType{year: year, month: month, day: day})
 	t.Lock()
-	t.statYears[indexYear].monthsStat[indexMonth].daysStat[indexDay] = StatDayType{}
-	t.Unlock()
+	defer t.Unlock()
+	yearStat, ok := t.statofYears[year]
+	if !ok {
+		return
+	}
+	monthStat, ok := yearStat.monthsStat[month]
+	if !ok {
+		return
+	}
+	_, ok = monthStat.daysStat[day]
+	if !ok {
+		return
+	}
+	delete(t.statofYears[year].monthsStat[month].daysStat, day)
+	t.newCount.LastDateNew = time.Date(year, month, day, 0, 0, 0, 1, t.Location).Unix()
+	t.newCount.LastDayStrNew = time.Date(year, month, day, 0, 0, 0, 1, t.Location).String()
 }
 
 func (t *Transport) parseDirToMapNew(cfg *Config) error {
@@ -152,33 +191,34 @@ func (t *Transport) parseFileToMapNew(info os.FileInfo, cfg *Config) error {
 
 func (t *Transport) parseLogToArrayByLineNew(scanner *bufio.Scanner, cfg *Config) error {
 	for scanner.Scan() { // We go through the entire file to the end
-		cfg.newCount.LineRead++
+		t.newCount.LineRead++
 		line := scanner.Text() // get the text from the line, for simplicity
+		line = filtredMessage(line, cfg.IgnorList)
 		if line == "" {
-			cfg.newCount.LineSkiped++
+			t.newCount.LineSkiped++
 			continue
 		}
 		line = replaceQuotes(line)
 		l, err := parseLineToStruct(line, cfg)
 		if err != nil {
-			cfg.newCount.LineError++
+			t.newCount.LineError++
 			log.Warningf("%v", err)
 			continue
 		}
-		cfg.newCount.LineParsed++
-		if cfg.newCount.LastDate > l.timestamp {
+		t.newCount.LineParsed++
+		if t.newCount.LastDateNew > l.timestamp {
 			log.Tracef("line(%v) too old\r", line)
-			cfg.newCount.LineSkiped++
+			t.newCount.LineSkiped++
 			continue
-		} else if cfg.newCount.LastDate < l.timestamp {
-			cfg.newCount.LastDate = l.timestamp
+		} else if t.newCount.LastDateNew < l.timestamp {
+			t.newCount.LastDateNew = l.timestamp
 		}
+		line = filtredMessage(line, cfg.IgnorList)
 
 		// The main function of filling the database
 		// Adding a row to the database for counting traffic
 		t.addLineOutToMapOfReportsSuperNew(&l)
-
-		cfg.newCount.LineAdded++
+		t.newCount.LineAdded++
 	}
 	if err := scanner.Err(); err != nil && err != io.EOF {
 		log.Errorf("Error scanner :%v", err)
@@ -195,113 +235,181 @@ func (t *Transport) addLineOutToMapOfReportsSuperNew(l *lineOfLogType) {
 	// записать это в слайс и привязать к отдельному оборудованию.
 	// при чём по привязка только айпи адресу идёт только в течении сегодняшнего дня, потом не учитывается
 	// привязка по маку и мак+айпи идёт всегда, т.к. устройство опознано.
-	indexYear, indexMonth, indexDay, indexDevice := t.getIndexesOfStat(l)
 	t.Lock()
-	devStat := t.statYears[indexYear].monthsStat[indexMonth].daysStat[indexDay].devicesStat[indexDevice]
-	dayStat := t.statYears[indexYear].monthsStat[indexMonth].daysStat[indexDay]
+	year, ok := t.statofYears[l.year]
+	if !ok {
+		year = StatOfYearType{
+			year:       l.year,
+			monthsStat: map[time.Month]StatOfMonthType{},
+		}
+		t.statofYears[l.year] = year
+	}
+	month, ok := year.monthsStat[l.month]
+	if !ok {
+		month = StatOfMonthType{
+			daysStat: map[int]StatOfDayType{},
+			month:    l.month}
+		year.monthsStat[l.month] = month
+	}
+	daysStat, ok := month.daysStat[l.day]
+	if !ok {
+		daysStat = StatOfDayType{
+			devicesStat: map[KeyDevice]StatDeviceType{},
+			day:         l.day}
+		month.daysStat[l.day] = daysStat
+	}
+	deviceStat, ok := daysStat.devicesStat[KeyDevice{ip: l.ipaddress, mac: l.login}]
+	if !ok {
+		deviceStat = StatDeviceType{Mac: l.login, IP: l.ipaddress}
+		daysStat.devicesStat[KeyDevice{ip: l.ipaddress, mac: l.login}] = deviceStat
+	}
 	// Расчет суммы трафика для устройства для дальшейшего отображения
-	devStat.VolumePerDay = devStat.VolumePerDay + l.sizeInBytes
-	devStat.VolumePerCheck = devStat.VolumePerCheck + l.sizeInBytes
-	devStat.StatPerHour[l.hour].Hour = devStat.StatPerHour[l.hour].Hour + l.sizeInBytes
-	devStat.StatPerHour[l.hour].Minute[l.minute] = devStat.StatPerHour[l.hour].Minute[l.minute] + l.sizeInBytes
+	deviceStat.VolumePerDay = deviceStat.VolumePerDay + l.sizeInBytes
+	deviceStat.VolumePerCheck = deviceStat.VolumePerCheck + l.sizeInBytes
+	deviceStat.StatPerHour[l.hour].Hour = deviceStat.StatPerHour[l.hour].Hour + l.sizeInBytes
+	deviceStat.StatPerHour[l.hour].Minute[l.minute] = deviceStat.StatPerHour[l.hour].Minute[l.minute] + l.sizeInBytes
 	// Расчет суммы трафика для дня для дальшейшего отображения
-	dayStat.VolumePerDay = dayStat.VolumePerDay + l.sizeInBytes
-	dayStat.VolumePerCheck = dayStat.VolumePerCheck + l.sizeInBytes
-	dayStat.StatPerHour[l.hour].Hour = dayStat.StatPerHour[l.hour].Hour + l.sizeInBytes
-	dayStat.StatPerHour[l.hour].Minute[l.minute] = dayStat.StatPerHour[l.hour].Minute[l.minute] + l.sizeInBytes
+	daysStat.VolumePerDay = daysStat.VolumePerDay + l.sizeInBytes
+	daysStat.VolumePerCheck = daysStat.VolumePerCheck + l.sizeInBytes
+	daysStat.StatPerHour[l.hour].Hour = daysStat.StatPerHour[l.hour].Hour + l.sizeInBytes
+	daysStat.StatPerHour[l.hour].Minute[l.minute] = daysStat.StatPerHour[l.hour].Minute[l.minute] + l.sizeInBytes
 	// Возвращаем данные обратно
-	dayStat.devicesStat[indexDevice] = devStat
-	t.statYears[indexYear].monthsStat[indexMonth].daysStat[indexDay] = dayStat
+	daysStat.devicesStat[KeyDevice{ip: l.ipaddress, mac: l.login}] = deviceStat
+	month.daysStat[l.day] = daysStat
+	year.monthsStat[l.month] = month
+	t.statofYears[l.year] = year
 	t.Unlock()
 }
 
-func (t *Transport) getIndexesOfDay(l *lineOfLogType) (int, int, int) {
-	t.RLock()
-	defer t.RUnlock()
-	var indexYear, indexMonth, indexDay int = -1, -1, -1
-	for index, year := range t.statYears {
-		if year.year == l.year {
-			indexYear = index
-			break
-		}
-	}
-	if indexYear == -1 {
-		t.statYears = append(t.statYears, statYearType{year: l.year})
-		indexYear = len(t.statYears) - 1
-	}
-	for index, monthStat := range t.statYears[indexYear].monthsStat {
-		if monthStat.month == l.month {
-			indexMonth = index
-			break
-		}
-	}
-	if indexMonth == -1 {
-		t.statYears[indexYear].monthsStat = append(t.statYears[indexYear].monthsStat, StatMonthType{month: l.month})
-		indexMonth = len(t.statYears[indexYear].monthsStat) - 1
-	}
-	for index, daysStat := range t.statYears[indexYear].monthsStat[indexMonth].daysStat {
-		if daysStat.day == l.day {
-			indexDay = index
-			break
-		}
-	}
-	if indexDay == -1 {
-		t.statYears[indexYear].monthsStat[indexMonth].daysStat = append(t.statYears[indexYear].monthsStat[indexMonth].daysStat, StatDayType{day: l.day})
-		indexDay = len(t.statYears[indexYear].monthsStat[indexMonth].daysStat) - 1
-	}
-	return indexYear, indexMonth, indexDay
-}
+// func (t *Transport) addLineOutToMapOfReportsSuperNew(l *lineOfLogType) {
+// 	l.alias = determiningAlias(*l)
+// 	// Идея такая.
+// 	// посчитать статистику для каждого отдельного случая, когда:
+// 	// есть и мак и айпи, есть только айпи, есть только мак
+// 	// записать это в слайс и привязать к отдельному оборудованию.
+// 	// при чём по привязка только айпи адресу идёт только в течении сегодняшнего дня, потом не учитывается
+// 	// привязка по маку и мак+айпи идёт всегда, т.к. устройство опознано.
+// 	indexYear, indexMonth, indexDay, indexDevice := t.getIndexesOfStat(l)
+// 	t.Lock()
+// 	devStat := t.statYears[indexYear].monthsStat[indexMonth].daysStat[indexDay].devicesStat[indexDevice]
+// 	dayStat := t.statYears[indexYear].monthsStat[indexMonth].daysStat[indexDay]
+// 	// Расчет суммы трафика для устройства для дальшейшего отображения
+// 	devStat.VolumePerDay = devStat.VolumePerDay + l.sizeInBytes
+// 	devStat.VolumePerCheck = devStat.VolumePerCheck + l.sizeInBytes
+// 	devStat.StatPerHour[l.hour].Hour = devStat.StatPerHour[l.hour].Hour + l.sizeInBytes
+// 	devStat.StatPerHour[l.hour].Minute[l.minute] = devStat.StatPerHour[l.hour].Minute[l.minute] + l.sizeInBytes
+// 	// Расчет суммы трафика для дня для дальшейшего отображения
+// 	dayStat.VolumePerDay = dayStat.VolumePerDay + l.sizeInBytes
+// 	dayStat.VolumePerCheck = dayStat.VolumePerCheck + l.sizeInBytes
+// 	dayStat.StatPerHour[l.hour].Hour = dayStat.StatPerHour[l.hour].Hour + l.sizeInBytes
+// 	dayStat.StatPerHour[l.hour].Minute[l.minute] = dayStat.StatPerHour[l.hour].Minute[l.minute] + l.sizeInBytes
+// 	// Возвращаем данные обратно
+// 	dayStat.devicesStat[indexDevice] = devStat
+// 	t.statYears[indexYear].monthsStat[indexMonth].daysStat[indexDay] = dayStat
+// 	t.Unlock()
+// }
 
-func (t *Transport) getIndexesOfStat(l *lineOfLogType) (int, int, int, int) {
-	t.RLock()
-	defer t.RUnlock()
-	var indexYear, indexMonth, indexDay, indexDevice int = -1, -1, -1, -1
-	for index, year := range t.statYears {
-		if year.year == l.year {
-			indexYear = index
-			break
-		}
-	}
-	if indexYear == -1 {
-		t.statYears = append(t.statYears, statYearType{year: l.year})
-		indexYear = len(t.statYears) - 1
-	}
-	for index, monthStat := range t.statYears[indexYear].monthsStat {
-		if monthStat.month == l.month {
-			indexMonth = index
-			break
-		}
-	}
-	if indexMonth == -1 {
-		t.statYears[indexYear].monthsStat = append(t.statYears[indexYear].monthsStat, StatMonthType{month: l.month})
-		indexMonth = len(t.statYears[indexYear].monthsStat) - 1
-	}
-	for index, daysStat := range t.statYears[indexYear].monthsStat[indexMonth].daysStat {
-		if daysStat.day == l.day {
-			indexDay = index
-			break
-		}
-	}
-	if indexDay == -1 {
-		t.statYears[indexYear].monthsStat[indexMonth].daysStat = append(t.statYears[indexYear].monthsStat[indexMonth].daysStat, StatDayType{day: l.day})
-		indexDay = len(t.statYears[indexYear].monthsStat[indexMonth].daysStat) - 1
-	}
-	for index, deviceStat := range t.statYears[indexYear].monthsStat[indexMonth].daysStat[indexDay].devicesStat {
-		if deviceStat.Mac == l.login || deviceStat.IP == l.ipaddress {
-			indexDevice = index
-			break
-		}
-	}
-	var mac, ip string
-	if isMac(l.login) {
-		mac = l.login
-	}
-	if isIP(l.ipaddress) {
-		ip = l.ipaddress
-	}
-	if indexDevice == -1 {
-		t.statYears[indexYear].monthsStat[indexMonth].daysStat[indexDay].devicesStat = append(t.statYears[indexYear].monthsStat[indexMonth].daysStat[indexDay].devicesStat, StatDeviceType{Mac: mac, IP: ip})
-		indexDevice = len(t.statYears[indexYear].monthsStat[indexMonth].daysStat[indexDay].devicesStat) - 1
-	}
-	return indexYear, indexMonth, indexDay, indexDevice
-}
+// func (t *Transport) getIndexesOfDay(l *lineOfLogType) (int, int, int) {
+// 	t.RLock()
+// 	defer t.RUnlock()
+// 	var indexYear, indexMonth, indexDay int = -1, -1, -1
+// 	for index, year := range t.statYears {
+// 		if year.year == l.year {
+// 			indexYear = index
+// 			break
+// 		}
+// 	}
+// 	if indexYear == -1 {
+// 		t.statYears = append(t.statYears, statYearType{year: l.year})
+// 		indexYear = len(t.statYears) - 1
+// 	}
+// 	for index, monthStat := range t.statYears[indexYear].monthsStat {
+// 		if monthStat.month == l.month {
+// 			indexMonth = index
+// 			break
+// 		}
+// 	}
+// 	if indexMonth == -1 {
+// 		t.statYears[indexYear].monthsStat = append(t.statYears[indexYear].monthsStat, StatMonthType{month: l.month})
+// 		indexMonth = len(t.statYears[indexYear].monthsStat) - 1
+// 	}
+// 	for index, daysStat := range t.statYears[indexYear].monthsStat[indexMonth].daysStat {
+// 		if daysStat.day == l.day {
+// 			indexDay = index
+// 			break
+// 		}
+// 	}
+// 	if indexDay == -1 {
+// 		t.statYears[indexYear].monthsStat[indexMonth].daysStat = append(t.statYears[indexYear].monthsStat[indexMonth].daysStat, StatDayType{day: l.day})
+// 		indexDay = len(t.statYears[indexYear].monthsStat[indexMonth].daysStat) - 1
+// 	}
+// 	return indexYear, indexMonth, indexDay
+// }
+
+// func (t *Transport) getIndexesOfStat(l *lineOfLogType) (int, int, int, int) {
+// 	t.RLock()
+// 	defer t.RUnlock()
+// 	var indexYear, indexMonth, indexDay, indexDevice int = -1, -1, -1, -1
+// 	for index, year := range t.statYears {
+// 		if year.year == l.year {
+// 			indexYear = index
+// 			break
+// 		}
+// 	}
+// 	if indexYear == -1 {
+// 		t.statYears = append(t.statYears, statYearType{year: l.year})
+// 		indexYear = len(t.statYears) - 1
+// 	}
+// 	for index, monthStat := range t.statYears[indexYear].monthsStat {
+// 		if monthStat.month == l.month {
+// 			indexMonth = index
+// 			break
+// 		}
+// 	}
+// 	if indexMonth == -1 {
+// 		t.statYears[indexYear].monthsStat = append(t.statYears[indexYear].monthsStat, StatMonthType{month: l.month})
+// 		indexMonth = len(t.statYears[indexYear].monthsStat) - 1
+// 	}
+// 	for index, daysStat := range t.statYears[indexYear].monthsStat[indexMonth].daysStat {
+// 		if daysStat.day == l.day {
+// 			indexDay = index
+// 			break
+// 		}
+// 	}
+// 	if indexDay == -1 {
+// 		t.statYears[indexYear].monthsStat[indexMonth].daysStat = append(t.statYears[indexYear].monthsStat[indexMonth].daysStat, StatDayType{day: l.day})
+// 		indexDay = len(t.statYears[indexYear].monthsStat[indexMonth].daysStat) - 1
+// 	}
+// 	for index, deviceStat := range t.statYears[indexYear].monthsStat[indexMonth].daysStat[indexDay].devicesStat {
+// 		if deviceStat.Mac == l.login || deviceStat.IP == l.ipaddress {
+// 			indexDevice = index
+// 			break
+// 		}
+// 	}
+// 	var mac, ip string
+// 	if isMac(l.login) {
+// 		mac = l.login
+// 	}
+// 	if isIP(l.ipaddress) {
+// 		ip = l.ipaddress
+// 	}
+// 	if indexDevice == -1 {
+// 		t.statYears[indexYear].monthsStat[indexMonth].daysStat[indexDay].devicesStat = append(t.statYears[indexYear].monthsStat[indexMonth].daysStat[indexDay].devicesStat, StatDeviceType{Mac: mac, IP: ip})
+// 		indexDevice = len(t.statYears[indexYear].monthsStat[indexMonth].daysStat[indexDay].devicesStat) - 1
+// 	}
+// 	return indexYear, indexMonth, indexDay, indexDevice
+// }
+
+// func (t *Transport) Print() {
+// 	t.RLock()
+// 	for _, year := range t.statofYears {
+// 		for _, month := range year.monthsStat {
+// 			for _, day := range month.daysStat {
+// 				for _, dev := range day.devicesStat {
+// 					fmt.Println(year.year, month.month.String(), day.day, dev.IP, dev.Mac, dev.VolumePerDay)
+// 				}
+// 			}
+// 		}
+// 	}
+// 	t.RUnlock()
+// }

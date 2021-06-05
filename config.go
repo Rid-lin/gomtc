@@ -39,6 +39,7 @@ type Config struct {
 	Loc                    string   `default:"Asia/Yekaterinburg" usage:"Location for time"`
 	ParseDelay             string   `default:"10m" usage:"Delay parsing logs"`
 	BlockGroup             string   `default:"Block" usage:"The name of the address list in MicrotiK with which access is blocked to users who have exceeded the quota."`
+	Timezone               float32  `default:"5" usage:"Timezone east of UTC"`
 	ReceiveBufferSizeBytes int      `default:"" usage:"Size of RxQueue, i.e. value for SO_RCVBUF in bytes"`
 	MaxSSHRetries          int      `default:"-1" usage:"The number of attempts to connect to the microtik router"`
 	SSHRetryDelay          uint16   `default:"0" usage:"Interval of attempts to connect to MT"`
@@ -62,11 +63,11 @@ var (
 
 type newContType struct {
 	Count
-	startTime   time.Time
-	endTime     time.Time
-	lastUpdated time.Time
-	LastDate    int64
-	LastDayStr  string
+	startTime     time.Time
+	endTime       time.Time
+	lastUpdated   time.Time
+	LastDateNew   int64
+	LastDayStrNew string
 }
 
 func newConfig() *Config {

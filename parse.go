@@ -49,7 +49,7 @@ func (t *Transport) runOnce(cfg *Config) {
 	count = Count{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
 	t.parseAllFilesAndCountingTrafficNew(cfg)
-
+	// t.Print()
 	t.setTimerParse(cfg.ParseDelay)
 }
 
@@ -66,7 +66,7 @@ func (t *Transport) parseAllFilesAndCountingTraffic(cfg *Config) {
 	// Получение текущего времени для расчёта времени работы
 	cfg.startTime = time.Now()
 	fmt.Printf("Parsing has started.\n")
-	err := t.parseDirToMap(cfg)
+	err := t.parseDirToMapOld(cfg)
 	if err != nil {
 		log.Error(err)
 	}
@@ -113,7 +113,7 @@ func (t *Transport) ClearDataOfLastDay(cfg *Config) {
 	cfg.LastDate = cfg.LastDay
 }
 
-func (t *Transport) parseDirToMap(cfg *Config) error {
+func (t *Transport) parseDirToMapOld(cfg *Config) error {
 	// iteration over all files in a folder
 	files, err := ioutil.ReadDir(cfg.LogPath)
 	if err != nil {
@@ -121,7 +121,7 @@ func (t *Transport) parseDirToMap(cfg *Config) error {
 	}
 	SortFileByModTime(files)
 	for _, file := range files {
-		if err := t.parseFileToMap(file, cfg); err != nil {
+		if err := t.parseFileToMapOld(file, cfg); err != nil {
 			log.Error(err)
 			continue
 		}
@@ -144,7 +144,7 @@ func (t *Transport) parseDirToMap(cfg *Config) error {
 	return nil
 }
 
-func (t *Transport) parseFileToMap(info os.FileInfo, cfg *Config) error {
+func (t *Transport) parseFileToMapOld(info os.FileInfo, cfg *Config) error {
 	FullFileName := filepath.Join(cfg.LogPath, info.Name())
 	file, err := os.Open(FullFileName)
 	if err != nil {
@@ -180,7 +180,7 @@ func (t *Transport) parseFileToMap(info os.FileInfo, cfg *Config) error {
 	}
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
-	if err := t.parseLogToArrayByLine(scanner, cfg); err != nil {
+	if err := t.parseLogToArrayByLineOld(scanner, cfg); err != nil {
 		return err
 	}
 	if scanner.Err() != nil {
@@ -189,7 +189,7 @@ func (t *Transport) parseFileToMap(info os.FileInfo, cfg *Config) error {
 	return nil
 }
 
-func (t *Transport) parseLogToArrayByLine(scanner *bufio.Scanner, cfg *Config) error {
+func (t *Transport) parseLogToArrayByLineOld(scanner *bufio.Scanner, cfg *Config) error {
 	for scanner.Scan() { // We go through the entire file to the end
 		cfg.LineRead++
 		line := scanner.Text() // get the text from the line, for simplicity

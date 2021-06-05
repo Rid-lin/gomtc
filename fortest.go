@@ -77,63 +77,63 @@ func saveStrToFile(nameFile, str string) error {
 	return nil
 }
 
-func (t *Transport) addLineOutToMapOfReports(value *lineOfLogType) {
-	value.alias = determiningAlias(*value)
-	t.trafficСounting(value)
-}
+// func (t *Transport) addLineOutToMapOfReports(value *lineOfLogType) {
+// 	value.alias = determiningAlias(*value)
+// 	t.trafficСounting(value)
+// }
 
-func (t *Transport) trafficСounting(l *lineOfLogType) {
-	// Идея такая.
-	// посчитать статистику для каждого отдельного случая, когда:
-	// есть и мак и айпи, есть только айпи, есть только мак
-	// записать это в слайс и привязать к отдельному оборудованию.
-	// при чём по привязка только айпи адресу идёт только в течении сегодняшнего дня, потом не учитывается
-	// привязка по маку и мак+айпи идёт всегда, т.к. устройство опознано.
-	t.Lock()
-	statForDate, iStatDay, _ := t.getStatForDate(l) // статистка за день по всем устройствам и общая
-	// Присваеваем данные в массиве временной переменной для того чтобы предыдущие значения не потерялись
-	devStat, iStatDev, _ := statForDate.findStat(l)
-	// Расчет суммы трафика для устройства для дальшейшего отображения
-	devStat.VolumePerDay = devStat.VolumePerDay + l.sizeInBytes
-	devStat.VolumePerCheck = devStat.VolumePerCheck + l.sizeInBytes
-	devStat.StatPerHour[l.hour].Hour = devStat.StatPerHour[l.hour].Hour + l.sizeInBytes
-	devStat.StatPerHour[l.hour].Minute[l.minute] = devStat.StatPerHour[l.hour].Minute[l.minute] + l.sizeInBytes
-	// Расчет суммы трафика для дня для дальшейшего отображения
-	statForDate.VolumePerDay = statForDate.VolumePerDay + l.sizeInBytes
-	statForDate.VolumePerCheck = statForDate.VolumePerCheck + l.sizeInBytes
-	statForDate.StatPerHour[l.hour].Hour = statForDate.StatPerHour[l.hour].Hour + l.sizeInBytes
-	statForDate.StatPerHour[l.hour].Minute[l.minute] = statForDate.StatPerHour[l.hour].Minute[l.minute] + l.sizeInBytes
-	// Возвращаем данные обратно
-	statForDate.devicesStat[iStatDev] = devStat
-	t.stats[iStatDay] = statForDate
+// func (t *Transport) trafficСounting(l *lineOfLogType) {
+// 	// Идея такая.
+// 	// посчитать статистику для каждого отдельного случая, когда:
+// 	// есть и мак и айпи, есть только айпи, есть только мак
+// 	// записать это в слайс и привязать к отдельному оборудованию.
+// 	// при чём по привязка только айпи адресу идёт только в течении сегодняшнего дня, потом не учитывается
+// 	// привязка по маку и мак+айпи идёт всегда, т.к. устройство опознано.
+// 	t.Lock()
+// 	statForDate, iStatDay, _ := t.getStatForDate(l) // статистка за день по всем устройствам и общая
+// 	// Присваеваем данные в массиве временной переменной для того чтобы предыдущие значения не потерялись
+// 	devStat, iStatDev, _ := statForDate.findStat(l)
+// 	// Расчет суммы трафика для устройства для дальшейшего отображения
+// 	devStat.VolumePerDay = devStat.VolumePerDay + l.sizeInBytes
+// 	devStat.VolumePerCheck = devStat.VolumePerCheck + l.sizeInBytes
+// 	devStat.StatPerHour[l.hour].Hour = devStat.StatPerHour[l.hour].Hour + l.sizeInBytes
+// 	devStat.StatPerHour[l.hour].Minute[l.minute] = devStat.StatPerHour[l.hour].Minute[l.minute] + l.sizeInBytes
+// 	// Расчет суммы трафика для дня для дальшейшего отображения
+// 	statForDate.VolumePerDay = statForDate.VolumePerDay + l.sizeInBytes
+// 	statForDate.VolumePerCheck = statForDate.VolumePerCheck + l.sizeInBytes
+// 	statForDate.StatPerHour[l.hour].Hour = statForDate.StatPerHour[l.hour].Hour + l.sizeInBytes
+// 	statForDate.StatPerHour[l.hour].Minute[l.minute] = statForDate.StatPerHour[l.hour].Minute[l.minute] + l.sizeInBytes
+// 	// Возвращаем данные обратно
+// 	statForDate.devicesStat[iStatDev] = devStat
+// 	t.stats[iStatDay] = statForDate
 
-	t.Unlock()
-}
+// 	t.Unlock()
+// }
 
-func (t *Transport) getStatForDate(l *lineOfLogType) (StatDayType, int, error) {
-	date := fmt.Sprintf("%d-%s-%d", l.year, l.month.String(), l.day)
-	for index, statForDay := range t.stats {
-		if statForDay.date == date {
-			return statForDay, index, nil
-		}
-	}
-	t.stats = append(t.stats, StatDayType{})
-	return StatDayType{}, len(t.stats) - 1, fmt.Errorf("Not found statistic of Day")
-}
+// func (t *Transport) getStatForDate(l *lineOfLogType) (StatDayType, int, error) {
+// 	date := fmt.Sprintf("%d-%s-%d", l.year, l.month.String(), l.day)
+// 	for index, statForDay := range t.stats {
+// 		if statForDay.date == date {
+// 			return statForDay, index, nil
+// 		}
+// 	}
+// 	t.stats = append(t.stats, StatDayType{})
+// 	return StatDayType{}, len(t.stats) - 1, fmt.Errorf("Not found statistic of Day")
+// }
 
-func (ss *StatDayType) findStat(l *lineOfLogType) (StatDeviceType, int, error) {
-	for index, s := range ss.devicesStat {
-		if s.Mac == l.login || s.IP == l.ipaddress {
-			return s, index, nil
-		}
-	}
-	var mac, ip string
-	if isMac(l.login) {
-		mac = l.login
-	}
-	if isIP(l.ipaddress) {
-		ip = l.ipaddress
-	}
-	ss.devicesStat = append(ss.devicesStat, StatDeviceType{Mac: mac, IP: ip})
-	return ss.devicesStat[len(ss.devicesStat)-1], len(ss.devicesStat) - 1, nil
-}
+// func (ss *StatDayType) findStat(l *lineOfLogType) (StatDeviceType, int, error) {
+// 	for index, s := range ss.devicesStat {
+// 		if s.Mac == l.login || s.IP == l.ipaddress {
+// 			return s, index, nil
+// 		}
+// 	}
+// 	var mac, ip string
+// 	if isMac(l.login) {
+// 		mac = l.login
+// 	}
+// 	if isIP(l.ipaddress) {
+// 		ip = l.ipaddress
+// 	}
+// 	ss.devicesStat = append(ss.devicesStat, StatDeviceType{Mac: mac, IP: ip})
+// 	return ss.devicesStat[len(ss.devicesStat)-1], len(ss.devicesStat) - 1, nil
+// }

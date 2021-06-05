@@ -17,6 +17,7 @@ func (transport *Transport) handleRequest(cfg *Config) {
 
 	http.HandleFunc("/", logreq(transport.handleIndex))
 	http.HandleFunc("/wf/", logreq(transport.handleWithFriends))
+	http.HandleFunc("/new/", logreq(transport.handleIndexNew))
 	http.HandleFunc("/log/", logreq(transport.handleLog))
 	http.HandleFunc("/runparse", logreq(transport.handleRunParse))
 	http.HandleFunc("/editalias/", logreq(transport.handleEditAlias))
@@ -94,6 +95,41 @@ func (data *Transport) handleShowReport(w http.ResponseWriter, withfriends bool,
 		assetsPath+"/header.html",
 		assetsPath+"/footer.html"))
 	err := t.Execute(w, DisplayData)
+	if err != nil {
+		if strings.Contains(fmt.Sprint(err), "index out of range") {
+			fmt.Fprintf(w, "Проверьте налиие логов за запрашиваемый период<br> или подождите несколько минут.")
+		} else {
+			fmt.Fprintf(w, "Что-то пошло не так, произошла ошибка при выполнении запроса. <br> %v", err.Error())
+		}
+	}
+}
+
+func (data *Transport) handleIndexNew(w http.ResponseWriter, r *http.Request) {
+	data.handleNewReport(w, false, "new", r)
+}
+
+func (t *Transport) handleNewReport(w http.ResponseWriter, withfriends bool, preffix string, r *http.Request) {
+
+	request := parseDataFromURL(r)
+	request.referURL = r.Host + r.URL.Path
+	request.path = r.URL.Path
+	t.RLock()
+	assetsPath := t.AssetsPath
+	t.RUnlock()
+	DisplayData, err := t.reportTrafficHourlyByLoginsNew(request, withfriends)
+	if err != nil {
+		fmt.Fprintf(w, "Проверьте налиие логов за запрашиваемый период<br> или подождите несколько минут.")
+
+	}
+
+	fmap := template.FuncMap{
+		"FormatSize": FormatSize,
+	}
+	templ := template.Must(template.New("index"+preffix).Funcs(fmap).ParseFiles(
+		assetsPath+"/index"+preffix+".html",
+		assetsPath+"/header.html",
+		assetsPath+"/footer.html"))
+	err = templ.Execute(w, DisplayData)
 	if err != nil {
 		if strings.Contains(fmt.Sprint(err), "index out of range") {
 			fmt.Fprintf(w, "Проверьте налиие логов за запрашиваемый период<br> или подождите несколько минут.")
