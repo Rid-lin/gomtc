@@ -198,20 +198,6 @@ func (rData ReportDataType) FiltredFriendS(friends []string) ReportDataType {
 	return rData
 }
 
-// func (data ReportDataType) Format(cub uint8) ReportDataType {
-// 	for index := 1; index < len(data)-1; index++ {
-// 		// data[index].AverageStr = fmt.Sprintf("%6.2f", data[index].Average)
-// 		data[index].PrecentStr = fmt.Sprintf("%6.2f", data[index].Precent)
-// 		HourSize := data[index].SizeOfHourU
-// 		HourSizeStr := data[index].SizeOfHourStr
-// 		for hourIndex := range HourSize {
-// 			HourSizeStr[hourIndex] = fmt.Sprintf("%6.2f", HourSize[hourIndex])
-// 		}
-// 		data[index].SizeOfHourStr = HourSizeStr
-// 	}
-// 	return data
-// }
-
 func add(slice []LineOfDisplay, line LineOfDisplay) []LineOfDisplay {
 	for index, item := range slice {
 		if line.Alias == item.Alias {
@@ -221,14 +207,3 @@ func add(slice []LineOfDisplay, line LineOfDisplay) []LineOfDisplay {
 	}
 	return append(slice, line)
 }
-
-// // roundToMb Function rounds a number to megabyte with cub precision
-// func roundToMb(sizeInBytes uint64, SizeOneKilobyte uint64, cub int) float64 {
-// 	if SizeOneKilobyte == 0 {
-// 		SizeOneKilobyte = 1048576
-// 	}
-// 	sizeInBytesf := float64(sizeInBytes)
-// 	cubf := math.Pow(10, float64(cub))
-// 	// return (math.Round((float64(sizeInBytes) / SizeOneKilobyte * math.Pow(10, float64(cub+1))) / math.Pow(10, float64(cub+1))))
-// 	return math.Round(sizeInBytesf/float64(SizeOneKilobyte)*cubf) / cubf
-// }

@@ -18,20 +18,6 @@ func CheckPIDFile(filename string) error {
 		if os.IsNotExist(err) {
 			return nil
 		}
-
-		// 	// If the time is more than 15 minutes - delete this file and run the program
-		// } else if time.Since(stat.ModTime()) > 15*time.Minute {
-
-		// 	if err := os.Remove(filename); err != nil {
-		// 		log.Errorf("Error remove file(%v):%v", filename, err)
-		// 	}
-		// 	if err := writePID(filename); err != nil {
-		// 		return err
-		// 	}
-
-		// 	return nil
-		// 	// If it is there and the time for its change is less than 15 minutes, do not start.
-
 	}
 	return fmt.Errorf("already running")
 }

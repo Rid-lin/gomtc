@@ -292,23 +292,7 @@ type parseType struct {
 	Location         *time.Location
 }
 
-// TODO to Future
-// type parseCommentType struct {
-// 	QuotaType
-// 	Name     string
-// 	Position string
-// 	Company  string
-// 	TypeD    string
-// 	IDUser   string
-// 	Comment  string
-// 	Manual   bool
-// }
-
 var (
-	// cache Cache
-	// cache      = map[string]cacheRecord{}
-	// cacheMutex = sync.RWMutex{}
-	// writer           *bufio.Writer
 	fileDestination     *os.File
 	csvFiletDestination *os.File
 )
