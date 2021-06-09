@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-var count Count
+// var count Count
 
 func (t *Transport) runOnce(cfg *Config) {
 	p := parseType{}

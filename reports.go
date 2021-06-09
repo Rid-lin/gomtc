@@ -105,8 +105,8 @@ func (t *Transport) reportTrafficHourlyByLoginsNew(request RequestForm, showFrie
 		// TODO подумать над ключом
 		line.InfoOldType.PersonType = t.Aliases[key.mac].PersonType
 		for i := range line.VolumePerHour {
-			line.VolumePerHour[i] = value.StatPerHour[i].Hour
-			totalVolumePerHour[i] += value.StatPerHour[i].Hour
+			line.VolumePerHour[i] = value.StatPerHour[i].PerHour
+			totalVolumePerHour[i] += value.StatPerHour[i].PerHour
 		}
 		ReportData = add(ReportData, line)
 	}

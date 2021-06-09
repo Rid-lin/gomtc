@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -278,6 +279,7 @@ func (d DeviceType) convertToInfo(blockGroup string) InfoOldType {
 			HostName: d.hostName,
 			Groups:   d.addressLists,
 			timeout:  d.timeout,
+			TypeD:    typeD,
 		},
 		QuotaType: QuotaType{
 			HourlyQuota:  hourlyQuota,
@@ -292,7 +294,6 @@ func (d DeviceType) convertToInfo(blockGroup string) InfoOldType {
 			Name:     name,
 			Position: position,
 			Company:  company,
-			TypeD:    typeD,
 			Comment:  comment,
 			Comments: d.comment,
 		},
@@ -421,31 +422,31 @@ func boolToParamert(trigger bool) string {
 	return "no"
 }
 
-func removeDefaultQuota(setValue, deafultValue uint64) uint64 {
-	if setValue == deafultValue {
-		return uint64(0)
-	}
-	return uint64(setValue)
-}
+// func removeDefaultQuota(setValue, deafultValue uint64) uint64 {
+// 	if setValue == deafultValue {
+// 		return uint64(0)
+// 	}
+// 	return uint64(setValue)
+// }
 
-func (a *InfoOldType) removeDefaultQuotas(qDef QuotaType) {
-	a.HourlyQuota = removeDefaultQuota(a.HourlyQuota, qDef.MonthlyQuota)
-	a.DailyQuota = removeDefaultQuota(a.DailyQuota, qDef.DailyQuota)
-	a.MonthlyQuota = removeDefaultQuota(a.MonthlyQuota, qDef.MonthlyQuota)
-}
+// func (a *InfoOldType) removeDefaultQuotas(qDef QuotaType) {
+// 	a.HourlyQuota = removeDefaultQuota(a.HourlyQuota, qDef.MonthlyQuota)
+// 	a.DailyQuota = removeDefaultQuota(a.DailyQuota, qDef.DailyQuota)
+// 	a.MonthlyQuota = removeDefaultQuota(a.MonthlyQuota, qDef.MonthlyQuota)
+// }
 
-func (a *InfoOldType) addBlockGroup(group string) {
-	a.Groups = a.Groups + "," + group
-	a.Groups = strings.Trim(a.Groups, ",")
-	a.Groups = strings.ReplaceAll(a.Groups, `"`, "")
-}
+// func (a *InfoOldType) addBlockGroup(group string) {
+// 	a.Groups = a.Groups + "," + group
+// 	a.Groups = strings.Trim(a.Groups, ",")
+// 	a.Groups = strings.ReplaceAll(a.Groups, `"`, "")
+// }
 
-func (a *InfoOldType) delBlockGroup(group string) {
-	a.Groups = strings.Replace(a.Groups, group, "", 1)
-	a.Groups = strings.ReplaceAll(a.Groups, ",,", ",")
-	a.Groups = strings.Trim(a.Groups, ",")
-	a.Groups = strings.ReplaceAll(a.Groups, `"`, "")
-}
+// func (a *InfoOldType) delBlockGroup(group string) {
+// 	a.Groups = strings.Replace(a.Groups, group, "", 1)
+// 	a.Groups = strings.ReplaceAll(a.Groups, ",,", ",")
+// 	a.Groups = strings.Trim(a.Groups, ",")
+// 	a.Groups = strings.ReplaceAll(a.Groups, `"`, "")
+// }
 
 // func (t *Transport) getAliasS(alias string) InfoType {
 // 	key := KeyMapOfReports{
@@ -458,3 +459,14 @@ func (a *InfoOldType) delBlockGroup(group string) {
 // 	}
 // 	return InfoD
 // }
+
+func lNow() *lineOfLogType {
+	var l lineOfLogType
+	tn := time.Now()
+	l.year = tn.Year()
+	l.month = tn.Month()
+	l.day = tn.Day()
+	l.hour = tn.Hour()
+	l.minute = tn.Minute()
+	return &l
+}

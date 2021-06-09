@@ -53,7 +53,7 @@ type Config struct {
 	Location               *time.Location
 	startTime              time.Time
 	endTime                time.Time
-	newCount               newContType
+	// newCount               newContType
 	Count
 }
 

@@ -3,9 +3,11 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"net/url"
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -56,26 +58,33 @@ func (t *Transport) updateAliases(p parseType) {
 		for _, month := range year.monthsStat {
 			for _, day := range month.daysStat {
 				for key, deviceStat := range day.devicesStat {
+					device := t.devices[key]
 					for _, alias := range t.Aliases {
 						switch {
 						case alias.DeviceInAlias(key):
-							device := t.devices[key]
 							alias.UpdateQuota(device.ToQuota())
 							alias.UpdatePerson(device.ToPerson())
-							contains = true
-							break
-						case alias.IPOnlyInAlias(key):
+							goto gotAlias
+						case alias.IPOnlyInAlias(key) && day.day == time.Now().Day():
+							alias.UpdateQuota(device.ToQuota())
+							alias.UpdatePerson(device.ToPerson())
+							goto gotAlias
+						case alias.MacInAlias(key):
+							alias.UpdateQuota(device.ToQuota())
+							alias.UpdatePerson(device.ToPerson())
+							goto gotAlias
 						}
 					}
 					if !contains {
 						device := t.devices[key]
 						t.Aliases[deviceStat.mac] = AliasType{
 							AliasName:  deviceStat.mac,
-							KeyArr:     []KeyDevice{KeyDevice{ip: deviceStat.ip, mac: deviceStat.mac}},
+							KeyArr:     []KeyDevice{{ip: deviceStat.ip, mac: deviceStat.mac}},
 							QuotaType:  checkNULLQuotas(device.ToQuota(), p.QuotaType),
 							PersonType: device.ToPerson(),
 						}
 					}
+				gotAlias:
 				}
 			}
 		}
@@ -94,7 +103,8 @@ func (a *AliasType) DeviceInAlias(key KeyDevice) bool {
 
 func (a *AliasType) IPOnlyInAlias(key KeyDevice) bool {
 	for _, item := range a.KeyArr {
-		if item.ip == key.ip && item.ip == "" {
+		// Если ip алиаса совпадают с маком устройства или мак пустой, то указан только ip
+		if item.ip == key.ip && item.mac == "" || item.ip == key.ip && item.mac == key.ip {
 			return true
 		}
 	}
@@ -132,13 +142,85 @@ func (a *AliasType) UpdatePerson(p PersonType) {
 	if p.Company != "" {
 		a.PersonType.Company = p.Company
 	}
-	if p.TypeD != "" {
-		a.PersonType.TypeD = p.TypeD
-	}
+	// if p.TypeD != "" {
+	// 	a.PersonType.TypeD = p.TypeD
+	// }
 	if p.Comment != "" {
 		a.PersonType.Comment = p.Comment
 	}
 	if p.IDUser != "" {
 		a.PersonType.IDUser = p.IDUser
 	}
+}
+
+func (a *AliasType) UpdateFromForm(params url.Values) {
+	// if len(params["TypeD"]) > 0 {
+	// 	a.TypeD = params["TypeD"][0]
+	// } else {
+	// 	a.TypeD = "other"
+	// }
+	if len(params["name"]) > 0 {
+		a.Name = params["name"][0]
+	} else {
+		a.Name = ""
+	}
+	if len(params["col"]) > 0 {
+		a.Position = params["col"][0]
+	} else {
+		a.Position = ""
+	}
+	if len(params["com"]) > 0 {
+		a.Company = params["com"][0]
+	} else {
+		a.Company = ""
+	}
+	if len(params["comment"]) > 0 {
+		a.Comment = params["comment"][0]
+	} else {
+		a.Comment = ""
+	}
+	if len(params["disabled"]) > 0 {
+		a.Disabled = paramertToBool(params["disabled"][0])
+	} else {
+		a.Disabled = false
+	}
+	if len(params["quotahourly"]) > 0 {
+		a.HourlyQuota = paramertToUint(params["quotahourly"][0])
+	} else {
+		a.HourlyQuota = 0
+	}
+	if len(params["quotadaily"]) > 0 {
+		a.DailyQuota = paramertToUint(params["quotadaily"][0])
+	} else {
+		a.DailyQuota = 0
+	}
+	if len(params["quotamonthly"]) > 0 {
+		a.MonthlyQuota = paramertToUint(params["quotamonthly"][0])
+	} else {
+		a.MonthlyQuota = 0
+	}
+
+}
+
+func (t *Transport) addBlockGroup(a AliasType, group string) {
+	t.Lock()
+	for _, key := range a.KeyArr {
+		device := t.devices[key]
+		device = device.addBlockGroup(group)
+		t.change[key] = DeviceToBlock{
+			Id:       device.Id,
+			Groups:   device.addressLists,
+			Disabled: paramertToBool(device.disabledL),
+		}
+	}
+	t.Unlock()
+}
+
+func (t *Transport) delBlockGroup(a AliasType, group string) {
+	t.Lock()
+	for _, key := range a.KeyArr {
+		device := t.devices[key]
+		device = device.delBlockGroup(group)
+	}
+	t.Unlock()
 }

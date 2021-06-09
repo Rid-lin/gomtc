@@ -17,17 +17,17 @@ type AliasType struct {
 }
 
 type Transport struct {
-	AliasesOld map[string]AliasOldType
-	Aliases    map[string]AliasType
+	// AliasesOld map[string]AliasOldType
 	// aliases  AliasesType
 	// stats    []StatDayType
 	// statYears           []statYearType
-	statofYears   map[int]StatOfYearType
-	AliasesStrArr map[string][]string
 	// Infos               map[string]InfoType
 	// dataOld             MapOfReports
 	// dataCasheOld        MapOfReports
-	change              AliasesOldedType
+	Aliases             map[string]AliasType
+	statofYears         map[int]StatOfYearType
+	AliasesStrArr       map[string][]string
+	change              BlockDevices
 	devices             DevicesMapType
 	logs                []LogsOfJob
 	friends             []string
@@ -90,6 +90,7 @@ type DeviceOldType struct {
 	HostName string
 	Groups   string
 	timeout  time.Time
+	TypeD    string
 }
 
 type DeviceType struct {
@@ -130,19 +131,28 @@ type DeviceType struct {
 	Manual          bool
 	ShouldBeBlocked bool
 	timeout         time.Time
+	TypeD           string
 	StatOldType
 }
 
 type DevicesType []DeviceType
 type DevicesMapType map[KeyDevice]DeviceType
 
-type AliasOldType struct {
-	AliasName string
-	infoArr   []InfoType
-	QuotaType
-}
+// type AliasOldType struct {
+// 	AliasName string
+// 	// infoArr   []InfoType
+// 	QuotaType
+// }
 
-type AliasesOldedType []AliasOld
+type BlockDevices map[KeyDevice]DeviceToBlock
+
+type DeviceToBlock struct {
+	Id       string
+	Mac      string
+	IP       string
+	Groups   string
+	Disabled bool
+}
 
 type lineOfLogType struct {
 	date        string // squid timestamp 1621969229.000
@@ -165,20 +175,20 @@ type lineOfLogType struct {
 	sizeInBytes uint64
 }
 
-type MapOfReports map[KeyMapOfReports]AliasOld
+// type MapOfReports map[KeyMapOfReports]AliasOld
 
-type KeyMapOfReports struct {
-	DateStr string
-	Alias   string
-}
+// type KeyMapOfReports struct {
+// 	DateStr string
+// 	Alias   string
+// }
 
-type AliasOld struct {
-	Alias   string
-	DateStr string
-	Hits    uint32
-	InfoOldType
-	StatOldType
-}
+// type AliasOld struct {
+// 	Alias   string
+// 	DateStr string
+// 	Hits    uint32
+// 	InfoOldType
+// 	StatOldType
+// }
 
 type InfoOldType struct {
 	DeviceOldType
@@ -200,7 +210,6 @@ type PersonType struct {
 	Position string
 	Company  string
 	IDUser   string
-	TypeD    string
 }
 
 type Count struct {
@@ -276,18 +285,14 @@ type StatType struct {
 	Precent         float64
 	SizeOfPrecentil uint64
 	Average         uint64
-	SpeedPerDay     uint64
-	SpeedPerCheck   uint64
 	VolumePerDay    uint64
 	VolumePerCheck  uint64
 	Count           uint32
 }
 
 type VolumePerType struct {
-	Minute      [60]uint64
-	SpeedMinute [60]uint64
-	Hour        uint64
-	SpeedHour   uint64
+	PerMinute [60]uint64
+	PerHour   uint64
 }
 
 type SSHCredentials struct {
@@ -342,8 +347,10 @@ func NewTransport(cfg *Config) *Transport {
 		// dataCasheOld:        map[KeyMapOfReports]AliasOld{},
 		devices:             make(map[KeyDevice]DeviceType),
 		AliasesStrArr:       make(map[string][]string),
+		Aliases:             make(map[string]AliasType),
 		Location:            Location,
 		statofYears:         make(map[int]StatOfYearType),
+		change:              make(BlockDevices),
 		pidfile:             cfg.Pidfile,
 		DevicesRetryDelay:   cfg.DevicesRetryDelay,
 		BlockAddressList:    cfg.BlockGroup,

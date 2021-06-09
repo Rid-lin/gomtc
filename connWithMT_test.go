@@ -6,9 +6,9 @@ import (
 	"time"
 )
 
-var (
-	DS DevicesType
-)
+// var (
+// 	DS DevicesType
+// )
 
 func Test_parseParamertToStr(t *testing.T) {
 	type args struct {
@@ -304,9 +304,11 @@ func Test_makeCommentFromIodt(t *testing.T) {
 						Name:     "Vlad",
 						Position: "Admin",
 						Company:  "Home",
-						TypeD:    "nb",
 						IDUser:   "33785",
 						Comment:  "interesnaya fignya",
+					},
+					DeviceOldType: DeviceOldType{
+						TypeD: "nb",
 					},
 				},
 			},
@@ -445,7 +447,6 @@ func TestDeviceType_convertToInfo(t *testing.T) {
 					Position: "Admin",
 					Company:  "Home",
 					IDUser:   "33785",
-					TypeD:    "nb",
 				},
 				DeviceOldType: DeviceOldType{
 					Id:       "",
@@ -455,6 +456,7 @@ func TestDeviceType_convertToInfo(t *testing.T) {
 					HostName: "root-hp",
 					Groups:   "inet",
 					timeout:  now,
+					TypeD:    "nb",
 				},
 			},
 		},
@@ -519,7 +521,6 @@ func TestInfoOfDeviceType_convertToDevice(t *testing.T) {
 					Position: "Admin",
 					Company:  "Home",
 					IDUser:   "33785",
-					TypeD:    "nb",
 				},
 				DeviceType: DeviceType{
 					Id:               "",
@@ -529,6 +530,7 @@ func TestInfoOfDeviceType_convertToDevice(t *testing.T) {
 					hostName:         "root-hp",
 					addressLists:     "inet",
 					timeout:          now,
+					TypeD:            "nb",
 				},
 			},
 			quotaDef: QuotaType{

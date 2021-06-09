@@ -246,13 +246,13 @@ func (t *Transport) addLineOutToMapOfReportsSuperNew(l *lineOfLogType) {
 	// Расчет суммы трафика для устройства для дальшейшего отображения
 	deviceStat.VolumePerDay = deviceStat.VolumePerDay + l.sizeInBytes
 	deviceStat.VolumePerCheck = deviceStat.VolumePerCheck + l.sizeInBytes
-	deviceStat.StatPerHour[l.hour].Hour = deviceStat.StatPerHour[l.hour].Hour + l.sizeInBytes
-	deviceStat.StatPerHour[l.hour].Minute[l.minute] = deviceStat.StatPerHour[l.hour].Minute[l.minute] + l.sizeInBytes
+	deviceStat.StatPerHour[l.hour].PerHour = deviceStat.StatPerHour[l.hour].PerHour + l.sizeInBytes
+	deviceStat.StatPerHour[l.hour].PerMinute[l.minute] = deviceStat.StatPerHour[l.hour].PerMinute[l.minute] + l.sizeInBytes
 	// Расчет суммы трафика для дня для дальшейшего отображения
 	daysStat.VolumePerDay = daysStat.VolumePerDay + l.sizeInBytes
 	daysStat.VolumePerCheck = daysStat.VolumePerCheck + l.sizeInBytes
-	daysStat.StatPerHour[l.hour].Hour = daysStat.StatPerHour[l.hour].Hour + l.sizeInBytes
-	daysStat.StatPerHour[l.hour].Minute[l.minute] = daysStat.StatPerHour[l.hour].Minute[l.minute] + l.sizeInBytes
+	daysStat.StatPerHour[l.hour].PerHour = daysStat.StatPerHour[l.hour].PerHour + l.sizeInBytes
+	daysStat.StatPerHour[l.hour].PerMinute[l.minute] = daysStat.StatPerHour[l.hour].PerMinute[l.minute] + l.sizeInBytes
 	// Возвращаем данные обратно
 	daysStat.devicesStat[KeyDevice{ip: l.ipaddress, mac: l.login}] = deviceStat
 	month.daysStat[l.day] = daysStat
@@ -263,7 +263,6 @@ func (t *Transport) addLineOutToMapOfReportsSuperNew(l *lineOfLogType) {
 
 func (t *Transport) checkQuotasNew() {
 	t.RLock()
-	quota := t.QuotaType
 	p := parseType{
 		SSHCredentials:   t.sshCredentials,
 		QuotaType:        t.QuotaType,
@@ -271,58 +270,58 @@ func (t *Transport) checkQuotasNew() {
 		Location:         t.Location,
 	}
 	t.RUnlock()
-	tn := time.Now().Format("2006-01-02")
 	hour := time.Now().Hour()
-	statOfDay := t.getDay(time.Now())
-	t.Lock()
-	for key, alias := range t.AliasesOld {
-		switch {
-		case statOfDevice.IP == "":
-			continue
-		case (alias.VolumePerDay >= alias.DailyQuota || alias.VolumePerHour[hour] >= alias.HourlyQuota) && alias.DateStr == tn && alias.Blocked:
-			continue
-		case alias.VolumePerDay >= alias.DailyQuota && alias.DateStr == tn && !alias.Blocked:
-			alias.ShouldBeBlocked = true
-			// alias.TimeoutBlock = setDailyTimeout()
-			alias.addBlockGroup(p.BlockAddressList)
-			t.change = append(t.change, alias)
-			log.Debugf("Login (%17s) was disabled due to exceeding the daily quota(%v)", alias.Alias, alias.DailyQuota)
-		case alias.VolumePerHour[hour] >= alias.HourlyQuota && alias.DateStr == tn && !alias.Blocked:
-			alias.ShouldBeBlocked = true
-			// alias.TimeoutBlock = setHourlyTimeout()
-			alias.addBlockGroup(p.BlockAddressList)
-			t.change = append(t.change, alias)
-			log.Debugf("Login (%17s) was disabled due to exceeding the hourly quota(%v)", alias.Alias, alias.DailyQuota)
-		case alias.Blocked && alias.DateStr == tn:
-			alias.ShouldBeBlocked = false
-			alias.delBlockGroup(p.BlockAddressList)
-			t.change = append(t.change, alias)
-			log.Debugf("Login (%17s) has been enabled, the quota(%v) has not been exceeded(Blocked:%v)",
-				alias.Alias, alias.HourlyQuota, alias.Blocked)
+	statOfDay := t.getDay(lNow())
+
+	for _, alias := range t.Aliases {
+		var VolumePerDay, VolumePerCheck uint64
+		var StatPerHour [24]VolumePerType
+		for _, key := range alias.KeyArr {
+			VolumePerDay += statOfDay.devicesStat[key].VolumePerDay
+			VolumePerCheck += statOfDay.devicesStat[key].VolumePerCheck
+			for index := range statOfDay.devicesStat[key].StatPerHour {
+				StatPerHour[index].PerHour += statOfDay.devicesStat[key].StatPerHour[index].PerHour
+			}
+
+			switch {
+			case (VolumePerDay >= alias.DailyQuota || StatPerHour[hour].PerHour >= alias.HourlyQuota) && alias.Blocked && alias.ShouldBeBlocked:
+				continue
+			case VolumePerDay >= alias.DailyQuota && !alias.Blocked:
+				alias.ShouldBeBlocked = true
+				// alias.TimeoutBlock = setDailyTimeout()
+				t.addBlockGroup(alias, p.BlockAddressList)
+				log.Debugf("Login (%17s) was disabled due to exceeding the daily quota(%v)", alias.AliasName, alias.DailyQuota)
+			case StatPerHour[hour].PerHour >= alias.HourlyQuota && !alias.Blocked:
+				alias.ShouldBeBlocked = true
+				// alias.TimeoutBlock = setHourlyTimeout()
+				t.addBlockGroup(alias, p.BlockAddressList)
+				log.Debugf("Login (%17s) was disabled due to exceeding the hourly quota(%v)", alias.AliasName, alias.DailyQuota)
+			case alias.Blocked:
+				alias.ShouldBeBlocked = false
+				t.delBlockGroup(alias, p.BlockAddressList)
+				log.Debugf("Login (%17s) has been enabled, the quota(%v) has not been exceeded(Blocked:%v)",
+					alias.AliasName, alias.HourlyQuota, alias.Blocked)
+			}
+			t.Lock()
+			t.Aliases[alias.AliasName] = alias
+			t.Unlock()
 		}
-		t.dataOld[key] = alias
 
 	}
-	for _, device := range t.devices {
-		for _, blockedDevice := range t.change {
-			if device.macAddress == blockedDevice.Mac || device.macAddress == blockedDevice.Alias || device.activeMacAddress == blockedDevice.Mac {
-				break
+	t.Lock()
+	for key, device := range t.devices {
+		if _, ok := t.change[key]; !ok {
+			if paramertToBool(device.blocked) {
+				device.ShouldBeBlocked = false
+				device = device.delBlockGroup(p.BlockAddressList)
+				t.change[key] = DeviceToBlock{
+					Id:       device.Id,
+					Groups:   device.addressLists,
+					Disabled: paramertToBool(device.disabledL),
+				}
 			}
-		}
-		if paramertToBool(device.blocked) {
-			device.ShouldBeBlocked = false
-			alias := AliasOld{
-				Alias:   device.macAddress,
-				DateStr: time.Now().In(t.Location).Format("2006-01-02"),
-			}
-			alias.delBlockGroup(p.BlockAddressList)
-			t.change = append(t.change, alias)
 		}
 	}
-	t.Unlock()
-	t.change.sendLeaseSet(p, quota)
-	t.Lock()
-	t.change = AliasesOldedType{}
 	t.Unlock()
 }
 

@@ -156,17 +156,12 @@ func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 	t.RLock()
 	assetsPath := t.AssetsPath
 	SizeOneKilobyte := t.SizeOneKilobyte
-	p := parseType{
-		SSHCredentials:   t.sshCredentials,
-		QuotaType:        t.QuotaType,
-		BlockAddressList: t.BlockAddressList,
-		Location:         t.Location,
-	}
 	t.RUnlock()
 
 	if r.Method == "GET" {
 		alias := r.FormValue("alias")
-		aliasS := t.getAliasS(alias)
+		// aliasS := t.getAliasS(alias)
+		aliasS := t.Aliases[alias]
 		// InfoOfDevice := data.aliasToDevice(alias)
 
 		DisplayDataUser := DisplayDataUserType{
@@ -174,7 +169,10 @@ func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 			Copyright:       "GoSquidLogAnalyzer <i>© 2020</i> by Vladislav Vegner",
 			Mail:            "mailto:vegner.vs@uttist.ru",
 			SizeOneKilobyte: SizeOneKilobyte,
-			InfoType:        aliasS,
+			InfoType: InfoType{
+				PersonType: aliasS.PersonType,
+				QuotaType:  aliasS.QuotaType,
+			},
 		}
 
 		fmap := template.FuncMap{
@@ -198,83 +196,17 @@ func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/", 302)
 		}
 		params := r.Form
-		alias := params["alias"][0]
-		device := t.getAliasS(alias)
-		// device := data.aliasToDevice(alias)
-		fromFormToDevice(&device, params)
-		// if err := data.setDevice(device); err != nil {
-		// if err := devices.updateInfo(info.convertToDevice(quotaDef)); err != nil {
-		// 	fmt.Fprintf(w, `Произошла ошибка при сохранении.
-		// 	<br> %v
-		// 	<br> Перенаправление...
-		// 	<br> Если ничего не происходит нажмите <a href="/">сюда</a>`, err.Error())
-		// 	time.Sleep(5 * time.Second)
-		// 	http.Redirect(w, r, "/", 302)
-		// 	return
-		// }
-		// _ = info.sendByAll(p, quotaDef)
-		device.Update(p)
-		t.Lock()
-		t.devices[KeyDevice{ip: device.activeAddress, mac: device.activeMacAddress}] = device.DeviceType
-		t.Unlock()
+		aliasName := params["alias"][0]
+		alias := t.Aliases[aliasName]
+		alias.UpdateFromForm(params)
 
-		// t.getDevices()
 		var refer string
 		if len(params["reffer"]) > 0 {
 			refer = params["alias"][0]
 		}
 		http.Redirect(w, r, "/"+refer, 302)
-		log.Printf("%v(%v)%v", alias, device, params)
+		log.Tracef("%v(%v)%v", aliasName, alias, params)
 	}
-}
-
-func fromFormToDevice(device *InfoType, params url.Values) {
-	if len(params["TypeD"]) > 0 {
-		device.TypeD = params["TypeD"][0]
-	} else {
-		device.TypeD = "other"
-	}
-	if len(params["name"]) > 0 {
-		device.Name = params["name"][0]
-	} else {
-		device.Name = ""
-	}
-	if len(params["col"]) > 0 {
-		device.Position = params["col"][0]
-	} else {
-		device.Position = ""
-	}
-	if len(params["com"]) > 0 {
-		device.Company = params["com"][0]
-	} else {
-		device.Company = ""
-	}
-	if len(params["comment"]) > 0 {
-		device.Comment = params["comment"][0]
-	} else {
-		device.Comment = ""
-	}
-	if len(params["disabled"]) > 0 {
-		device.Disabled = paramertToBool(params["disabled"][0])
-	} else {
-		device.Disabled = false
-	}
-	if len(params["quotahourly"]) > 0 {
-		device.HourlyQuota = paramertToUint(params["quotahourly"][0])
-	} else {
-		device.HourlyQuota = 0
-	}
-	if len(params["quotadaily"]) > 0 {
-		device.DailyQuota = paramertToUint(params["quotadaily"][0])
-	} else {
-		device.DailyQuota = 0
-	}
-	if len(params["quotamonthly"]) > 0 {
-		device.MonthlyQuota = paramertToUint(params["quotamonthly"][0])
-	} else {
-		device.MonthlyQuota = 0
-	}
-
 }
 
 func (t *Transport) handleLog(w http.ResponseWriter, r *http.Request) {
