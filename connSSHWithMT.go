@@ -45,6 +45,9 @@ func getResponseOverSSHfMT(sshCred SSHCredentials, command string) bytes.Buffer 
 }
 
 func parseInfoFromMTAsValueToSlice(p parseType) []DeviceType {
+	if p.MaxSSHRetries == 0 {
+		return nil
+	}
 	devices := DevicesType{}
 	var b bytes.Buffer
 	var i int = 1
@@ -158,6 +161,9 @@ func (ds *DevicesType) findDeviceToConvertInfoD(alias, blockGroup string, q Quot
 }
 
 func (a AliasOld) sendByAll(p parseType, qDefault QuotaType) error {
+	if p.MaxSSHRetries == 0 {
+		return nil
+	}
 	var err error
 	var idStr string
 	comments := a.convertToComment(qDefault)
@@ -221,6 +227,9 @@ func reciveIDByMac(p parseType, mac string) (string, error) {
 }
 
 func reciveIDBy(p parseType, entity, value string) (string, error) {
+	if p.MaxSSHRetries == 0 {
+		return "", nil
+	}
 	command := fmt.Sprintf(`:put [/ip dhcp-server lease find %s="%s"]`,
 		entity, value)
 	b := getResponseOverSSHfMT(p.SSHCredentials, command)
@@ -239,6 +248,9 @@ func reciveIDByIP(p parseType, ip string) (string, error) {
 }
 
 func (a *AliasesOldType) sendLeaseSet(p parseType, q QuotaType) {
+	if p.MaxSSHRetries == 0 {
+		return
+	}
 	var command string
 	firstCommand := "/ip dhcp-server lease set "
 	for _, item := range *a {
