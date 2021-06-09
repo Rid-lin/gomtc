@@ -9,59 +9,59 @@ import (
 
 type ReportDataType []LineOfDisplay
 
-func (t *Transport) reportTrafficHourlyByLogins(request RequestForm, showFriends bool) DisplayDataType {
-	start := time.Now()
-	t.RLock()
-	dataChashe := t.dataCasheOld
-	SizeOneKilobyte := t.SizeOneKilobyte
-	Quota := t.QuotaType
-	Copyright := t.Copyright
-	Mail := t.Mail
-	LastUpdated := t.lastUpdated.Format("2006-01-02 15:04:05.999")
-	LastUpdatedMT := t.lastUpdatedMT.Format("2006-01-02 15:04:05.999")
-	t.RUnlock()
+// func (t *Transport) reportTrafficHourlyByLogins(request RequestForm, showFriends bool) DisplayDataType {
+// 	start := time.Now()
+// 	t.RLock()
+// 	dataChashe := t.dataCasheOld
+// 	SizeOneKilobyte := t.SizeOneKilobyte
+// 	Quota := t.QuotaType
+// 	Copyright := t.Copyright
+// 	Mail := t.Mail
+// 	LastUpdated := t.lastUpdated.Format("2006-01-02 15:04:05.999")
+// 	LastUpdatedMT := t.lastUpdatedMT.Format("2006-01-02 15:04:05.999")
+// 	t.RUnlock()
 
-	ReportData := ReportDataType{}
-	line := LineOfDisplay{}
-	for key, value := range dataChashe {
-		if key.DateStr != request.dateFrom {
-			continue
-		}
-		line.Alias = key.Alias
-		line.InfoType = value.InfoType
-		line.StatOldType = value.StatOldType
-		ReportData = add(ReportData, line)
-	}
+// 	ReportData := ReportDataType{}
+// 	line := LineOfDisplay{}
+// 	for key, value := range dataChashe {
+// 		if key.DateStr != request.dateFrom {
+// 			continue
+// 		}
+// 		line.Alias = key.Alias
+// 		line.InfoType = value.InfoType
+// 		line.StatOldType = value.StatOldType
+// 		ReportData = add(ReportData, line)
+// 	}
 
-	sort.Sort(ReportData)
-	ReportData = ReportData.percentileCalculation(1)
-	if !showFriends {
-		ReportData = ReportData.FiltredFriendS(t.friends)
-	}
+// 	sort.Sort(ReportData)
+// 	ReportData = ReportData.percentileCalculation(1)
+// 	if !showFriends {
+// 		ReportData = ReportData.FiltredFriendS(t.friends)
+// 	}
 
-	return DisplayDataType{
-		ArrayDisplay:   ReportData,
-		Logs:           []LogsOfJob{},
-		Header:         "Отчёт почасовой по трафику пользователей с логинами и IP-адресами",
-		DateFrom:       request.dateFrom,
-		DateTo:         "",
-		LastUpdated:    LastUpdated,
-		LastUpdatedMT:  LastUpdatedMT,
-		TimeToGenerate: time.Since(start),
-		ReferURL:       request.referURL,
-		Path:           request.path,
-		SizeOneType: SizeOneType{
-			SizeOneKilobyte: SizeOneKilobyte,
-			SizeOneMegabyte: SizeOneKilobyte * SizeOneKilobyte,
-			SizeOneGigabyte: SizeOneKilobyte * SizeOneKilobyte * SizeOneKilobyte,
-		},
-		Author: Author{Copyright: Copyright,
-			Mail: Mail,
-		},
-		QuotaType: Quota,
-	}
+// 	return DisplayDataType{
+// 		ArrayDisplay:   ReportData,
+// 		Logs:           []LogsOfJob{},
+// 		Header:         "Отчёт почасовой по трафику пользователей с логинами и IP-адресами",
+// 		DateFrom:       request.dateFrom,
+// 		DateTo:         "",
+// 		LastUpdated:    LastUpdated,
+// 		LastUpdatedMT:  LastUpdatedMT,
+// 		TimeToGenerate: time.Since(start),
+// 		ReferURL:       request.referURL,
+// 		Path:           request.path,
+// 		SizeOneType: SizeOneType{
+// 			SizeOneKilobyte: SizeOneKilobyte,
+// 			SizeOneMegabyte: SizeOneKilobyte * SizeOneKilobyte,
+// 			SizeOneGigabyte: SizeOneKilobyte * SizeOneKilobyte * SizeOneKilobyte,
+// 		},
+// 		Author: Author{Copyright: Copyright,
+// 			Mail: Mail,
+// 		},
+// 		QuotaType: Quota,
+// 	}
 
-}
+// }
 
 func (t *Transport) reportTrafficHourlyByLoginsNew(request RequestForm, showFriends bool) (DisplayDataType, error) {
 	start := time.Now()
@@ -71,7 +71,7 @@ func (t *Transport) reportTrafficHourlyByLoginsNew(request RequestForm, showFrie
 	Quota := t.QuotaType
 	Copyright := t.Copyright
 	Mail := t.Mail
-	BlockAddressList := t.BlockAddressList
+	// BlockAddressList := t.BlockAddressList
 	LastUpdated := t.lastUpdated.Format("2006-01-02 15:04:05.999")
 	LastUpdatedMT := t.lastUpdatedMT.Format("2006-01-02 15:04:05.999")
 	t.RUnlock()
@@ -102,7 +102,8 @@ func (t *Transport) reportTrafficHourlyByLoginsNew(request RequestForm, showFrie
 		line.Alias = key.mac
 		line.VolumePerDay = value.VolumePerDay
 		totalVolumePerDay += value.VolumePerDay
-		line.InfoType = t.devices.findDeviceToConvertInfoD(key.mac, BlockAddressList, Quota)
+		// TODO подумать над ключом
+		line.InfoOldType.PersonType = t.Aliases[key.mac].PersonType
 		for i := range line.VolumePerHour {
 			line.VolumePerHour[i] = value.StatPerHour[i].Hour
 			totalVolumePerHour[i] += value.StatPerHour[i].Hour

@@ -25,37 +25,37 @@ func Test_checkNULLQuota(t *testing.T) {
 	}
 }
 
-func TestTransport_checkQuota(t *testing.T) {
-	tests := []struct {
-		name      string
-		transport *Transport
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.transport.checkQuotas()
-		})
-	}
-}
+// func TestTransport_checkQuota(t *testing.T) {
+// 	tests := []struct {
+// 		name      string
+// 		transport *Transport
+// 	}{
+// 		// TODO: Add test cases.
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			tt.transport.checkQuotas()
+// 		})
+// 	}
+// }
 
-func TestTransport_updateStatusDevicesToMT(t *testing.T) {
-	type args struct {
-		cfg *Config
-	}
-	tests := []struct {
-		name      string
-		transport *Transport
-		args      args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.transport.updateStatusDevicesToMT(tt.args.cfg)
-		})
-	}
-}
+// func TestTransport_updateStatusDevicesToMT(t *testing.T) {
+// 	type args struct {
+// 		cfg *Config
+// 	}
+// 	tests := []struct {
+// 		name      string
+// 		transport *Transport
+// 		args      args
+// 	}{
+// 		// TODO: Add test cases.
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			tt.transport.updateStatusDevicesToMT(tt.args.cfg)
+// 		})
+// 	}
+// }
 
 func Test_setDailyTimeout(t *testing.T) {
 	tests := []struct {

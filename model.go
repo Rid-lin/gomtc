@@ -9,18 +9,26 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type AliasType struct {
+	AliasName string
+	KeyArr    []KeyDevice
+	QuotaType
+	PersonType
+}
+
 type Transport struct {
-	AllDates map[string]AliasesType
+	AliasesOld map[string]AliasOldType
+	Aliases    map[string]AliasType
 	// aliases  AliasesType
 	// stats    []StatDayType
 	// statYears           []statYearType
-	statofYears         map[int]StatOfYearType
-	AliasesStrArr       map[string][]string
-	Infos               map[string]InfoType
-	dataOld             MapOfReports
-	dataCasheOld        MapOfReports
-	change              AliasesOldType
-	devices             DevicesType
+	statofYears   map[int]StatOfYearType
+	AliasesStrArr map[string][]string
+	// Infos               map[string]InfoType
+	// dataOld             MapOfReports
+	// dataCasheOld        MapOfReports
+	change              AliasesOldedType
+	devices             DevicesMapType
 	logs                []LogsOfJob
 	friends             []string
 	AssetsPath          string
@@ -126,8 +134,15 @@ type DeviceType struct {
 }
 
 type DevicesType []DeviceType
-type AliasesType []AliasType
-type AliasesOldType []AliasOld
+type DevicesMapType map[KeyDevice]DeviceType
+
+type AliasOldType struct {
+	AliasName string
+	infoArr   []InfoType
+	QuotaType
+}
+
+type AliasesOldedType []AliasOld
 
 type lineOfLogType struct {
 	date        string // squid timestamp 1621969229.000
@@ -161,18 +176,18 @@ type AliasOld struct {
 	Alias   string
 	DateStr string
 	Hits    uint32
-	InfoType
+	InfoOldType
 	StatOldType
 }
 
-type InfoType struct {
+type InfoOldType struct {
 	DeviceOldType
 	PersonType
 	QuotaType
 }
 
-type AliasType struct {
-	Alias string
+type InfoType struct {
+	InfoName string
 	DeviceType
 	PersonType
 	QuotaType
@@ -204,7 +219,7 @@ type Count struct {
 type LineOfDisplay struct {
 	Alias string
 	Login string
-	InfoType
+	InfoOldType
 	StatOldType
 }
 
@@ -234,7 +249,6 @@ type DisplayDataUserType struct {
 	Header          string
 	Copyright       string
 	Mail            string
-	Alias           string
 	SizeOneKilobyte uint64
 	InfoType
 }
@@ -324,9 +338,9 @@ func NewTransport(cfg *Config) *Transport {
 	}
 
 	return &Transport{
-		dataOld:             map[KeyMapOfReports]AliasOld{},
-		dataCasheOld:        map[KeyMapOfReports]AliasOld{},
-		devices:             DevicesType{},
+		// dataOld:             map[KeyMapOfReports]AliasOld{},
+		// dataCasheOld:        map[KeyMapOfReports]AliasOld{},
+		devices:             make(map[KeyDevice]DeviceType),
 		AliasesStrArr:       make(map[string][]string),
 		Location:            Location,
 		statofYears:         make(map[int]StatOfYearType),

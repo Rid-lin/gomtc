@@ -110,37 +110,35 @@ func TestAliasType_send(t *testing.T) {
 	tn := time.Now()
 	tests := []struct {
 		name    string
-		a       AliasOld
+		a       InfoType
 		args    args
 		wantErr bool
 	}{
 		{
 			name: "1",
-			a: AliasOld{
-
-				InfoType: InfoType{
-					DeviceOldType{
-						IP:       "192.168.65.85",
-						Mac:      "E8:D8:D1:47:55:93",
-						HostName: "root-hp",
-						Groups:   "inet,Block",
-						timeout:  tn,
-					},
-					PersonType{
-						Name:     "Vlad",
-						Position: "Admin",
-						Company:  "UTTiST",
-						Comment:  "",
-					},
-					QuotaType{
-						HourlyQuota:     600000000,
-						DailyQuota:      6000000000,
-						MonthlyQuota:    60000000000,
-						Manual:          false,
-						Blocked:         true,
-						Disabled:        false,
-						ShouldBeBlocked: true,
-					},
+			a: InfoType{
+				InfoName: "E8:D8:D1:47:55:93",
+				DeviceType: DeviceType{
+					activeAddress:    "192.168.65.85",
+					activeMacAddress: "E8:D8:D1:47:55:93",
+					hostName:         "root-hp",
+					addressLists:     "inet,Block",
+					timeout:          tn,
+				},
+				PersonType: PersonType{
+					Name:     "Vlad",
+					Position: "Admin",
+					Company:  "UTTiST",
+					Comment:  "",
+				},
+				QuotaType: QuotaType{
+					HourlyQuota:     600000000,
+					DailyQuota:      6000000000,
+					MonthlyQuota:    60000000000,
+					Manual:          false,
+					Blocked:         true,
+					Disabled:        false,
+					ShouldBeBlocked: true,
 				},
 			},
 			args: args{

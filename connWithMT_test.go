@@ -282,7 +282,7 @@ func Test_paramertToBool(t *testing.T) {
 
 func Test_makeCommentFromIodt(t *testing.T) {
 	type args struct {
-		d     InfoType
+		d     InfoOldType
 		quota QuotaType
 	}
 	tests := []struct {
@@ -293,7 +293,7 @@ func Test_makeCommentFromIodt(t *testing.T) {
 		{
 			name: "vlad",
 			args: args{
-				d: InfoType{
+				d: InfoOldType{
 					QuotaType: QuotaType{
 						HourlyQuota:  500000000,
 						DailyQuota:   50000000000,
@@ -400,7 +400,7 @@ func TestDeviceType_convertToInfo(t *testing.T) {
 		name       string
 		d          DeviceType
 		blockGroup string
-		want       InfoType
+		want       InfoOldType
 	}{
 		{
 			name: "vlad",
@@ -428,7 +428,7 @@ func TestDeviceType_convertToInfo(t *testing.T) {
 				ShouldBeBlocked:  false,
 				timeout:          now,
 			},
-			want: InfoType{
+			want: InfoOldType{
 				QuotaType: QuotaType{
 					HourlyQuota:     500000000,
 					DailyQuota:      50000000000,
@@ -521,14 +521,14 @@ func TestInfoOfDeviceType_convertToDevice(t *testing.T) {
 					IDUser:   "33785",
 					TypeD:    "nb",
 				},
-				DeviceOldType: DeviceOldType{
-					Id:       "",
-					IP:       "192.168.65.85",
-					Mac:      "E8:D8:D1:47:55:93",
-					AMac:     "E8:D8:D1:47:55:93",
-					HostName: "root-hp",
-					Groups:   "inet",
-					timeout:  now,
+				DeviceType: DeviceType{
+					Id:               "",
+					activeAddress:    "192.168.65.85",
+					macAddress:       "E8:D8:D1:47:55:93",
+					activeMacAddress: "E8:D8:D1:47:55:93",
+					hostName:         "root-hp",
+					addressLists:     "inet",
+					timeout:          now,
 				},
 			},
 			quotaDef: QuotaType{
@@ -1215,252 +1215,252 @@ func TestDeviceType_compare(t *testing.T) {
 	}
 }
 
-func TestDevicesType_find(t *testing.T) {
-	now := time.Now()
-	DS = DevicesType{
-		{
-			activeAddress:    "192.168.65.86",
-			activeClientId:   "1:e8:d8:d1:47:55:96",
-			activeMacAddress: "E8:D8:D1:47:55:96",
-			activeServer:     "dhcp_lan",
-			address:          "pool_admin",
-			addressLists:     "inet",
-			blocked:          "false",
-			clientId:         "1:e8:d8:d1:47:55:96",
-			comment:          "nb=Vlad/id=33786/com=Home/pos=Admin/quotahourly=500000000/quotadaily=50000000000/manual=true/comment=interesnaya fignya",
-			dhcpOption:       "",
-			disabledL:        "false",
-			dynamic:          "false",
-			expiresAfter:     "6m32s",
-			hostName:         "root-hp6",
-			lastSeen:         "3m28s",
-			macAddress:       "E8:D8:D1:47:55:96",
-			radius:           "false",
-			server:           "dhcp_lan",
-			status:           "bound",
-			Manual:           true,
-			ShouldBeBlocked:  false,
-			timeout:          now,
-		},
-		{
-			activeAddress:    "192.168.65.87",
-			activeClientId:   "1:e8:d8:d1:47:55:97",
-			activeMacAddress: "E8:D8:D1:47:55:97",
-			activeServer:     "dhcp_lan",
-			address:          "pool_admin",
-			addressLists:     "inet",
-			blocked:          "false",
-			clientId:         "1:e8:d8:d1:47:55:97",
-			comment:          "nb=Vlad/id=33787/com=Home/pos=Admin/quotahourly=500000000/quotadaily=50000000000/manual=true/comment=interesnaya fignya",
-			dhcpOption:       "",
-			disabledL:        "false",
-			dynamic:          "false",
-			expiresAfter:     "6m32s",
-			hostName:         "root-hp7",
-			lastSeen:         "3m28s",
-			macAddress:       "E8:D8:D1:47:55:97",
-			radius:           "false",
-			server:           "dhcp_lan",
-			status:           "bound",
-			Manual:           true,
-			ShouldBeBlocked:  false,
-			timeout:          now,
-		},
-		{
-			activeAddress:    "192.168.65.85",
-			activeClientId:   "1:e8:d8:d1:47:55:93",
-			activeMacAddress: "E8:D8:D1:47:55:93",
-			activeServer:     "dhcp_lan",
-			address:          "pool_admin",
-			addressLists:     "inet",
-			blocked:          "false",
-			clientId:         "1:e8:d8:d1:47:55:93",
-			comment:          "nb=Vlad/id=33785/com=Home/pos=Admin/quotahourly=500000000/quotadaily=50000000000/manual=true/comment=interesnaya fignya",
-			dhcpOption:       "",
-			disabledL:        "false",
-			dynamic:          "false",
-			expiresAfter:     "6m32s",
-			hostName:         "root-hp",
-			lastSeen:         "3m28s",
-			macAddress:       "E8:D8:D1:47:55:93",
-			radius:           "false",
-			server:           "dhcp_lan",
-			status:           "bound",
-			Manual:           true,
-			ShouldBeBlocked:  false,
-			timeout:          now,
-		},
-	}
-	type args struct {
-		d *DeviceType
-	}
-	tests := []struct {
-		name string
-		ds   *DevicesType
-		args args
-		want int
-	}{
-		{
-			name: "1",
-			ds:   &DS,
-			args: args{
-				d: &DeviceType{
-					activeAddress:    "192.168.65.86",
-					activeClientId:   "1:e8:d8:d1:47:55:96",
-					activeMacAddress: "E8:D8:D1:47:55:96",
-					activeServer:     "dhcp_lan",
-					address:          "pool_admin",
-					addressLists:     "inet",
-					blocked:          "false",
-					clientId:         "1:e8:d8:d1:47:55:96",
-					comment:          "nb=Vlad/id=33786/com=Home/pos=Admin/quotahourly=500000000/quotadaily=50000000000/manual=true/comment=interesnaya fignya",
-					dhcpOption:       "",
-					disabledL:        "false",
-					dynamic:          "false",
-					expiresAfter:     "6m32s",
-					hostName:         "root-hp6",
-					lastSeen:         "3m28s",
-					macAddress:       "E8:D8:D1:47:55:96",
-					radius:           "false",
-					server:           "dhcp_lan",
-					status:           "bound",
-					Manual:           true,
-					ShouldBeBlocked:  false,
-					timeout:          now,
-				},
-			},
-			want: 0,
-		},
-		{
-			name: "2",
-			ds:   &DS,
-			args: args{d: &DeviceType{
-				activeAddress:    "192.168.65.87",
-				activeClientId:   "1:e8:d8:d1:47:55:97",
-				activeMacAddress: "E8:D8:D1:47:55:97",
-				activeServer:     "dhcp_lan",
-				address:          "pool_admin",
-				addressLists:     "inet",
-				blocked:          "false",
-				clientId:         "1:e8:d8:d1:47:55:97",
-				comment:          "nb=Vlad/id=33787/com=Home/pos=Admin/quotahourly=500000000/quotadaily=50000000000/manual=true/comment=interesnaya fignya",
-				dhcpOption:       "",
-				disabledL:        "false",
-				dynamic:          "false",
-				expiresAfter:     "6m32s",
-				hostName:         "root-hp7",
-				lastSeen:         "3m28s",
-				macAddress:       "E8:D8:D1:47:55:97",
-				radius:           "false",
-				server:           "dhcp_lan",
-				status:           "bound",
-				Manual:           true,
-				ShouldBeBlocked:  false,
-				timeout:          now,
-			}},
-			want: 1,
-		},
-		{
-			name: "3",
-			ds:   &DS,
-			args: args{d: &DeviceType{
-				activeAddress:    "192.168.65.85",
-				activeClientId:   "1:e8:d8:d1:47:55:93",
-				activeMacAddress: "E8:D8:D1:47:55:93",
-				activeServer:     "dhcp_lan",
-				address:          "pool_admin",
-				addressLists:     "inet",
-				blocked:          "false",
-				clientId:         "1:e8:d8:d1:47:55:93",
-				comment:          "nb=Vlad/id=33785/com=Home/pos=Admin/quotahourly=500000000/quotadaily=50000000000/manual=true/comment=interesnaya fignya",
-				dhcpOption:       "",
-				disabledL:        "false",
-				dynamic:          "false",
-				expiresAfter:     "6m32s",
-				hostName:         "root-hp",
-				lastSeen:         "3m28s",
-				macAddress:       "E8:D8:D1:47:55:93",
-				radius:           "false",
-				server:           "dhcp_lan",
-				status:           "bound",
-				Manual:           true,
-				ShouldBeBlocked:  false,
-				timeout:          now,
-			}},
-			want: 2,
-		},
-		{
-			name: "3",
-			ds:   &DS,
-			args: args{d: &DeviceType{
-				activeMacAddress: "E8:D8:D1:47:55:93",
-				activeServer:     "dhcp_lan",
-				address:          "pool_admin",
-				addressLists:     "inet",
-				blocked:          "false",
-				clientId:         "1:e8:d8:d1:47:55:93",
-				comment:          "nb=Vlad/id=33785/com=Home/pos=Admin/quotahourly=500000000/quotadaily=50000000000/manual=true/comment=interesnaya fignya",
-				dhcpOption:       "",
-				disabledL:        "false",
-				dynamic:          "false",
-				expiresAfter:     "6m32s",
-				hostName:         "root-hp",
-				lastSeen:         "3m28s",
-				macAddress:       "E8:D8:D1:47:55:93",
-				radius:           "false",
-				server:           "dhcp_lan",
-				status:           "bound",
-				Manual:           true,
-				ShouldBeBlocked:  false,
-				timeout:          now,
-			}},
-			want: 2,
-		},
-		{
-			name: "3",
-			ds:   &DS,
-			args: args{d: &DeviceType{
-				clientId:        "1:e8:d8:d1:47:55:93",
-				comment:         "nb=Vlad/id=33785/com=Home/pos=Admin/quotahourly=500000000/quotadaily=50000000000/manual=true/comment=interesnaya fignya",
-				dhcpOption:      "",
-				disabledL:       "false",
-				dynamic:         "false",
-				expiresAfter:    "6m32s",
-				hostName:        "root-hp",
-				lastSeen:        "3m28s",
-				macAddress:      "E8:D8:D1:47:55:93",
-				radius:          "false",
-				server:          "dhcp_lan",
-				status:          "bound",
-				Manual:          true,
-				ShouldBeBlocked: false,
-				timeout:         now,
-			}},
-			want: 2,
-		},
-		{
-			name: "3",
-			ds:   &DS,
-			args: args{d: &DeviceType{
-				macAddress:      "E8:D8:D1:47:55:93",
-				radius:          "false",
-				server:          "dhcp_lan",
-				status:          "bound",
-				Manual:          true,
-				ShouldBeBlocked: false,
-				timeout:         now,
-			}},
-			want: 2,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.ds.findIndexOfDevice(tt.args.d); got != tt.want {
-				t.Errorf("Test(%s)DevicesType.find() = %v, want %v", tt.name, got, tt.want)
-			}
-		})
-	}
-}
+// func TestDevicesType_find(t *testing.T) {
+// 	now := time.Now()
+// 	DS = DevicesType{
+// 		{
+// 			activeAddress:    "192.168.65.86",
+// 			activeClientId:   "1:e8:d8:d1:47:55:96",
+// 			activeMacAddress: "E8:D8:D1:47:55:96",
+// 			activeServer:     "dhcp_lan",
+// 			address:          "pool_admin",
+// 			addressLists:     "inet",
+// 			blocked:          "false",
+// 			clientId:         "1:e8:d8:d1:47:55:96",
+// 			comment:          "nb=Vlad/id=33786/com=Home/pos=Admin/quotahourly=500000000/quotadaily=50000000000/manual=true/comment=interesnaya fignya",
+// 			dhcpOption:       "",
+// 			disabledL:        "false",
+// 			dynamic:          "false",
+// 			expiresAfter:     "6m32s",
+// 			hostName:         "root-hp6",
+// 			lastSeen:         "3m28s",
+// 			macAddress:       "E8:D8:D1:47:55:96",
+// 			radius:           "false",
+// 			server:           "dhcp_lan",
+// 			status:           "bound",
+// 			Manual:           true,
+// 			ShouldBeBlocked:  false,
+// 			timeout:          now,
+// 		},
+// 		{
+// 			activeAddress:    "192.168.65.87",
+// 			activeClientId:   "1:e8:d8:d1:47:55:97",
+// 			activeMacAddress: "E8:D8:D1:47:55:97",
+// 			activeServer:     "dhcp_lan",
+// 			address:          "pool_admin",
+// 			addressLists:     "inet",
+// 			blocked:          "false",
+// 			clientId:         "1:e8:d8:d1:47:55:97",
+// 			comment:          "nb=Vlad/id=33787/com=Home/pos=Admin/quotahourly=500000000/quotadaily=50000000000/manual=true/comment=interesnaya fignya",
+// 			dhcpOption:       "",
+// 			disabledL:        "false",
+// 			dynamic:          "false",
+// 			expiresAfter:     "6m32s",
+// 			hostName:         "root-hp7",
+// 			lastSeen:         "3m28s",
+// 			macAddress:       "E8:D8:D1:47:55:97",
+// 			radius:           "false",
+// 			server:           "dhcp_lan",
+// 			status:           "bound",
+// 			Manual:           true,
+// 			ShouldBeBlocked:  false,
+// 			timeout:          now,
+// 		},
+// 		{
+// 			activeAddress:    "192.168.65.85",
+// 			activeClientId:   "1:e8:d8:d1:47:55:93",
+// 			activeMacAddress: "E8:D8:D1:47:55:93",
+// 			activeServer:     "dhcp_lan",
+// 			address:          "pool_admin",
+// 			addressLists:     "inet",
+// 			blocked:          "false",
+// 			clientId:         "1:e8:d8:d1:47:55:93",
+// 			comment:          "nb=Vlad/id=33785/com=Home/pos=Admin/quotahourly=500000000/quotadaily=50000000000/manual=true/comment=interesnaya fignya",
+// 			dhcpOption:       "",
+// 			disabledL:        "false",
+// 			dynamic:          "false",
+// 			expiresAfter:     "6m32s",
+// 			hostName:         "root-hp",
+// 			lastSeen:         "3m28s",
+// 			macAddress:       "E8:D8:D1:47:55:93",
+// 			radius:           "false",
+// 			server:           "dhcp_lan",
+// 			status:           "bound",
+// 			Manual:           true,
+// 			ShouldBeBlocked:  false,
+// 			timeout:          now,
+// 		},
+// 	}
+// 	type args struct {
+// 		d *DeviceType
+// 	}
+// 	tests := []struct {
+// 		name string
+// 		ds   *DevicesType
+// 		args args
+// 		want int
+// 	}{
+// 		{
+// 			name: "1",
+// 			ds:   &DS,
+// 			args: args{
+// 				d: &DeviceType{
+// 					activeAddress:    "192.168.65.86",
+// 					activeClientId:   "1:e8:d8:d1:47:55:96",
+// 					activeMacAddress: "E8:D8:D1:47:55:96",
+// 					activeServer:     "dhcp_lan",
+// 					address:          "pool_admin",
+// 					addressLists:     "inet",
+// 					blocked:          "false",
+// 					clientId:         "1:e8:d8:d1:47:55:96",
+// 					comment:          "nb=Vlad/id=33786/com=Home/pos=Admin/quotahourly=500000000/quotadaily=50000000000/manual=true/comment=interesnaya fignya",
+// 					dhcpOption:       "",
+// 					disabledL:        "false",
+// 					dynamic:          "false",
+// 					expiresAfter:     "6m32s",
+// 					hostName:         "root-hp6",
+// 					lastSeen:         "3m28s",
+// 					macAddress:       "E8:D8:D1:47:55:96",
+// 					radius:           "false",
+// 					server:           "dhcp_lan",
+// 					status:           "bound",
+// 					Manual:           true,
+// 					ShouldBeBlocked:  false,
+// 					timeout:          now,
+// 				},
+// 			},
+// 			want: 0,
+// 		},
+// 		{
+// 			name: "2",
+// 			ds:   &DS,
+// 			args: args{d: &DeviceType{
+// 				activeAddress:    "192.168.65.87",
+// 				activeClientId:   "1:e8:d8:d1:47:55:97",
+// 				activeMacAddress: "E8:D8:D1:47:55:97",
+// 				activeServer:     "dhcp_lan",
+// 				address:          "pool_admin",
+// 				addressLists:     "inet",
+// 				blocked:          "false",
+// 				clientId:         "1:e8:d8:d1:47:55:97",
+// 				comment:          "nb=Vlad/id=33787/com=Home/pos=Admin/quotahourly=500000000/quotadaily=50000000000/manual=true/comment=interesnaya fignya",
+// 				dhcpOption:       "",
+// 				disabledL:        "false",
+// 				dynamic:          "false",
+// 				expiresAfter:     "6m32s",
+// 				hostName:         "root-hp7",
+// 				lastSeen:         "3m28s",
+// 				macAddress:       "E8:D8:D1:47:55:97",
+// 				radius:           "false",
+// 				server:           "dhcp_lan",
+// 				status:           "bound",
+// 				Manual:           true,
+// 				ShouldBeBlocked:  false,
+// 				timeout:          now,
+// 			}},
+// 			want: 1,
+// 		},
+// 		{
+// 			name: "3",
+// 			ds:   &DS,
+// 			args: args{d: &DeviceType{
+// 				activeAddress:    "192.168.65.85",
+// 				activeClientId:   "1:e8:d8:d1:47:55:93",
+// 				activeMacAddress: "E8:D8:D1:47:55:93",
+// 				activeServer:     "dhcp_lan",
+// 				address:          "pool_admin",
+// 				addressLists:     "inet",
+// 				blocked:          "false",
+// 				clientId:         "1:e8:d8:d1:47:55:93",
+// 				comment:          "nb=Vlad/id=33785/com=Home/pos=Admin/quotahourly=500000000/quotadaily=50000000000/manual=true/comment=interesnaya fignya",
+// 				dhcpOption:       "",
+// 				disabledL:        "false",
+// 				dynamic:          "false",
+// 				expiresAfter:     "6m32s",
+// 				hostName:         "root-hp",
+// 				lastSeen:         "3m28s",
+// 				macAddress:       "E8:D8:D1:47:55:93",
+// 				radius:           "false",
+// 				server:           "dhcp_lan",
+// 				status:           "bound",
+// 				Manual:           true,
+// 				ShouldBeBlocked:  false,
+// 				timeout:          now,
+// 			}},
+// 			want: 2,
+// 		},
+// 		{
+// 			name: "3",
+// 			ds:   &DS,
+// 			args: args{d: &DeviceType{
+// 				activeMacAddress: "E8:D8:D1:47:55:93",
+// 				activeServer:     "dhcp_lan",
+// 				address:          "pool_admin",
+// 				addressLists:     "inet",
+// 				blocked:          "false",
+// 				clientId:         "1:e8:d8:d1:47:55:93",
+// 				comment:          "nb=Vlad/id=33785/com=Home/pos=Admin/quotahourly=500000000/quotadaily=50000000000/manual=true/comment=interesnaya fignya",
+// 				dhcpOption:       "",
+// 				disabledL:        "false",
+// 				dynamic:          "false",
+// 				expiresAfter:     "6m32s",
+// 				hostName:         "root-hp",
+// 				lastSeen:         "3m28s",
+// 				macAddress:       "E8:D8:D1:47:55:93",
+// 				radius:           "false",
+// 				server:           "dhcp_lan",
+// 				status:           "bound",
+// 				Manual:           true,
+// 				ShouldBeBlocked:  false,
+// 				timeout:          now,
+// 			}},
+// 			want: 2,
+// 		},
+// 		{
+// 			name: "3",
+// 			ds:   &DS,
+// 			args: args{d: &DeviceType{
+// 				clientId:        "1:e8:d8:d1:47:55:93",
+// 				comment:         "nb=Vlad/id=33785/com=Home/pos=Admin/quotahourly=500000000/quotadaily=50000000000/manual=true/comment=interesnaya fignya",
+// 				dhcpOption:      "",
+// 				disabledL:       "false",
+// 				dynamic:         "false",
+// 				expiresAfter:    "6m32s",
+// 				hostName:        "root-hp",
+// 				lastSeen:        "3m28s",
+// 				macAddress:      "E8:D8:D1:47:55:93",
+// 				radius:          "false",
+// 				server:          "dhcp_lan",
+// 				status:          "bound",
+// 				Manual:          true,
+// 				ShouldBeBlocked: false,
+// 				timeout:         now,
+// 			}},
+// 			want: 2,
+// 		},
+// 		{
+// 			name: "3",
+// 			ds:   &DS,
+// 			args: args{d: &DeviceType{
+// 				macAddress:      "E8:D8:D1:47:55:93",
+// 				radius:          "false",
+// 				server:          "dhcp_lan",
+// 				status:          "bound",
+// 				Manual:          true,
+// 				ShouldBeBlocked: false,
+// 				timeout:         now,
+// 			}},
+// 			want: 2,
+// 		},
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			if got := tt.ds.findIndexOfDevice(tt.args.d); got != tt.want {
+// 				t.Errorf("Test(%s)DevicesType.find() = %v, want %v", tt.name, got, tt.want)
+// 			}
+// 		})
+// 	}
+// }
 
 func TestTransport_readsStreamFromMT(t *testing.T) {
 	type args struct {

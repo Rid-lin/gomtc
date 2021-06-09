@@ -15,9 +15,10 @@ import (
 func (transport *Transport) handleRequest(cfg *Config) {
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(cfg.AssetsPath))))
 
+	// http.HandleFunc("/", logreq(transport.handleIndex))
+	// http.HandleFunc("/wf/", logreq(transport.handleWithFriends))
 	http.HandleFunc("/", logreq(transport.handleIndex))
-	http.HandleFunc("/wf/", logreq(transport.handleWithFriends))
-	http.HandleFunc("/new/", logreq(transport.handleIndexNew))
+	http.HandleFunc("/wf/", logreq(transport.handleIndexWithFriends))
 	http.HandleFunc("/log/", logreq(transport.handleLog))
 	http.HandleFunc("/runparse", logreq(transport.handleRunParse))
 	http.HandleFunc("/editalias/", logreq(transport.handleEditAlias))
@@ -77,35 +78,39 @@ func parseDataFromURL(r *http.Request) RequestForm {
 	return request
 }
 
-func (data *Transport) handleShowReport(w http.ResponseWriter, withfriends bool, preffix string, r *http.Request) {
+// func (data *Transport) handleShowReport(w http.ResponseWriter, withfriends bool, preffix string, r *http.Request) {
 
-	request := parseDataFromURL(r)
-	request.referURL = r.Host + r.URL.Path
-	request.path = r.URL.Path
-	data.RLock()
-	assetsPath := data.AssetsPath
-	data.RUnlock()
-	DisplayData := data.reportTrafficHourlyByLogins(request, withfriends)
+// 	request := parseDataFromURL(r)
+// 	request.referURL = r.Host + r.URL.Path
+// 	request.path = r.URL.Path
+// 	data.RLock()
+// 	assetsPath := data.AssetsPath
+// 	data.RUnlock()
+// 	DisplayData := data.reportTrafficHourlyByLogins(request, withfriends)
 
-	fmap := template.FuncMap{
-		"FormatSize": FormatSize,
-	}
-	t := template.Must(template.New("index"+preffix).Funcs(fmap).ParseFiles(
-		assetsPath+"/index"+preffix+".html",
-		assetsPath+"/header.html",
-		assetsPath+"/footer.html"))
-	err := t.Execute(w, DisplayData)
-	if err != nil {
-		if strings.Contains(fmt.Sprint(err), "index out of range") {
-			fmt.Fprintf(w, "Проверьте налиие логов за запрашиваемый период<br> или подождите несколько минут.")
-		} else {
-			fmt.Fprintf(w, "Что-то пошло не так, произошла ошибка при выполнении запроса. <br> %v", err.Error())
-		}
-	}
+// 	fmap := template.FuncMap{
+// 		"FormatSize": FormatSize,
+// 	}
+// 	t := template.Must(template.New("index"+preffix).Funcs(fmap).ParseFiles(
+// 		assetsPath+"/index"+preffix+".html",
+// 		assetsPath+"/header.html",
+// 		assetsPath+"/footer.html"))
+// 	err := t.Execute(w, DisplayData)
+// 	if err != nil {
+// 		if strings.Contains(fmt.Sprint(err), "index out of range") {
+// 			fmt.Fprintf(w, "Проверьте налиие логов за запрашиваемый период<br> или подождите несколько минут.")
+// 		} else {
+// 			fmt.Fprintf(w, "Что-то пошло не так, произошла ошибка при выполнении запроса. <br> %v", err.Error())
+// 		}
+// 	}
+// }
+
+func (data *Transport) handleIndex(w http.ResponseWriter, r *http.Request) {
+	data.handleNewReport(w, false, "", r)
 }
 
-func (data *Transport) handleIndexNew(w http.ResponseWriter, r *http.Request) {
-	data.handleNewReport(w, false, "new", r)
+func (data *Transport) handleIndexWithFriends(w http.ResponseWriter, r *http.Request) {
+	data.handleNewReport(w, true, "wf", r)
 }
 
 func (t *Transport) handleNewReport(w http.ResponseWriter, withfriends bool, preffix string, r *http.Request) {
@@ -139,20 +144,18 @@ func (t *Transport) handleNewReport(w http.ResponseWriter, withfriends bool, pre
 	}
 }
 
-func (data *Transport) handleIndex(w http.ResponseWriter, r *http.Request) {
-	data.handleShowReport(w, false, "", r)
-}
+// func (data *Transport) handleIndex(w http.ResponseWriter, r *http.Request) {
+// 	data.handleShowReport(w, false, "", r)
+// }
 
-func (data *Transport) handleWithFriends(w http.ResponseWriter, r *http.Request) {
-	data.handleShowReport(w, true, "wf", r)
-}
+// func (data *Transport) handleWithFriends(w http.ResponseWriter, r *http.Request) {
+// 	data.handleShowReport(w, true, "wf", r)
+// }
 
 func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 	t.RLock()
 	assetsPath := t.AssetsPath
 	SizeOneKilobyte := t.SizeOneKilobyte
-	devices := t.devices
-	quotaDef := t.QuotaType
 	p := parseType{
 		SSHCredentials:   t.sshCredentials,
 		QuotaType:        t.QuotaType,
@@ -170,9 +173,8 @@ func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 			Header:          "Редактирование пользователя",
 			Copyright:       "GoSquidLogAnalyzer <i>© 2020</i> by Vladislav Vegner",
 			Mail:            "mailto:vegner.vs@uttist.ru",
-			Alias:           alias,
 			SizeOneKilobyte: SizeOneKilobyte,
-			InfoType:        aliasS.InfoType,
+			InfoType:        aliasS,
 		}
 
 		fmap := template.FuncMap{
@@ -197,27 +199,36 @@ func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 		}
 		params := r.Form
 		alias := params["alias"][0]
-		info := t.getAliasS(alias)
+		device := t.getAliasS(alias)
 		// device := data.aliasToDevice(alias)
-		parseParamertToDevice(&info, params)
+		fromFormToDevice(&device, params)
 		// if err := data.setDevice(device); err != nil {
-		if err := devices.updateInfo(info.convertToDevice(quotaDef)); err != nil {
-			fmt.Fprintf(w, `Произошла ошибка при сохранении. 
-			<br> %v
-			<br> Перенаправление...
-			<br> Если ничего не происходит нажмите <a href="/">сюда</a>`, err.Error())
-			time.Sleep(5 * time.Second)
-			http.Redirect(w, r, "/", 302)
-			return
+		// if err := devices.updateInfo(info.convertToDevice(quotaDef)); err != nil {
+		// 	fmt.Fprintf(w, `Произошла ошибка при сохранении.
+		// 	<br> %v
+		// 	<br> Перенаправление...
+		// 	<br> Если ничего не происходит нажмите <a href="/">сюда</a>`, err.Error())
+		// 	time.Sleep(5 * time.Second)
+		// 	http.Redirect(w, r, "/", 302)
+		// 	return
+		// }
+		// _ = info.sendByAll(p, quotaDef)
+		device.Update(p)
+		t.Lock()
+		t.devices[KeyDevice{ip: device.activeAddress, mac: device.activeMacAddress}] = device.DeviceType
+		t.Unlock()
+
+		// t.getDevices()
+		var refer string
+		if len(params["reffer"]) > 0 {
+			refer = params["alias"][0]
 		}
-		_ = info.sendByAll(p, quotaDef)
-		t.updateDevices()
-		http.Redirect(w, r, "/", 302)
-		log.Printf("%v(%v)%v", alias, info, params)
+		http.Redirect(w, r, "/"+refer, 302)
+		log.Printf("%v(%v)%v", alias, device, params)
 	}
 }
 
-func parseParamertToDevice(device *AliasOld, params url.Values) {
+func fromFormToDevice(device *InfoType, params url.Values) {
 	if len(params["TypeD"]) > 0 {
 		device.TypeD = params["TypeD"][0]
 	} else {

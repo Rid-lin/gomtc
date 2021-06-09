@@ -145,7 +145,7 @@ func (ds *DevicesType) parseLeasePrintAsValue(b bytes.Buffer) {
 	}
 }
 
-func (ds *DevicesType) findDeviceToConvertInfoD(alias, blockGroup string, q QuotaType) InfoType {
+func (ds *DevicesType) findDeviceToConvertInfoD(alias, blockGroup string, q QuotaType) InfoOldType {
 	for _, d := range *ds {
 		if d.activeAddress == alias || d.activeMacAddress == alias || d.address == alias || d.macAddress == alias {
 			infoD := d.convertToInfo(blockGroup)
@@ -154,10 +154,10 @@ func (ds *DevicesType) findDeviceToConvertInfoD(alias, blockGroup string, q Quot
 			return infoD
 		}
 	}
-	return InfoType{}
+	return InfoOldType{}
 }
 
-func (a AliasOld) sendByAll(p parseType, qDefault QuotaType) error {
+func (a InfoType) sendByAll(p parseType, qDefault QuotaType) error {
 	var err error
 	var idStr string
 	comments := a.convertToComment(qDefault)
@@ -165,28 +165,28 @@ func (a AliasOld) sendByAll(p parseType, qDefault QuotaType) error {
 	switch {
 	case a.Id != "":
 		idStr = a.Id
-	case a.Mac != "":
-		idStr, err = reciveIDByMac(p, a.Mac)
+	case a.activeMacAddress != "":
+		idStr, err = reciveIDByMac(p, a.activeMacAddress)
 		if err != nil {
 			return err
 		}
-	case a.AMac != "":
-		idStr, err = reciveIDByMac(p, a.AMac)
+	case a.macAddress != "":
+		idStr, err = reciveIDByMac(p, a.macAddress)
 		if err != nil {
 			return err
 		}
-	case a.IP != "":
-		idStr, err = reciveIDByIP(p, a.IP)
+	case a.activeAddress != "":
+		idStr, err = reciveIDByIP(p, a.activeAddress)
 		if err != nil {
 			return err
 		}
-	case a.Alias != "" && isMac(a.Alias):
-		idStr, err = reciveIDByMac(p, a.Alias)
+	case a.InfoName != "" && isMac(a.InfoName):
+		idStr, err = reciveIDByMac(p, a.InfoName)
 		if err != nil {
 			return err
 		}
-	case a.Alias != "" && isIP(a.Alias):
-		idStr, err = reciveIDByIP(p, a.Alias)
+	case a.InfoName != "" && isIP(a.InfoName):
+		idStr, err = reciveIDByIP(p, a.InfoName)
 		if err != nil {
 			return err
 		}
@@ -200,7 +200,7 @@ func (a AliasOld) sendByAll(p parseType, qDefault QuotaType) error {
 	for _, id := range idArr {
 		command := fmt.Sprintf(`/ip dhcp-server lease set number="%s" address-lists="%s" disabled="%s" comment="%s"`,
 			id,
-			a.Groups,
+			a.addressLists,
 			boolToParamert(a.Disabled),
 			comments)
 		b := getResponseOverSSHfMT(p.SSHCredentials, command)
@@ -238,7 +238,7 @@ func reciveIDByIP(p parseType, ip string) (string, error) {
 	return reciveIDBy(p, "active-address", ip)
 }
 
-func (a *AliasesOldType) sendLeaseSet(p parseType, q QuotaType) {
+func (a *AliasesOldedType) sendLeaseSet(p parseType, q QuotaType) {
 	var command string
 	firstCommand := "/ip dhcp-server lease set "
 	for _, item := range *a {

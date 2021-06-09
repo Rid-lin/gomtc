@@ -35,8 +35,8 @@ type KeyDevice struct {
 }
 
 type StatDeviceType struct {
-	Mac string
-	IP  string
+	mac string
+	ip  string
 	StatType
 }
 
@@ -68,8 +68,6 @@ func (t *Transport) parseAllFilesAndCountingTrafficNew(cfg *Config) {
 		t.newCount.endTime.In(cfg.Location).Format(cfg.dateTimeLayout),
 		ExTime.Seconds(),
 		t.newCount.totalLineParsed/ExTimeInSec)
-	t.newCount.Count = Count{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-
 }
 
 func (t *Transport) delOldData(timestamp int64, Location *time.Location) {
@@ -242,7 +240,7 @@ func (t *Transport) addLineOutToMapOfReportsSuperNew(l *lineOfLogType) {
 	}
 	deviceStat, ok := daysStat.devicesStat[KeyDevice{ip: l.ipaddress, mac: l.login}]
 	if !ok {
-		deviceStat = StatDeviceType{Mac: l.login, IP: l.ipaddress}
+		deviceStat = StatDeviceType{mac: l.login, ip: l.ipaddress}
 		daysStat.devicesStat[KeyDevice{ip: l.ipaddress, mac: l.login}] = deviceStat
 	}
 	// Расчет суммы трафика для устройства для дальшейшего отображения
@@ -261,4 +259,97 @@ func (t *Transport) addLineOutToMapOfReportsSuperNew(l *lineOfLogType) {
 	year.monthsStat[l.month] = month
 	t.statofYears[l.year] = year
 	t.Unlock()
+}
+
+func (t *Transport) checkQuotasNew() {
+	t.RLock()
+	quota := t.QuotaType
+	p := parseType{
+		SSHCredentials:   t.sshCredentials,
+		QuotaType:        t.QuotaType,
+		BlockAddressList: t.BlockAddressList,
+		Location:         t.Location,
+	}
+	t.RUnlock()
+	tn := time.Now().Format("2006-01-02")
+	hour := time.Now().Hour()
+	statOfDay := t.getDay(time.Now())
+	t.Lock()
+	for key, alias := range t.AliasesOld {
+		switch {
+		case statOfDevice.IP == "":
+			continue
+		case (alias.VolumePerDay >= alias.DailyQuota || alias.VolumePerHour[hour] >= alias.HourlyQuota) && alias.DateStr == tn && alias.Blocked:
+			continue
+		case alias.VolumePerDay >= alias.DailyQuota && alias.DateStr == tn && !alias.Blocked:
+			alias.ShouldBeBlocked = true
+			// alias.TimeoutBlock = setDailyTimeout()
+			alias.addBlockGroup(p.BlockAddressList)
+			t.change = append(t.change, alias)
+			log.Debugf("Login (%17s) was disabled due to exceeding the daily quota(%v)", alias.Alias, alias.DailyQuota)
+		case alias.VolumePerHour[hour] >= alias.HourlyQuota && alias.DateStr == tn && !alias.Blocked:
+			alias.ShouldBeBlocked = true
+			// alias.TimeoutBlock = setHourlyTimeout()
+			alias.addBlockGroup(p.BlockAddressList)
+			t.change = append(t.change, alias)
+			log.Debugf("Login (%17s) was disabled due to exceeding the hourly quota(%v)", alias.Alias, alias.DailyQuota)
+		case alias.Blocked && alias.DateStr == tn:
+			alias.ShouldBeBlocked = false
+			alias.delBlockGroup(p.BlockAddressList)
+			t.change = append(t.change, alias)
+			log.Debugf("Login (%17s) has been enabled, the quota(%v) has not been exceeded(Blocked:%v)",
+				alias.Alias, alias.HourlyQuota, alias.Blocked)
+		}
+		t.dataOld[key] = alias
+
+	}
+	for _, device := range t.devices {
+		for _, blockedDevice := range t.change {
+			if device.macAddress == blockedDevice.Mac || device.macAddress == blockedDevice.Alias || device.activeMacAddress == blockedDevice.Mac {
+				break
+			}
+		}
+		if paramertToBool(device.blocked) {
+			device.ShouldBeBlocked = false
+			alias := AliasOld{
+				Alias:   device.macAddress,
+				DateStr: time.Now().In(t.Location).Format("2006-01-02"),
+			}
+			alias.delBlockGroup(p.BlockAddressList)
+			t.change = append(t.change, alias)
+		}
+	}
+	t.Unlock()
+	t.change.sendLeaseSet(p, quota)
+	t.Lock()
+	t.change = AliasesOldedType{}
+	t.Unlock()
+}
+
+func (t *Transport) getDay(l *lineOfLogType) StatOfDayType {
+	t.Lock()
+	year, ok := t.statofYears[l.year]
+	if !ok {
+		year = StatOfYearType{
+			year:       l.year,
+			monthsStat: map[time.Month]StatOfMonthType{},
+		}
+		t.statofYears[l.year] = year
+	}
+	month, ok := year.monthsStat[l.month]
+	if !ok {
+		month = StatOfMonthType{
+			daysStat: map[int]StatOfDayType{},
+			month:    l.month}
+		year.monthsStat[l.month] = month
+	}
+	day, ok := month.daysStat[l.day]
+	if !ok {
+		day = StatOfDayType{
+			devicesStat: map[KeyDevice]StatDeviceType{},
+			day:         l.day}
+		month.daysStat[l.day] = day
+	}
+	t.Unlock()
+	return day
 }
