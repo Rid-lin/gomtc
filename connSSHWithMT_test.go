@@ -99,14 +99,6 @@ func TestAliasType_send(t *testing.T) {
 		p        parseType
 		qDefault QuotaType
 	}
-	// q := QuotaType{
-	// 	HourlyQuota:     50000000,
-	// 	DailyQuota:      300000000,
-	// 	MonthlyQuota:    9000000000,
-	// 	Disabled:        false,
-	// 	Manual:          false,
-	// 	ShouldBeBlocked: false,
-	// }
 	tn := time.Now()
 	tests := []struct {
 		name    string

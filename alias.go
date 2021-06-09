@@ -142,9 +142,6 @@ func (a *AliasType) UpdatePerson(p PersonType) {
 	if p.Company != "" {
 		a.PersonType.Company = p.Company
 	}
-	// if p.TypeD != "" {
-	// 	a.PersonType.TypeD = p.TypeD
-	// }
 	if p.Comment != "" {
 		a.PersonType.Comment = p.Comment
 	}
@@ -154,11 +151,6 @@ func (a *AliasType) UpdatePerson(p PersonType) {
 }
 
 func (a *AliasType) UpdateFromForm(params url.Values) {
-	// if len(params["TypeD"]) > 0 {
-	// 	a.TypeD = params["TypeD"][0]
-	// } else {
-	// 	a.TypeD = "other"
-	// }
 	if len(params["name"]) > 0 {
 		a.Name = params["name"][0]
 	} else {

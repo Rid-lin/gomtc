@@ -71,39 +71,10 @@ func parseDataFromURL(r *http.Request) RequestForm {
 	}
 	if len(m["report"]) > 0 {
 		request.report = m["report"][0]
-		// } else {
-		// request.report = "index"
 	}
 
 	return request
 }
-
-// func (data *Transport) handleShowReport(w http.ResponseWriter, withfriends bool, preffix string, r *http.Request) {
-
-// 	request := parseDataFromURL(r)
-// 	request.referURL = r.Host + r.URL.Path
-// 	request.path = r.URL.Path
-// 	data.RLock()
-// 	assetsPath := data.AssetsPath
-// 	data.RUnlock()
-// 	DisplayData := data.reportTrafficHourlyByLogins(request, withfriends)
-
-// 	fmap := template.FuncMap{
-// 		"FormatSize": FormatSize,
-// 	}
-// 	t := template.Must(template.New("index"+preffix).Funcs(fmap).ParseFiles(
-// 		assetsPath+"/index"+preffix+".html",
-// 		assetsPath+"/header.html",
-// 		assetsPath+"/footer.html"))
-// 	err := t.Execute(w, DisplayData)
-// 	if err != nil {
-// 		if strings.Contains(fmt.Sprint(err), "index out of range") {
-// 			fmt.Fprintf(w, "Проверьте налиие логов за запрашиваемый период<br> или подождите несколько минут.")
-// 		} else {
-// 			fmt.Fprintf(w, "Что-то пошло не так, произошла ошибка при выполнении запроса. <br> %v", err.Error())
-// 		}
-// 	}
-// }
 
 func (data *Transport) handleIndex(w http.ResponseWriter, r *http.Request) {
 	data.handleNewReport(w, false, "", r)
@@ -144,14 +115,6 @@ func (t *Transport) handleNewReport(w http.ResponseWriter, withfriends bool, pre
 	}
 }
 
-// func (data *Transport) handleIndex(w http.ResponseWriter, r *http.Request) {
-// 	data.handleShowReport(w, false, "", r)
-// }
-
-// func (data *Transport) handleWithFriends(w http.ResponseWriter, r *http.Request) {
-// 	data.handleShowReport(w, true, "wf", r)
-// }
-
 func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 	t.RLock()
 	assetsPath := t.AssetsPath
@@ -160,9 +123,7 @@ func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "GET" {
 		alias := r.FormValue("alias")
-		// aliasS := t.getAliasS(alias)
 		aliasS := t.Aliases[alias]
-		// InfoOfDevice := data.aliasToDevice(alias)
 
 		DisplayDataUser := DisplayDataUserType{
 			Header:          "Редактирование пользователя",

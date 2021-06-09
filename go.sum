@@ -1,5 +1,3 @@
-github.com/bmuller/arrow v1.0.3 h1:CdIOphUB+2VeCP92YieWSkiYzqfmFQwmyzf1iJ6Uf2Q=
-github.com/bmuller/arrow v1.0.3/go.mod h1:+voQMVaya0tr8p3W33Qxj/dKOjZNCepW+k8JJvt91gk=
 github.com/cristalhq/aconfig v0.16.1 h1:P3noQOujaPU5Of8E9fA1YYU3s/HUoPCIhpKkEgIQtfc=
 github.com/cristalhq/aconfig v0.16.1/go.mod h1:NXaRp+1e6bkO4dJn+wZ71xyaihMDYPtCSvEhMTm/H3E=
 github.com/cristalhq/aconfig/aconfigyaml v0.16.1 h1:ghmzWFolCuja6BzBvHkNAn2Qsewu6xqdAXQyWnXjvZw=

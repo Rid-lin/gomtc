@@ -11,10 +11,7 @@ import (
 )
 
 func CheckPIDFile(filename string) error {
-	// View file info
 	if _, err := os.Stat(filename); err != nil {
-		// if stat, err := os.Stat(filename); err != nil {
-		// If it is not there, start
 		if os.IsNotExist(err) {
 			return nil
 		}
@@ -60,7 +57,6 @@ func (t *Transport) Exit() {
 	if err := os.Remove(t.pidfile); err != nil {
 		log.Error(err)
 	}
-	// t.conn.Close()
 	log.Println("Shutting down")
 	time.Sleep(5 * time.Second)
 	os.Exit(0)
@@ -84,8 +80,6 @@ func (t *Transport) ReOpenLogAfterLogroatate() {
 		}
 	}
 	t.Unlock()
-	// log.Println("Opening a new file.")
-	// time.Sleep(2 * time.Second)
 }
 
 func getNewLogSignalsChannel() chan os.Signal {

@@ -145,18 +145,6 @@ func (ds *DevicesType) parseLeasePrintAsValue(b bytes.Buffer) {
 	}
 }
 
-// func (ds *DevicesType) findDeviceToConvertInfoD(alias, blockGroup string, q QuotaType) InfoOldType {
-// 	for _, d := range *ds {
-// 		if d.activeAddress == alias || d.activeMacAddress == alias || d.address == alias || d.macAddress == alias {
-// 			infoD := d.convertToInfo(blockGroup)
-// 			infoD.QuotaType = checkNULLQuotas(infoD.QuotaType, q)
-
-// 			return infoD
-// 		}
-// 	}
-// 	return InfoOldType{}
-// }
-
 func (info InfoType) sendByAll(p parseType, qDefault QuotaType) error {
 	var err error
 	var idStr string

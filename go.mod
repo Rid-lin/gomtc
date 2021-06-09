@@ -3,7 +3,6 @@ module git.vegner.org/vsvegner/gomtc
 go 1.16
 
 require (
-	github.com/bmuller/arrow v1.0.3
 	github.com/cristalhq/aconfig v0.16.1
 	github.com/cristalhq/aconfig/aconfigyaml v0.16.1
 	github.com/jinzhu/now v1.1.2

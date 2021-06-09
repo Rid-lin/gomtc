@@ -17,13 +17,6 @@ type AliasType struct {
 }
 
 type Transport struct {
-	// AliasesOld map[string]AliasOldType
-	// aliases  AliasesType
-	// stats    []StatDayType
-	// statYears           []statYearType
-	// Infos               map[string]InfoType
-	// dataOld             MapOfReports
-	// dataCasheOld        MapOfReports
 	Aliases             map[string]AliasType
 	statofYears         map[int]StatOfYearType
 	AliasesStrArr       map[string][]string
@@ -138,12 +131,6 @@ type DeviceType struct {
 type DevicesType []DeviceType
 type DevicesMapType map[KeyDevice]DeviceType
 
-// type AliasOldType struct {
-// 	AliasName string
-// 	// infoArr   []InfoType
-// 	QuotaType
-// }
-
 type BlockDevices map[KeyDevice]DeviceToBlock
 
 type DeviceToBlock struct {
@@ -174,21 +161,6 @@ type lineOfLogType struct {
 	month       time.Month
 	sizeInBytes uint64
 }
-
-// type MapOfReports map[KeyMapOfReports]AliasOld
-
-// type KeyMapOfReports struct {
-// 	DateStr string
-// 	Alias   string
-// }
-
-// type AliasOld struct {
-// 	Alias   string
-// 	DateStr string
-// 	Hits    uint32
-// 	InfoOldType
-// 	StatOldType
-// }
 
 type InfoOldType struct {
 	DeviceOldType
@@ -343,8 +315,6 @@ func NewTransport(cfg *Config) *Transport {
 	}
 
 	return &Transport{
-		// dataOld:             map[KeyMapOfReports]AliasOld{},
-		// dataCasheOld:        map[KeyMapOfReports]AliasOld{},
 		devices:             make(map[KeyDevice]DeviceType),
 		AliasesStrArr:       make(map[string][]string),
 		Aliases:             make(map[string]AliasType),

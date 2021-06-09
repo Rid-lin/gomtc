@@ -45,8 +45,6 @@ func (t *Transport) parseAllFilesAndCountingTrafficNew(cfg *Config) {
 	t.newCount.startTime = time.Now()
 	fmt.Printf("Parsing has started.\n")
 	t.delOldData(t.newCount.LastDateNew, t.Location)
-	// fmt.Printf("After Delete DAta\n")
-	// t.Print()
 	err := t.parseDirToMapNew(cfg)
 	if err != nil {
 		log.Error(err)

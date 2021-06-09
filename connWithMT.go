@@ -15,8 +15,6 @@ func parseParamertToStr(inpuStr string) string {
 	arr := strings.Split(inpuStr, "=")
 	if len(arr) > 1 {
 		return arr[1]
-		// } else {
-		// 	log.Warnf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inpuStr)
 	}
 	return ""
 }
@@ -27,14 +25,11 @@ func parseParamertToComment(inpuStr string) string {
 	arr := strings.Split(inpuStr, "=")
 	if len(arr) > 1 {
 		return strings.Join(arr[1:], "=")
-		// } else {
-		// 	log.Warnf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inpuStr)
 	}
 	return ""
 }
 
 func parseParamertToUint(inputValue string) uint64 {
-	// var err error
 	var q uint64
 	inputValue = strings.Trim(inputValue, "=")
 	inputValue = strings.ReplaceAll(inputValue, "==", "=")
@@ -43,8 +38,6 @@ func parseParamertToUint(inputValue string) uint64 {
 		quotaStr := Arr[1]
 		q = paramertToUint(quotaStr)
 		return q
-		// } else {
-		// 	log.Warnf("Parameter error. The parameter is specified incorrectly or not specified at all.(%v)", inputValue)
 	}
 	return q
 }
@@ -340,125 +333,12 @@ func (d1 *DeviceType) compare(d2 *DeviceType) bool {
 	return false
 }
 
-// func (ds *DevicesType) findIndexOfDevice(d *DeviceType) int {
-// 	for index, device := range *ds {
-// 		if d.compare(&device) {
-// 			return index
-// 		}
-// 	}
-// 	return -1
-// }
-
-// func (t *Transport) updateStatusDevicesToMT(cfg *Config) {
-
-// 	t.RLock()
-// 	blockGroup := t.BlockAddressList
-// 	dataCashe := t.dataCasheOld
-// 	quota := t.QuotaType
-// 	p := parseType{
-// 		SSHCredentials:   t.sshCredentials,
-// 		QuotaType:        t.QuotaType,
-// 		BlockAddressList: t.BlockAddressList,
-// 		Location:         t.Location,
-// 	}
-// 	t.RUnlock()
-// 	tn := time.Now().Format("2006-01-02")
-
-// 	for key, alias := range dataCashe {
-// 		if alias.Manual {
-// 			continue
-// 		}
-// 		if key.DateStr != tn || alias.Dynamic {
-// 			continue
-// 		}
-// 		// key := KeyMapOfReports{
-// 		// 	Alias:   alias,
-// 		// 	DateStr: time.Now().In(t.Location).Format("2006-01-02"),
-// 		// }
-// 		if alias.ShouldBeBlocked && !alias.Blocked {
-// 			alias.removeDefaultQuotas(quota)
-// 			alias.addBlockGroup(blockGroup)
-// 			if err := alias.sendByAll(p, quota); err != nil {
-// 				log.Errorf(`An error occurred while saving the device(%v::%v::%v):%v`,
-// 					alias.Alias, alias.Mac, alias.AMac, err.Error())
-// 			}
-// 		} else if !alias.ShouldBeBlocked && alias.Blocked {
-// 			alias.removeDefaultQuotas(quota)
-// 			alias.delBlockGroup(blockGroup)
-// 			if err := alias.sendByAll(p, quota); err != nil {
-// 				log.Errorf(`An error occurred while saving the device(%v::%v::%v):%v`,
-// 					alias.Alias, alias.Mac, alias.AMac, err.Error())
-// 			}
-// 		}
-// 	}
-// 	t.getDevices()
-// }
-
-// func (ds *DevicesType) updateInfo(deviceNew DeviceType) error {
-// 	index := ds.findIndexOfDevice(&deviceNew)
-// 	if index == -1 {
-// 		*ds = append(*ds, deviceNew)
-// 	} else {
-// 		(*ds)[index] = deviceNew
-// 	}
-// 	return nil
-// }
-
-// func (dms *DevicesMapType) updateInfo(deviceNew DeviceType) error {
-
-// 	index := dms.findIndexOfDevice(&deviceNew)
-// 	if index == -1 {
-// 		*dms = append(*dms, deviceNew)
-// 	} else {
-// 		(*dms)[index] = deviceNew
-// 	}
-// 	return nil
-// }
-
 func boolToParamert(trigger bool) string {
 	if trigger {
 		return "yes"
 	}
 	return "no"
 }
-
-// func removeDefaultQuota(setValue, deafultValue uint64) uint64 {
-// 	if setValue == deafultValue {
-// 		return uint64(0)
-// 	}
-// 	return uint64(setValue)
-// }
-
-// func (a *InfoOldType) removeDefaultQuotas(qDef QuotaType) {
-// 	a.HourlyQuota = removeDefaultQuota(a.HourlyQuota, qDef.MonthlyQuota)
-// 	a.DailyQuota = removeDefaultQuota(a.DailyQuota, qDef.DailyQuota)
-// 	a.MonthlyQuota = removeDefaultQuota(a.MonthlyQuota, qDef.MonthlyQuota)
-// }
-
-// func (a *InfoOldType) addBlockGroup(group string) {
-// 	a.Groups = a.Groups + "," + group
-// 	a.Groups = strings.Trim(a.Groups, ",")
-// 	a.Groups = strings.ReplaceAll(a.Groups, `"`, "")
-// }
-
-// func (a *InfoOldType) delBlockGroup(group string) {
-// 	a.Groups = strings.Replace(a.Groups, group, "", 1)
-// 	a.Groups = strings.ReplaceAll(a.Groups, ",,", ",")
-// 	a.Groups = strings.Trim(a.Groups, ",")
-// 	a.Groups = strings.ReplaceAll(a.Groups, `"`, "")
-// }
-
-// func (t *Transport) getAliasS(alias string) InfoType {
-// 	key := KeyMapOfReports{
-// 		Alias:   alias,
-// 		DateStr: time.Now().In(t.Location).Format("2006-01-02"),
-// 	}
-// 	InfoD, ok := t.dataCasheOld[key]
-// 	if !ok {
-// 		return InfoType{}
-// 	}
-// 	return InfoD
-// }
 
 func lNow() *lineOfLogType {
 	var l lineOfLogType
