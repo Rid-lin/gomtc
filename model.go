@@ -293,9 +293,9 @@ func NewTransport(cfg *Config) *Transport {
 
 	Location, err := time.LoadLocation(cfg.Loc)
 	if err != nil {
-		log.Errorf("Error loading Location(%v):%v", cfg.Loc, err)
-		// Location = time.UTC
 		Location = time.FixedZone("Custom timezone", int(cfg.Timezone*60*60))
+		log.Warningf("Error loading timezone from location(%v):%v. Using a fixed time zone(%v:%v)", cfg.Loc, err, Location, cfg.Timezone*60*60)
+		// Location = time.UTC
 	}
 
 	return &Transport{
