@@ -132,6 +132,7 @@ func (t *Transport) SendGroupStatus() {
 		BlockAddressList: t.BlockAddressList,
 		Location:         t.Location,
 	}
+	t.RUnlock()
 	t.change.sendLeaseSet(p)
 	t.Lock()
 	t.change = BlockDevices{}
