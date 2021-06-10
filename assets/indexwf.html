@@ -21,8 +21,10 @@
 			<tr>
 				<th>#</th>
 				<th>Пользователь</th>
-				<th>Имя устройства</th>
-				<th>Имя</th>
+				<th>Имя ус-ва</th>
+				<th>m</th>
+				<th>b</th>
+				<th>s</th>
 				<th>Комментарий</th>
 				<th>Байт</th>
 				<th>%</th>
@@ -65,8 +67,40 @@
 				</th>
 				<th{{if $v.DeviceType.Blocked}} style="background-color: rgb(252, 210, 186);" {{end}}>
 					{{$v.HostName}}</th>
-					<th>{{$v.Name}}</th>
-					<th>{{$v.DeviceType.Comment}}</th>
+					<th 
+					{{if $v.DeviceType.Manual}}
+						style="background-color:green;"
+					{{end}}
+					>
+					{{if $v.DeviceType.Manual}}
+						.
+					{{else}}
+						
+					{{end}}
+					</th>
+					<th 
+					{{if $v.DeviceType.Blocked}}
+						style="background-color:rgb(238, 141, 141);"
+					{{end}}
+					>
+					{{if $v.DeviceType.Blocked}}
+						.
+					{{else}}
+						
+					{{end}}
+					</th>
+					<th 
+					{{if $v.DeviceType.ShouldBeBlocked}}
+						style="background-color:rgb(238, 141, 141);"
+					{{end}}
+					>
+					{{if $v.DeviceType.ShouldBeBlocked}}
+						.
+					{{else}}
+						
+					{{end}}
+					</th>
+					<th style="text-align: left;">{{$v.DeviceType.Comment}}</th>
 					<th {{if $v.DeviceType.ShouldBeBlocked}} style="background-color: rgb(248, 74, 74);" {{end}}
 							{{if and (le $.SizeOneGigabyte $v.VolumePerDay) (ne $k 0)}}
 								style="color: rgb(179, 8, 185);"
