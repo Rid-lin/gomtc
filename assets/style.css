@@ -116,10 +116,10 @@ html body div.body_report table tbody tr th:nth-child(4) {
     text-align: left;
 }
 
-.body_report table tbody tr th:nth-child(7) {
+/* .body_report table tbody tr th:nth-child(7) {
     min-width: 3rem;
     background-color: rgb(252, 210, 186);
-}
+} */
 
 .body_report table tbody tr th:nth-child(2) {
     padding: 0 0.3rem 0 0.3rem;

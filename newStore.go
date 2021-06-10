@@ -87,11 +87,9 @@ func (t *Transport) delOldData(timestamp int64, Location *time.Location) {
 	if !ok {
 		return
 	}
-	t.Lock()
 	delete(t.statofYears[year].monthsStat[month].daysStat, day)
 	t.newCount.LastDateNew = time.Date(year, month, day, 0, 0, 0, 1, t.Location).Unix()
 	t.newCount.LastDayStrNew = time.Date(year, month, day, 0, 0, 0, 1, t.Location).String()
-	t.Unlock()
 }
 
 func (t *Transport) parseDirToMapNew(cfg *Config) error {
@@ -127,7 +125,7 @@ func (t *Transport) parseDirToMapNew(cfg *Config) error {
 
 func (t *Transport) parseFileToMapNew(info os.FileInfo, cfg *Config) error {
 	if !strings.HasPrefix(info.Name(), cfg.FnStartsWith) {
-		return fmt.Errorf("don't match to paramert fnStartsWith='%s'", cfg.FnStartsWith)
+		return fmt.Errorf("%s don't match to paramert fnStartsWith='%s'", info.Name(), cfg.FnStartsWith)
 	}
 	FullFileName := filepath.Join(cfg.LogPath, info.Name())
 	file, err := os.Open(FullFileName)

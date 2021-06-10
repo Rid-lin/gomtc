@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -58,7 +57,7 @@ func (t *Transport) Exit() {
 		log.Error(err)
 	}
 	log.Println("Shutting down")
-	time.Sleep(5 * time.Second)
+	// time.Sleep(5 * time.Second)
 	os.Exit(0)
 
 }
