@@ -40,6 +40,7 @@ type Config struct {
 	ParseDelay             string   `default:"10m" usage:"Delay parsing logs"`
 	BlockGroup             string   `default:"block" usage:"The name of the address list in MikrotiK with which access is blocked to users who have exceeded the quota."`
 	ManualGroup            string   `default:"manual" usage:"Name of the address list in MikrotiK, in the presence of which the device is manually controlled."`
+	fnStartsWith           string   `default:"access.log" usage:"Specifies where the names of the files to be parsed begin"`
 	Timezone               float32  `default:"5" usage:"Timezone east of UTC"`
 	ReceiveBufferSizeBytes int      `default:"" usage:"Size of RxQueue, i.e. value for SO_RCVBUF in bytes"`
 	MaxSSHRetries          int      `default:"-1" usage:"The number of attempts to connect to the microtik router"`

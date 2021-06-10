@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -44,7 +45,6 @@ func (t *Transport) parseAllFilesAndCountingTrafficNew(cfg *Config) {
 	// Getting the current time to calculate the running time
 	t.newCount.startTime = time.Now()
 	fmt.Printf("Parsing has started.\r")
-	t.delOldData(t.newCount.LastDateNew, t.Location)
 	err := t.parseDirToMapNew(cfg)
 	if err != nil {
 		log.Error(err)
@@ -87,9 +87,11 @@ func (t *Transport) delOldData(timestamp int64, Location *time.Location) {
 	if !ok {
 		return
 	}
+	t.Lock()
 	delete(t.statofYears[year].monthsStat[month].daysStat, day)
 	t.newCount.LastDateNew = time.Date(year, month, day, 0, 0, 0, 1, t.Location).Unix()
 	t.newCount.LastDayStrNew = time.Date(year, month, day, 0, 0, 0, 1, t.Location).String()
+	t.Unlock()
 }
 
 func (t *Transport) parseDirToMapNew(cfg *Config) error {
@@ -124,6 +126,9 @@ func (t *Transport) parseDirToMapNew(cfg *Config) error {
 }
 
 func (t *Transport) parseFileToMapNew(info os.FileInfo, cfg *Config) error {
+	if !strings.HasPrefix(info.Name(), cfg.fnStartsWith) {
+		return fmt.Errorf("don't match to paramert fnStartsWith='%s'", cfg.fnStartsWith)
+	}
 	FullFileName := filepath.Join(cfg.LogPath, info.Name())
 	file, err := os.Open(FullFileName)
 	if err != nil {

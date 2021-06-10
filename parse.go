@@ -21,6 +21,7 @@ func (t *Transport) runOnce(cfg *Config) {
 	t.readLog(cfg)
 
 	t.getDevices()
+	t.delOldData(t.newCount.LastDateNew, t.Location)
 	t.parseAllFilesAndCountingTrafficNew(cfg)
 	t.updateAliases(p)
 	t.checkQuotasNew()
