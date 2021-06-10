@@ -87,11 +87,9 @@ func (t *Transport) delOldData(timestamp int64, Location *time.Location) {
 	if !ok {
 		return
 	}
-	t.Lock()
 	delete(t.statofYears[year].monthsStat[month].daysStat, day)
 	t.newCount.LastDateNew = time.Date(year, month, day, 0, 0, 0, 1, t.Location).Unix()
 	t.newCount.LastDayStrNew = time.Date(year, month, day, 0, 0, 0, 1, t.Location).String()
-	t.Unlock()
 }
 
 func (t *Transport) parseDirToMapNew(cfg *Config) error {
