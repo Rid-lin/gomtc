@@ -42,6 +42,7 @@ func (t *Transport) reportTrafficHourlyByLoginsNew(request RequestForm, showFrie
 	line := LineOfDisplay{}
 	var totalVolumePerDay uint64
 	var totalVolumePerHour [24]VolumePerType
+	t.RLock()
 	for key, value := range day.devicesStat {
 
 		line.Alias = key.mac
@@ -57,6 +58,7 @@ func (t *Transport) reportTrafficHourlyByLoginsNew(request RequestForm, showFrie
 		}
 		ReportData = add(ReportData, line)
 	}
+	t.RUnlock()
 	line = LineOfDisplay{}
 	line.Alias = "Всего"
 	line.VolumePerDay = totalVolumePerDay
