@@ -54,7 +54,7 @@ func parseInfoFromMTAsValueToSlice(p parseType) []DeviceType {
 
 	for b.Len() == 0 {
 		if (i - p.MaxSSHRetries) == 0 {
-			os.Exit(2)
+			os.Exit(3)
 		}
 		b = getResponseOverSSHfMT(p.SSHCredentials, ":put [/ip dhcp-server lease print detail as-value]")
 		if b.Len() == 0 {
