@@ -246,7 +246,7 @@ func (t *Transport) pipeOutputToSquid(cfg *Config) {
 }
 
 func filtredMessage(message string, IgnorList []string) string {
-	for _, ignorStr := range cfg.IgnorList {
+	for _, ignorStr := range IgnorList {
 		if strings.Contains(message, ignorStr) {
 			log.Tracef("Line of log :%v contains ignorstr:%v, skipping...", message, ignorStr)
 			return ""

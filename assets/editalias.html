@@ -7,9 +7,8 @@
     <form class="edit_alias" id="edit_device" action="/editalias/" method="post">
         <div class="info_of_device">
             <h3>Информация об устройстве</h3>
-            <!-- Алиас <input type="text" name="Alias" id="alias" title="Алиас" placeholder="Алиас" value="{{.Alias}}" disabled> -->
-            Алиас: {{.Alias}}
-            <input type="text" name="alias" title="Алиас" value="{{.Alias}}" hidden>
+            Алиас: {{.InfoName}}
+            <input type="text" name="alias" title="Алиас" value="{{.InfoName}}" hidden>
             <div class="TypeD">
                 Тип устройства
                 <input type="radio" name="TypeD" value="tel" {{if eq .TypeD "tel" }} checked="checked" {{end}}> Телефон
@@ -21,17 +20,17 @@
                 <input type="radio" name="TypeD" value="ap" {{if eq .TypeD "ap" }} checked="checked" {{end}}> Точка доступа
                 <input type="radio" name="TypeD" value="other" {{if or (eq .TypeD "other") (eq .TypeD "") }} checked="checked" {{end}}> Другое
             </div>
-            <p> IP Адрес: {{.IP}} </p>
-            <p> Мак-Адрес: {{.Mac}} </p>
+            <p> IP Адрес: {{.ActiveAddress}} </p>
+            <p> Мак-Адрес: {{.ActiveMacAddress}} </p>
             <p> Имя устройства: {{.HostName}} </p>
-            <p> Группы: {{.Groups}} </p>
+            <p> Группы: {{.AddressLists}} </p>
             <p>
                 <span> Отключен: <input type="checkbox" name="disabled" value="yes" 
                     {{if .Disabled}} checked="checked" {{end}}></span>
                 <span>Заблокирован: <input type="checkbox" name="blocked" value="yes" 
-                    {{if .Blocked}} checked="checked" {{end}}></span>
+                    {{if .DeviceType.Blocked}} checked="checked" {{end}}></span>
                 <span>Должен быть заблокирован:<input type="checkbox" name="shouldbeblocked" value="yes" 
-                    {{if .ShouldBeBlocked}} checked="checked" {{end}}></span>
+                    {{if .DeviceType.ShouldBeBlocked}} checked="checked" {{end}}></span>
                 <span>Управление вручную: <input type="checkbox" name="manual" value="yes" 
                     {{if .Manual}} checked="checked" {{end}}></span>
             </p>
@@ -43,8 +42,8 @@
             <p>ID: <input type="text" name="IDUser" id="IDUser" title="ID" placeholder="ID" value="{{.IDUser}}"></p>
             <p>Должность: <input type="text" name="col" id="col" title="Должность" placeholder="Должность" value="{{.Position}}"></p>
             <p>Компания: <input type=" text " name="com" id="com" title="Компания " placeholder="Компания " value="{{.Company}}"></p>
-            <p>Комментарий: <input type="text" name="comment" id="comment" title="Комментарий" placeholder="Комментарий" value="{{.Comment}}"></p>
-            <p>Комментарии полностью: {{.Comments}}</p>
+            <p>Комментарий: <input type="text" name="comment" id="comment" title="Комментарий" placeholder="Комментарий" value="{{.PersonType.Comment}}"></p>
+            <p>Комментарии полностью: {{.PersonType.Comments}}</p>
         </div>
         <div class=" quota ">
             <br>

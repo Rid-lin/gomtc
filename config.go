@@ -19,8 +19,8 @@ type Config struct {
 	LastDayStr     string
 	LastDateStr    string
 
-	GonsquidAddr string `default:":3030" usage:"Listen address for HTTP-server"`
-
+	GonsquidAddr           string   `default:":3030" usage:"Listen address for HTTP-server"`
+	Pidfile                string   `default:"/run/gomtc.pid" usage:"PID-file"`
 	Friends                []string `default:"" usage:"List of aliases, IP addresses, friends' logins"`
 	ConfigPath             string   `default:"/etc/gomtc" usage:"folder path to all config files"`
 	LogPath                string   `default:"/var/log/gomtc" usage:"folder path to logs-file"`
@@ -38,7 +38,10 @@ type Config struct {
 	MTPass                 string   `default:"" usage:"The password of the user of the Mikrotik router, from which the data on the comparison of the mac-address and IP-address is taken"`
 	Loc                    string   `default:"Asia/Yekaterinburg" usage:"Location for time"`
 	ParseDelay             string   `default:"10m" usage:"Delay parsing logs"`
-	BlockGroup             string   `default:"Block" usage:"The name of the address list in MicrotiK with which access is blocked to users who have exceeded the quota."`
+	BlockGroup             string   `default:"block" usage:"The name of the address list in MikrotiK with which access is blocked to users who have exceeded the quota."`
+	ManualGroup            string   `default:"manual" usage:"Name of the address list in MikrotiK, in the presence of which the device is manually controlled."`
+	fnStartsWith           string   `default:"access.log" usage:"Specifies where the names of the files to be parsed begin"`
+	Timezone               float32  `default:"5" usage:"Timezone east of UTC"`
 	ReceiveBufferSizeBytes int      `default:"" usage:"Size of RxQueue, i.e. value for SO_RCVBUF in bytes"`
 	MaxSSHRetries          int      `default:"0" usage:"The number of attempts to connect to the microtik router"`
 	SSHRetryDelay          uint16   `default:"0" usage:"Interval of attempts to connect to MT"`
@@ -49,7 +52,7 @@ type Config struct {
 	UseTLS                 bool     `default:"false" usage:"Using TLS to connect to a router"`
 	CSV                    bool     `default:"false" usage:"Output to csv"`
 	NoFlow                 bool     `default:"true" usage:"When this parameter is specified, the netflow packet listener is not launched, therefore, log files are not created, but only parsed."`
-	NoMT                   bool     `default:"true" usage:"Disables attempts to connect with microtic."`
+	Debug                  bool     `default:"false" usage:"For debug, not create pid-file"`
 	Location               *time.Location
 	startTime              time.Time
 	endTime                time.Time
@@ -59,6 +62,15 @@ type Config struct {
 var (
 	cfg Config
 )
+
+type newContType struct {
+	Count
+	startTime     time.Time
+	endTime       time.Time
+	lastUpdated   time.Time
+	LastDateNew   int64
+	LastDayStrNew string
+}
 
 func newConfig() *Config {
 	// fix for https://github.com/cristalhq/aconfig/issues/82

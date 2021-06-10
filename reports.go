@@ -8,29 +8,60 @@ import (
 
 type ReportDataType []LineOfDisplay
 
-func (t *Transport) reportTrafficHourlyByLogins(request RequestForm, showFriends bool) DisplayDataType {
+func (t *Transport) reportTrafficHourlyByLoginsNew(request RequestForm, showFriends bool) (DisplayDataType, error) {
 	start := time.Now()
 	t.RLock()
-	dataChashe := t.dataCasheOld
+	// data := t.statofYears
 	SizeOneKilobyte := t.SizeOneKilobyte
 	Quota := t.QuotaType
 	Copyright := t.Copyright
 	Mail := t.Mail
+	// BlockAddressList := t.BlockAddressList
 	LastUpdated := t.lastUpdated.Format("2006-01-02 15:04:05.999")
 	LastUpdatedMT := t.lastUpdatedMT.Format("2006-01-02 15:04:05.999")
 	t.RUnlock()
+	day := t.getDay(lNow())
+	// tn, err := time.Parse("2006-01-02", request.dateFrom)
+	// if err != nil {
+	// 	tn = time.Now()
+	// }
+	// yearStat, ok := data[tn.Year()]
+	// if !ok {
+	// 	return DisplayDataType{}, fmt.Errorf("Year(%d) missing from statistics", tn.Year())
+	// }
+	// monthStat, ok := yearStat.monthsStat[tn.Month()]
+	// if !ok {
+	// 	return DisplayDataType{}, fmt.Errorf("Month(%s) missing from statistics", tn.Month().String())
+	// }
+	// day, ok := monthStat.daysStat[tn.Day()]
+	// if !ok {
+	// 	return DisplayDataType{}, fmt.Errorf("Day(%d) missing from statistics", tn.Day())
+	// }
 
 	ReportData := ReportDataType{}
 	line := LineOfDisplay{}
-	for key, value := range dataChashe {
-		if key.DateStr != request.dateFrom {
-			continue
+	var totalVolumePerDay uint64
+	var totalVolumePerHour [24]VolumePerType
+	for key, value := range day.devicesStat {
+
+		line.Alias = key.mac
+		line.VolumePerDay = value.VolumePerDay
+		totalVolumePerDay += value.VolumePerDay
+		// TODO подумать над ключом
+		line.InfoType.PersonType = t.Aliases[key.mac].PersonType
+		line.InfoType.QuotaType = t.Aliases[key.mac].QuotaType
+		line.InfoType.DeviceType = t.devices[key]
+		for i := range line.StatPerHour {
+			line.StatPerHour[i].PerHour = value.StatPerHour[i].PerHour
+			totalVolumePerHour[i].PerHour += value.StatPerHour[i].PerHour
 		}
-		line.Alias = key.Alias
-		line.InfoType = value.InfoType
-		line.StatType = value.StatType
 		ReportData = add(ReportData, line)
 	}
+	line = LineOfDisplay{}
+	line.Alias = "Всего"
+	line.VolumePerDay = totalVolumePerDay
+	line.StatPerHour = totalVolumePerHour
+	ReportData = add(ReportData, line)
 
 	sort.Sort(ReportData)
 	ReportData = ReportData.percentileCalculation(1)
@@ -58,13 +89,13 @@ func (t *Transport) reportTrafficHourlyByLogins(request RequestForm, showFriends
 			Mail: Mail,
 		},
 		QuotaType: Quota,
-	}
+	}, nil
 
 }
 
 func (a ReportDataType) Len() int           { return len(a) }
 func (a ReportDataType) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ReportDataType) Less(i, j int) bool { return a[i].Size > a[j].Size }
+func (a ReportDataType) Less(i, j int) bool { return a[i].VolumePerDay > a[j].VolumePerDay }
 
 func (data ReportDataType) percentileCalculation(cub uint8) ReportDataType {
 	var maxIndex = 0
@@ -73,8 +104,8 @@ func (data ReportDataType) percentileCalculation(cub uint8) ReportDataType {
 	if len(data) == 0 {
 		return data
 	}
-	SizeOfPrecentil := uint64(float64(data[maxIndex].Size) * 0.9)
-	sumTotal := data[maxIndex].Size // МАксимальная сумма необходима для расчёта претентиля 90
+	SizeOfPrecentil := uint64(float64(data[maxIndex].VolumePerDay) * 0.9)
+	sumTotal := data[maxIndex].VolumePerDay // МАксимальная сумма необходима для расчёта претентиля 90
 	// cubf := math.Pow(10, float64(cub)) // Высчитываем степерь округления
 	// Если сумма скаченного трафика текущего пользователя и тех кого уже прошли будет больше чем размер прецентиля, то мы отмечает порядковый номер данного пользователя для последующей обработки
 	for index := 1; index < len(data)-1; index++ {
@@ -83,18 +114,21 @@ func (data ReportDataType) percentileCalculation(cub uint8) ReportDataType {
 			break
 		} else {
 			// ... инвче прибавляем к текущей сумме объём скаченного пользователем
-			sum = (data[index-1].SizeOfPrecentil + data[index].Size)
-			data[index].SizeOfPrecentil = sum
+			sum = (uint64(data[index-1].Precent) + data[index].VolumePerDay)
+			data[index].Precent = float64(sum)
 			PrecentilIndex = index
 		}
 	}
-	AverageTotal := data[maxIndex].Size / uint64(PrecentilIndex)
+	if PrecentilIndex == 0 {
+		PrecentilIndex = 1
+	}
+	AverageTotal := data[maxIndex].VolumePerDay / uint64(PrecentilIndex)
 	data[maxIndex].Average = AverageTotal
 
 	for index := 1; index < PrecentilIndex; index++ {
 		// data[index].Average = math.Round(data[index].Size/float64(PrecentilIndex)*cubf) / cubf
-		data[index].Precent = math.Round(float64(data[index].Size)/float64(sumTotal)*1000) / 10
-		if data[index].Size > AverageTotal {
+		data[index].Precent = math.Round(float64(data[index].VolumePerDay)/float64(sumTotal)*1000) / 10
+		if data[index].VolumePerDay > AverageTotal {
 			data[maxIndex].Count++
 		}
 	}
@@ -105,7 +139,7 @@ func (rData ReportDataType) FiltredFriendS(friends []string) ReportDataType {
 	dataLen := len(rData)
 	for index := 0; index < dataLen; index++ {
 		for jndex := range friends {
-			if rData[index].Login == friends[jndex] || rData[index].Alias == friends[jndex] || rData[index].IP == friends[jndex] {
+			if rData[index].Login == friends[jndex] || rData[index].Alias == friends[jndex] || rData[index].ActiveAddress == friends[jndex] {
 				rData = append(rData[:index], rData[index+1:]...)
 				index--
 				dataLen--
@@ -115,37 +149,12 @@ func (rData ReportDataType) FiltredFriendS(friends []string) ReportDataType {
 	return rData
 }
 
-// func (data ReportDataType) Format(cub uint8) ReportDataType {
-// 	for index := 1; index < len(data)-1; index++ {
-// 		// data[index].AverageStr = fmt.Sprintf("%6.2f", data[index].Average)
-// 		data[index].PrecentStr = fmt.Sprintf("%6.2f", data[index].Precent)
-// 		HourSize := data[index].SizeOfHourU
-// 		HourSizeStr := data[index].SizeOfHourStr
-// 		for hourIndex := range HourSize {
-// 			HourSizeStr[hourIndex] = fmt.Sprintf("%6.2f", HourSize[hourIndex])
-// 		}
-// 		data[index].SizeOfHourStr = HourSizeStr
-// 	}
-// 	return data
-// }
-
 func add(slice []LineOfDisplay, line LineOfDisplay) []LineOfDisplay {
 	for index, item := range slice {
 		if line.Alias == item.Alias {
-			slice[index].SizeOfHour = line.SizeOfHour
+			slice[index].StatPerHour = line.StatPerHour
 			return slice
 		}
 	}
 	return append(slice, line)
 }
-
-// // roundToMb Function rounds a number to megabyte with cub precision
-// func roundToMb(sizeInBytes uint64, SizeOneKilobyte uint64, cub int) float64 {
-// 	if SizeOneKilobyte == 0 {
-// 		SizeOneKilobyte = 1048576
-// 	}
-// 	sizeInBytesf := float64(sizeInBytes)
-// 	cubf := math.Pow(10, float64(cub))
-// 	// return (math.Round((float64(sizeInBytes) / SizeOneKilobyte * math.Pow(10, float64(cub+1))) / math.Pow(10, float64(cub+1))))
-// 	return math.Round(sizeInBytesf/float64(SizeOneKilobyte)*cubf) / cubf
-// }

@@ -107,7 +107,7 @@ func isComment(inputStr, parametr string) bool {
 	return true
 }
 
-func isBlocked(addressLists, blockGroup string) bool {
+func inAddressList(addressLists, blockGroup string) bool {
 	arr := strings.Split(addressLists, ",")
 	for _, item := range arr {
 		if item == blockGroup {
