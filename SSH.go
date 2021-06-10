@@ -145,86 +145,86 @@ func (ds *DevicesType) parseLeasePrintAsValue(b bytes.Buffer) {
 	}
 }
 
-func (info InfoType) sendByAll(p parseType, qDefault QuotaType) error {
-	var err error
-	var idStr string
-	comments := info.convertToComment(qDefault)
+// func (info InfoType) sendByAll(p parseType, qDefault QuotaType) error {
+// 	var err error
+// 	var idStr string
+// 	comments := info.convertToComment(qDefault)
 
-	switch {
-	case info.Id != "":
-		idStr = info.Id
-	case info.activeMacAddress != "":
-		idStr, err = reciveIDByMac(p, info.activeMacAddress)
-		if err != nil {
-			return err
-		}
-	case info.macAddress != "":
-		idStr, err = reciveIDByMac(p, info.macAddress)
-		if err != nil {
-			return err
-		}
-	case info.activeAddress != "":
-		idStr, err = reciveIDByIP(p, info.activeAddress)
-		if err != nil {
-			return err
-		}
-	case info.InfoName != "" && isMac(info.InfoName):
-		idStr, err = reciveIDByMac(p, info.InfoName)
-		if err != nil {
-			return err
-		}
-	case info.InfoName != "" && isIP(info.InfoName):
-		idStr, err = reciveIDByIP(p, info.InfoName)
-		if err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("Mac and IP addres canot be empty")
-	}
-	if idStr == "" {
-		return fmt.Errorf("Device not found")
-	}
-	idArr := strings.Split(idStr, ";")
-	for _, id := range idArr {
-		command := fmt.Sprintf(`/ip dhcp-server lease set number="%s" address-lists="%s" disabled="%s" comment="%s"`,
-			id,
-			info.addressLists,
-			boolToParamert(info.Disabled),
-			comments)
-		b := getResponseOverSSHfMT(p.SSHCredentials, command)
-		result := b.String()
-		fmt.Printf("command:'%s',result:'%s'\n", command, result)
-		if b.Len() > 0 {
-			return fmt.Errorf(b.String())
-		}
-	}
-	return nil
-}
+// 	switch {
+// 	case info.Id != "":
+// 		idStr = info.Id
+// 	case info.activeMacAddress != "":
+// 		idStr, err = reciveIDByMac(p, info.activeMacAddress)
+// 		if err != nil {
+// 			return err
+// 		}
+// 	case info.macAddress != "":
+// 		idStr, err = reciveIDByMac(p, info.macAddress)
+// 		if err != nil {
+// 			return err
+// 		}
+// 	case info.activeAddress != "":
+// 		idStr, err = reciveIDByIP(p, info.activeAddress)
+// 		if err != nil {
+// 			return err
+// 		}
+// 	case info.InfoName != "" && isMac(info.InfoName):
+// 		idStr, err = reciveIDByMac(p, info.InfoName)
+// 		if err != nil {
+// 			return err
+// 		}
+// 	case info.InfoName != "" && isIP(info.InfoName):
+// 		idStr, err = reciveIDByIP(p, info.InfoName)
+// 		if err != nil {
+// 			return err
+// 		}
+// 	default:
+// 		return fmt.Errorf("Mac and IP addres canot be empty")
+// 	}
+// 	if idStr == "" {
+// 		return fmt.Errorf("Device not found")
+// 	}
+// 	idArr := strings.Split(idStr, ";")
+// 	for _, id := range idArr {
+// 		command := fmt.Sprintf(`/ip dhcp-server lease set number="%s" address-lists="%s" disabled="%s" comment="%s"`,
+// 			id,
+// 			info.addressLists,
+// 			boolToParamert(info.Disabled),
+// 			comments)
+// 		b := getResponseOverSSHfMT(p.SSHCredentials, command)
+// 		result := b.String()
+// 		fmt.Printf("command:'%s',result:'%s'\n", command, result)
+// 		if b.Len() > 0 {
+// 			return fmt.Errorf(b.String())
+// 		}
+// 	}
+// 	return nil
+// }
 
-func reciveIDByMac(p parseType, mac string) (string, error) {
-	if mac == "" {
-		return "", fmt.Errorf("MAC address cannot be empty")
-	}
-	return reciveIDBy(p, "mac-address", mac)
-}
+// func reciveIDByMac(p parseType, mac string) (string, error) {
+// 	if mac == "" {
+// 		return "", fmt.Errorf("MAC address cannot be empty")
+// 	}
+// 	return reciveIDBy(p, "mac-address", mac)
+// }
 
-func reciveIDBy(p parseType, entity, value string) (string, error) {
-	command := fmt.Sprintf(`:put [/ip dhcp-server lease find %s="%s"]`,
-		entity, value)
-	b := getResponseOverSSHfMT(p.SSHCredentials, command)
-	id := b.String()
-	id = strings.ReplaceAll(id, `"`, "")
-	id = strings.ReplaceAll(id, "\n", "")
-	id = strings.ReplaceAll(id, "\r", "")
-	return id, nil
-}
+// func reciveIDBy(p parseType, entity, value string) (string, error) {
+// 	command := fmt.Sprintf(`:put [/ip dhcp-server lease find %s="%s"]`,
+// 		entity, value)
+// 	b := getResponseOverSSHfMT(p.SSHCredentials, command)
+// 	id := b.String()
+// 	id = strings.ReplaceAll(id, `"`, "")
+// 	id = strings.ReplaceAll(id, "\n", "")
+// 	id = strings.ReplaceAll(id, "\r", "")
+// 	return id, nil
+// }
 
-func reciveIDByIP(p parseType, ip string) (string, error) {
-	if ip == "" {
-		return "", fmt.Errorf("IP address cannot be empty")
-	}
-	return reciveIDBy(p, "active-address", ip)
-}
+// func reciveIDByIP(p parseType, ip string) (string, error) {
+// 	if ip == "" {
+// 		return "", fmt.Errorf("IP address cannot be empty")
+// 	}
+// 	return reciveIDBy(p, "active-address", ip)
+// }
 
 func (a *BlockDevices) sendLeaseSet(p parseType) {
 	var command string

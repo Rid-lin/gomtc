@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"reflect"
 	"testing"
-	"time"
 )
 
 var (
@@ -22,7 +21,7 @@ var (
 		DailyQuota:   cfgTest.DefaultQuotaDaily,
 		MonthlyQuota: cfgTest.DefaultQuotaMonthly,
 	}
-	block string = cfg.BlockGroup
+	// block string = cfg.BlockGroup
 )
 
 func Test_getResponseOverSSHfMT(t *testing.T) {
@@ -94,64 +93,64 @@ func Test_deviceToSlice(t *testing.T) {
 	}
 }
 
-func TestAliasType_send(t *testing.T) {
-	type args struct {
-		p        parseType
-		qDefault QuotaType
-	}
-	tn := time.Now()
-	tests := []struct {
-		name    string
-		a       InfoType
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "1",
-			a: InfoType{
-				InfoName: "E8:D8:D1:47:55:93",
-				DeviceType: DeviceType{
-					activeAddress:    "192.168.65.85",
-					activeMacAddress: "E8:D8:D1:47:55:93",
-					hostName:         "root-hp",
-					addressLists:     "inet,Block",
-					timeout:          tn,
-				},
-				PersonType: PersonType{
-					Name:     "Vlad",
-					Position: "Admin",
-					Company:  "UTTiST",
-					Comment:  "",
-				},
-				QuotaType: QuotaType{
-					HourlyQuota:     600000000,
-					DailyQuota:      6000000000,
-					MonthlyQuota:    60000000000,
-					Manual:          false,
-					Blocked:         true,
-					Disabled:        false,
-					ShouldBeBlocked: true,
-				},
-			},
-			args: args{
-				p: parseType{
-					SSHCredentials:   sshCred,
-					QuotaType:        qDef,
-					BlockAddressList: block,
-					Location:         cfgTest.Location,
-				},
-				qDefault: qDef,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.a.sendByAll(tt.args.p, tt.args.qDefault); (err != nil) != tt.wantErr {
-				t.Errorf("AliasType.send() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
+// func TestAliasType_send(t *testing.T) {
+// 	type args struct {
+// 		p        parseType
+// 		qDefault QuotaType
+// 	}
+// 	tn := time.Now()
+// 	tests := []struct {
+// 		name    string
+// 		a       InfoType
+// 		args    args
+// 		wantErr bool
+// 	}{
+// 		{
+// 			name: "1",
+// 			a: InfoType{
+// 				InfoName: "E8:D8:D1:47:55:93",
+// 				DeviceType: DeviceType{
+// 					activeAddress:    "192.168.65.85",
+// 					activeMacAddress: "E8:D8:D1:47:55:93",
+// 					hostName:         "root-hp",
+// 					addressLists:     "inet,Block",
+// 					timeout:          tn,
+// 				},
+// 				PersonType: PersonType{
+// 					Name:     "Vlad",
+// 					Position: "Admin",
+// 					Company:  "UTTiST",
+// 					Comment:  "",
+// 				},
+// 				QuotaType: QuotaType{
+// 					HourlyQuota:     600000000,
+// 					DailyQuota:      6000000000,
+// 					MonthlyQuota:    60000000000,
+// 					Manual:          false,
+// 					Blocked:         true,
+// 					Disabled:        false,
+// 					ShouldBeBlocked: true,
+// 				},
+// 			},
+// 			args: args{
+// 				p: parseType{
+// 					SSHCredentials:   sshCred,
+// 					QuotaType:        qDef,
+// 					BlockAddressList: block,
+// 					Location:         cfgTest.Location,
+// 				},
+// 				qDefault: qDef,
+// 			},
+// 		},
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			if err := tt.a.sendByAll(tt.args.p, tt.args.qDefault); (err != nil) != tt.wantErr {
+// 				t.Errorf("AliasType.send() error = %v, wantErr %v", err, tt.wantErr)
+// 			}
+// 		})
+// 	}
+// }
 
 func Test_parseInfoFromMTAsValueToSlice(t *testing.T) {
 	type args struct {
