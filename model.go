@@ -9,21 +9,28 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type AliasType struct {
+	AliasName string
+	KeyArr    []KeyDevice
+	QuotaType
+	PersonType
+}
+
 type Transport struct {
-	// data                map[string]AliasesType
-	// aliases             AliasesType
-	AliasesStrArr       map[string][]string
-	Infos               map[string]InfoType
-	dataOld             MapOfReports
-	dataCasheOld        MapOfReports
-	change              AliasesOldType
-	devices             DevicesType
-	logs                []LogsOfJob
-	friends             []string
-	AssetsPath          string
-	BlockAddressList    string
-	SizeOneKilobyte     uint64
-	DevicesRetryDelay   string
+	Aliases           map[string]AliasType
+	statofYears       map[int]StatOfYearType
+	AliasesStrArr     map[string][]string
+	change            BlockDevices
+	devices           DevicesMapType
+	logs              []LogsOfJob
+	friends           []string
+	AssetsPath        string
+	BlockAddressList  string
+	ManualAddresList  string
+	SizeOneKilobyte   uint64
+	DevicesRetryDelay string
+	pidfile           string
+	// debug               bool
 	sshCredentials      SSHCredentials
 	fileDestination     *os.File
 	csvFiletDestination *os.File
@@ -38,6 +45,7 @@ type Transport struct {
 	parseChan           chan *time.Time
 	newLogChan          chan os.Signal
 	outputChannel       chan decodedRecord
+	newCount            newContType
 	Author
 	QuotaType
 	sync.RWMutex
@@ -54,7 +62,8 @@ type request struct {
 
 type ResponseType struct {
 	Comments string
-	DeviceOldType
+	Mac      string
+	HostName string
 }
 
 type QuotaType struct {
@@ -65,38 +74,26 @@ type QuotaType struct {
 	Disabled        bool
 	Dynamic         bool
 	Blocked         bool
-	Manual          bool
 	ShouldBeBlocked bool
-}
-
-type DeviceOldType struct {
-	Id       string
-	IP       string
-	Mac      string
-	AMac     string
-	HostName string
-	Groups   string
-	timeout  time.Time
 }
 
 type DeviceType struct {
 	// From MT
 	Id                  string
-	activeAddress       string // 192.168.65.85
+	ActiveAddress       string // 192.168.65.85
 	activeClientId      string // 1:e8:d8:d1:47:55:93
 	allowDualStackQueue string
-	activeMacAddress    string // E8:D8:D1:47:55:93
+	ActiveMacAddress    string // E8:D8:D1:47:55:93
 	activeServer        string // dhcp_lan
 	address             string // pool_admin
-	addressLists        string // inet
-	blocked             string // false
+	AddressLists        string // inet
 	clientId            string // 1:e8:d8:d1:47:55:93
-	comment             string // nb=Vlad/com=UTTiST/col=Admin/quotahourly=500000000/quotadaily=50000000000
+	Comment             string // nb=Vlad/com=UTTiST/col=Admin/quotahourly=500000000/quotadaily=50000000000
 	dhcpOption          string //
 	disabledL           string // false
 	dynamic             string // false
 	expiresAfter        string // 6m32s
-	hostName            string // root-hp
+	HostName            string // root-hp
 	lastSeen            string // 3m28s
 	macAddress          string // E8:D8:D1:47:55:93
 	radius              string // false
@@ -113,17 +110,29 @@ type DeviceType struct {
 	srcMacAddress       string
 	alwaysBroadcast     string
 	//User Defined
+	// timeout         time.Time
+	Hardware        bool
 	Manual          bool
+	Blocked         bool
 	ShouldBeBlocked bool
-	timeout         time.Time
+	TypeD           string
+	// StatOldType
 }
 
 type DevicesType []DeviceType
-type AliasesType []AliasType
-type AliasesOldType []AliasOld
+type DevicesMapType map[KeyDevice]DeviceType
+type BlockDevices map[KeyDevice]DeviceToBlock
+
+type DeviceToBlock struct {
+	Id       string
+	Mac      string
+	IP       string
+	Groups   string
+	Disabled bool
+}
 
 type lineOfLogType struct {
-	date        string
+	date        string // squid timestamp 1621969229.000
 	ipaddress   string
 	httpstatus  string
 	method      string
@@ -143,29 +152,8 @@ type lineOfLogType struct {
 	sizeInBytes uint64
 }
 
-type MapOfReports map[KeyMapOfReports]AliasOld
-
-type KeyMapOfReports struct {
-	DateStr string
-	Alias   string
-}
-
-type AliasOld struct {
-	Alias   string
-	DateStr string
-	Hits    uint32
-	InfoType
-	StatType
-}
-
 type InfoType struct {
-	DeviceOldType
-	PersonType
-	QuotaType
-}
-
-type AliasType struct {
-	Alias string
+	InfoName string
 	DeviceType
 	PersonType
 	QuotaType
@@ -178,7 +166,6 @@ type PersonType struct {
 	Position string
 	Company  string
 	IDUser   string
-	TypeD    string
 }
 
 type Count struct {
@@ -198,7 +185,7 @@ type LineOfDisplay struct {
 	Alias string
 	Login string
 	InfoType
-	StatType
+	StatDeviceType
 }
 
 type DisplayDataType struct {
@@ -227,7 +214,6 @@ type DisplayDataUserType struct {
 	Header          string
 	Copyright       string
 	Mail            string
-	Alias           string
 	SizeOneKilobyte uint64
 	InfoType
 }
@@ -240,14 +226,29 @@ type RequestForm struct {
 	report   string
 }
 
+// type StatOldType struct {
+// 	VolumePerHour     [24]uint64
+// 	Site              string
+// 	Precent           float64
+// 	VolumeOfPrecentil uint64
+// 	Average           uint64
+// 	VolumePerDay      uint64
+// 	Count             uint32
+// }
+
 type StatType struct {
-	SizeOfHour      [24]uint64
-	Site            string
+	StatPerHour     [24]VolumePerType
 	Precent         float64
 	SizeOfPrecentil uint64
 	Average         uint64
-	Size            uint64
+	VolumePerDay    uint64
+	VolumePerCheck  uint64
 	Count           uint32
+}
+
+type VolumePerType struct {
+	PerMinute [60]uint64
+	PerHour   uint64
 }
 
 type SSHCredentials struct {
@@ -266,23 +267,7 @@ type parseType struct {
 	Location         *time.Location
 }
 
-// TODO to Future
-// type parseCommentType struct {
-// 	QuotaType
-// 	Name     string
-// 	Position string
-// 	Company  string
-// 	TypeD    string
-// 	IDUser   string
-// 	Comment  string
-// 	Manual   bool
-// }
-
 var (
-	// cache Cache
-	// cache      = map[string]cacheRecord{}
-	// cacheMutex = sync.RWMutex{}
-	// writer           *bufio.Writer
 	fileDestination     *os.File
 	csvFiletDestination *os.File
 )
@@ -308,30 +293,35 @@ func NewTransport(cfg *Config) *Transport {
 
 	Location, err := time.LoadLocation(cfg.Loc)
 	if err != nil {
-		log.Errorf("Error loading Location(%v):%v", cfg.Loc, err)
-		Location = time.UTC
+		Location = time.FixedZone("Custom timezone", int(cfg.Timezone*60*60))
+		log.Warningf("Error loading timezone from location(%v):%v. Using a fixed time zone(%v:%v)", cfg.Loc, err, Location, cfg.Timezone*60*60)
+		// Location = time.UTC
 	}
 
 	return &Transport{
-		dataOld:             map[KeyMapOfReports]AliasOld{},
-		dataCasheOld:        map[KeyMapOfReports]AliasOld{},
-		devices:             DevicesType{},
+		devices:             make(map[KeyDevice]DeviceType),
 		AliasesStrArr:       make(map[string][]string),
+		Aliases:             make(map[string]AliasType),
 		Location:            Location,
+		statofYears:         make(map[int]StatOfYearType),
+		change:              make(BlockDevices),
+		pidfile:             cfg.Pidfile,
 		DevicesRetryDelay:   cfg.DevicesRetryDelay,
 		BlockAddressList:    cfg.BlockGroup,
+		ManualAddresList:    cfg.ManualGroup,
 		fileDestination:     fileDestination,
 		csvFiletDestination: csvFiletDestination,
 		logs:                []LogsOfJob{},
 		friends:             cfg.Friends,
 		AssetsPath:          cfg.AssetsPath,
 		SizeOneKilobyte:     cfg.SizeOneKilobyte,
-		stopReadFromUDP:     make(chan uint8, 2),
-		parseChan:           make(chan *time.Time),
-		outputChannel:       make(chan decodedRecord, 100),
-		renewOneMac:         make(chan string, 100),
-		newLogChan:          getNewLogSignalsChannel(),
-		exitChan:            getExitSignalsChannel(),
+		// debug:               cfg.Debug,
+		stopReadFromUDP: make(chan uint8, 2),
+		parseChan:       make(chan *time.Time),
+		outputChannel:   make(chan decodedRecord, 100),
+		renewOneMac:     make(chan string, 100),
+		newLogChan:      getNewLogSignalsChannel(),
+		exitChan:        getExitSignalsChannel(),
 		sshCredentials: SSHCredentials{
 			SSHHost:       cfg.MTAddr,
 			SSHPort:       "22",

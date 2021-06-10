@@ -15,8 +15,10 @@ import (
 func (transport *Transport) handleRequest(cfg *Config) {
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(cfg.AssetsPath))))
 
+	// http.HandleFunc("/", logreq(transport.handleIndex))
+	// http.HandleFunc("/wf/", logreq(transport.handleWithFriends))
 	http.HandleFunc("/", logreq(transport.handleIndex))
-	http.HandleFunc("/wf/", logreq(transport.handleWithFriends))
+	http.HandleFunc("/wf/", logreq(transport.handleIndexWithFriends))
 	http.HandleFunc("/log/", logreq(transport.handleLog))
 	http.HandleFunc("/runparse", logreq(transport.handleRunParse))
 	http.HandleFunc("/editalias/", logreq(transport.handleEditAlias))
@@ -69,31 +71,41 @@ func parseDataFromURL(r *http.Request) RequestForm {
 	}
 	if len(m["report"]) > 0 {
 		request.report = m["report"][0]
-		// } else {
-		// request.report = "index"
 	}
 
 	return request
 }
 
-func (data *Transport) handleShowReport(w http.ResponseWriter, withfriends bool, preffix string, r *http.Request) {
+func (data *Transport) handleIndex(w http.ResponseWriter, r *http.Request) {
+	data.handleNewReport(w, false, "", r)
+}
+
+func (data *Transport) handleIndexWithFriends(w http.ResponseWriter, r *http.Request) {
+	data.handleNewReport(w, true, "wf", r)
+}
+
+func (t *Transport) handleNewReport(w http.ResponseWriter, withfriends bool, preffix string, r *http.Request) {
 
 	request := parseDataFromURL(r)
 	request.referURL = r.Host + r.URL.Path
 	request.path = r.URL.Path
-	data.RLock()
-	assetsPath := data.AssetsPath
-	data.RUnlock()
-	DisplayData := data.reportTrafficHourlyByLogins(request, withfriends)
+	t.RLock()
+	assetsPath := t.AssetsPath
+	t.RUnlock()
+	DisplayData, err := t.reportTrafficHourlyByLoginsNew(request, withfriends)
+	if err != nil {
+		fmt.Fprintf(w, "Проверьте налиие логов за запрашиваемый период<br> или подождите несколько минут.")
+
+	}
 
 	fmap := template.FuncMap{
 		"FormatSize": FormatSize,
 	}
-	t := template.Must(template.New("index"+preffix).Funcs(fmap).ParseFiles(
+	templ := template.Must(template.New("index"+preffix).Funcs(fmap).ParseFiles(
 		assetsPath+"/index"+preffix+".html",
 		assetsPath+"/header.html",
 		assetsPath+"/footer.html"))
-	err := t.Execute(w, DisplayData)
+	err = templ.Execute(w, DisplayData)
 	if err != nil {
 		if strings.Contains(fmt.Sprint(err), "index out of range") {
 			fmt.Fprintf(w, "Проверьте налиие логов за запрашиваемый период<br> или подождите несколько минут.")
@@ -103,40 +115,27 @@ func (data *Transport) handleShowReport(w http.ResponseWriter, withfriends bool,
 	}
 }
 
-func (data *Transport) handleIndex(w http.ResponseWriter, r *http.Request) {
-	data.handleShowReport(w, false, "", r)
-}
-
-func (data *Transport) handleWithFriends(w http.ResponseWriter, r *http.Request) {
-	data.handleShowReport(w, true, "wf", r)
-}
-
 func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 	t.RLock()
 	assetsPath := t.AssetsPath
 	SizeOneKilobyte := t.SizeOneKilobyte
-	devices := t.devices
-	quotaDef := t.QuotaType
-	p := parseType{
-		SSHCredentials:   t.sshCredentials,
-		QuotaType:        t.QuotaType,
-		BlockAddressList: t.BlockAddressList,
-		Location:         t.Location,
-	}
 	t.RUnlock()
 
 	if r.Method == "GET" {
 		alias := r.FormValue("alias")
-		aliasS := t.getAliasS(alias)
-		// InfoOfDevice := data.aliasToDevice(alias)
+		aliasS := t.Aliases[alias]
 
 		DisplayDataUser := DisplayDataUserType{
-			Header:          "Редактирование пользователя",
+			Header:          "Редактирование устройства",
 			Copyright:       "GoSquidLogAnalyzer <i>© 2020</i> by Vladislav Vegner",
 			Mail:            "mailto:vegner.vs@uttist.ru",
-			Alias:           alias,
 			SizeOneKilobyte: SizeOneKilobyte,
-			InfoType:        aliasS.InfoType,
+			InfoType: InfoType{
+				InfoName:   aliasS.AliasName,
+				PersonType: aliasS.PersonType,
+				QuotaType:  aliasS.QuotaType,
+				DeviceType: t.devices[aliasS.KeyArr[0]],
+			},
 		}
 
 		fmap := template.FuncMap{
@@ -160,74 +159,17 @@ func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/", 302)
 		}
 		params := r.Form
-		alias := params["alias"][0]
-		info := t.getAliasS(alias)
-		// device := data.aliasToDevice(alias)
-		parseParamertToDevice(&info, params)
-		// if err := data.setDevice(device); err != nil {
-		if err := devices.updateInfo(info.convertToDevice(quotaDef)); err != nil {
-			fmt.Fprintf(w, `Произошла ошибка при сохранении. 
-			<br> %v
-			<br> Перенаправление...
-			<br> Если ничего не происходит нажмите <a href="/">сюда</a>`, err.Error())
-			time.Sleep(5 * time.Second)
-			http.Redirect(w, r, "/", 302)
-			return
+		aliasName := params["alias"][0]
+		alias := t.Aliases[aliasName]
+		alias.UpdateFromForm(params)
+
+		var refer string
+		if len(params["reffer"]) > 0 {
+			refer = params["alias"][0]
 		}
-		_ = info.sendByAll(p, quotaDef)
-		t.updateDevices()
-		http.Redirect(w, r, "/", 302)
-		log.Printf("%v(%v)%v", alias, info, params)
+		http.Redirect(w, r, "/"+refer, 302)
+		log.Tracef("%v(%v)%v", aliasName, alias, params)
 	}
-}
-
-func parseParamertToDevice(device *AliasOld, params url.Values) {
-	if len(params["TypeD"]) > 0 {
-		device.TypeD = params["TypeD"][0]
-	} else {
-		device.TypeD = "other"
-	}
-	if len(params["name"]) > 0 {
-		device.Name = params["name"][0]
-	} else {
-		device.Name = ""
-	}
-	if len(params["col"]) > 0 {
-		device.Position = params["col"][0]
-	} else {
-		device.Position = ""
-	}
-	if len(params["com"]) > 0 {
-		device.Company = params["com"][0]
-	} else {
-		device.Company = ""
-	}
-	if len(params["comment"]) > 0 {
-		device.Comment = params["comment"][0]
-	} else {
-		device.Comment = ""
-	}
-	if len(params["disabled"]) > 0 {
-		device.Disabled = paramertToBool(params["disabled"][0])
-	} else {
-		device.Disabled = false
-	}
-	if len(params["quotahourly"]) > 0 {
-		device.HourlyQuota = paramertToUint(params["quotahourly"][0])
-	} else {
-		device.HourlyQuota = 0
-	}
-	if len(params["quotadaily"]) > 0 {
-		device.DailyQuota = paramertToUint(params["quotadaily"][0])
-	} else {
-		device.DailyQuota = 0
-	}
-	if len(params["quotamonthly"]) > 0 {
-		device.MonthlyQuota = paramertToUint(params["quotamonthly"][0])
-	} else {
-		device.MonthlyQuota = 0
-	}
-
 }
 
 func (t *Transport) handleLog(w http.ResponseWriter, r *http.Request) {

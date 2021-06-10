@@ -495,7 +495,7 @@ func Test_isBlocked(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := isBlocked(tt.args.addressLists, tt.args.blockGroup); got != tt.want {
+			if got := inAddressList(tt.args.addressLists, tt.args.blockGroup); got != tt.want {
 				t.Errorf("isBlocked() = %v, want %v", got, tt.want)
 			}
 		})
