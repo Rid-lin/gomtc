@@ -126,13 +126,15 @@ func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 		aliasS := t.Aliases[alias]
 
 		DisplayDataUser := DisplayDataUserType{
-			Header:          "Редактирование пользователя",
+			Header:          "Редактирование устройства",
 			Copyright:       "GoSquidLogAnalyzer <i>© 2020</i> by Vladislav Vegner",
 			Mail:            "mailto:vegner.vs@uttist.ru",
 			SizeOneKilobyte: SizeOneKilobyte,
 			InfoType: InfoType{
+				InfoName:   aliasS.AliasName,
 				PersonType: aliasS.PersonType,
 				QuotaType:  aliasS.QuotaType,
+				DeviceType: t.devices[aliasS.KeyArr[0]],
 			},
 		}
 

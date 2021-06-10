@@ -53,45 +53,25 @@ func Test_getResponseOverSSHfMT(t *testing.T) {
 	}
 }
 
-func Test_saveDeviceToCSV(t *testing.T) {
-	type args struct {
-		devices []DeviceType
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := saveDeviceToCSV(tt.args.devices); (err != nil) != tt.wantErr {
-				t.Errorf("saveDeviceToCSV() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_deviceToSlice(t *testing.T) {
-	type args struct {
-		d DeviceType
-	}
-	tests := []struct {
-		name string
-		args args
-		want []string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.args.d.convertToSlice(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("deviceToSlice() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
+// func Test_deviceToSlice(t *testing.T) {
+// 	type args struct {
+// 		d DeviceType
+// 	}
+// 	tests := []struct {
+// 		name string
+// 		args args
+// 		want []string
+// 	}{
+// 		// TODO: Add test cases.
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			if got := tt.args.d.convertToSlice(); !reflect.DeepEqual(got, tt.want) {
+// 				t.Errorf("deviceToSlice() = %v, want %v", got, tt.want)
+// 			}
+// 		})
+// 	}
+// }
 
 // func TestAliasType_send(t *testing.T) {
 // 	type args struct {

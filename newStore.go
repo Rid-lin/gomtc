@@ -43,7 +43,7 @@ type StatDeviceType struct {
 func (t *Transport) parseAllFilesAndCountingTrafficNew(cfg *Config) {
 	// Getting the current time to calculate the running time
 	t.newCount.startTime = time.Now()
-	fmt.Printf("Parsing has started.\n")
+	fmt.Printf("Parsing has started.\r")
 	t.delOldData(t.newCount.LastDateNew, t.Location)
 	err := t.parseDirToMapNew(cfg)
 	if err != nil {
@@ -288,17 +288,16 @@ func (t *Transport) checkQuotasNew() {
 				alias.ShouldBeBlocked = true
 				// alias.TimeoutBlock = setDailyTimeout()
 				t.addBlockGroup(alias, p.BlockAddressList)
-				log.Debugf("Login (%17s) was disabled due to exceeding the daily quota(%v)", alias.AliasName, alias.DailyQuota)
+				alias.Blocked = true
 			case StatPerHour[hour].PerHour >= alias.HourlyQuota && !alias.Blocked:
 				alias.ShouldBeBlocked = true
 				// alias.TimeoutBlock = setHourlyTimeout()
 				t.addBlockGroup(alias, p.BlockAddressList)
-				log.Debugf("Login (%17s) was disabled due to exceeding the hourly quota(%v)", alias.AliasName, alias.DailyQuota)
+				alias.Blocked = true
 			case alias.Blocked:
 				alias.ShouldBeBlocked = false
 				t.delBlockGroup(alias, p.BlockAddressList)
-				log.Debugf("Login (%17s) has been enabled, the quota(%v) has not been exceeded(Blocked:%v)",
-					alias.AliasName, alias.HourlyQuota, alias.Blocked)
+				alias.Blocked = false
 			}
 			t.Lock()
 			t.Aliases[alias.AliasName] = alias
@@ -309,12 +308,12 @@ func (t *Transport) checkQuotasNew() {
 	t.Lock()
 	for key, device := range t.devices {
 		if _, ok := t.change[key]; !ok {
-			if paramertToBool(device.blocked) {
+			if device.Blocked {
 				device.ShouldBeBlocked = false
 				device = device.delBlockGroup(p.BlockAddressList)
 				t.change[key] = DeviceToBlock{
 					Id:       device.Id,
-					Groups:   device.addressLists,
+					Groups:   device.AddressLists,
 					Disabled: paramertToBool(device.disabledL),
 				}
 			}

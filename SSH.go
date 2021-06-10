@@ -53,11 +53,12 @@ func parseInfoFromMTAsValueToSlice(p parseType) []DeviceType {
 		if (i - p.MaxSSHRetries) == 0 {
 			os.Exit(2)
 		}
-		fmt.Printf("\rTrying connect to MT(%d) ", i)
 		b = getResponseOverSSHfMT(p.SSHCredentials, ":put [/ip dhcp-server lease print detail as-value]")
+		if b.Len() == 0 {
+			log.Warningf("\rThe connection attempt failed. Trying again(%d) ", i)
+		}
 		i++
 	}
-	fmt.Println("Connection successful.Get data.")
 	devices.parseLeasePrintAsValue(b)
 	return devices
 }
@@ -75,7 +76,7 @@ func (ds *DevicesType) parseLeasePrintAsValue(b bytes.Buffer) {
 		case isParametr(lineItem, ".id"):
 			d.Id = parseParamertToStr(lineItem)
 		case isParametr(lineItem, "active-address"):
-			d.activeAddress = parseParamertToStr(lineItem)
+			d.ActiveAddress = parseParamertToStr(lineItem)
 		case isParametr(lineItem, "address"):
 			d.address = parseParamertToStr(lineItem)
 		case isParametr(lineItem, "allow-dual-stack-queue"):
@@ -93,7 +94,7 @@ func (ds *DevicesType) parseLeasePrintAsValue(b bytes.Buffer) {
 			d.activeClientId = parseParamertToStr(lineItem)
 		case isParametr(lineItem, "address-lists"):
 			addedTo = "address-lists"
-			d.addressLists = parseParamertToStr(lineItem)
+			d.AddressLists = parseParamertToStr(lineItem)
 		case isParametr(lineItem, "always-broadcast"):
 			d.alwaysBroadcast = parseParamertToStr(lineItem)
 		case isParametr(lineItem, "dynamic"):
@@ -105,7 +106,7 @@ func (ds *DevicesType) parseLeasePrintAsValue(b bytes.Buffer) {
 		case isParametr(lineItem, "use-src-mac"):
 			d.useSrcMac = parseParamertToStr(lineItem)
 		case isParametr(lineItem, "active-mac-address"):
-			d.activeMacAddress = parseParamertToStr(lineItem)
+			d.ActiveMacAddress = parseParamertToStr(lineItem)
 		case isParametr(lineItem, "agent-circuit-id"):
 			d.agentCircuitId = parseParamertToStr(lineItem)
 		case isParametr(lineItem, "block-access"):
@@ -122,24 +123,24 @@ func (ds *DevicesType) parseLeasePrintAsValue(b bytes.Buffer) {
 			d.activeServer = parseParamertToStr(lineItem)
 		case isParametr(lineItem, "agent-remote-id"):
 			d.agentRemoteId = parseParamertToStr(lineItem)
-		case isParametr(lineItem, "blocked"):
-			d.blocked = parseParamertToStr(lineItem)
+		// case isParametr(lineItem, "blocked"):
+		// 	d.blocked = parseParamertToStr(lineItem)
 		case isParametr(lineItem, "dhcp-option-set"):
 			d.dhcpOptionSet = parseParamertToStr(lineItem)
 		case isParametr(lineItem, "host-name"):
-			d.hostName = parseParamertToStr(lineItem)
+			d.HostName = parseParamertToStr(lineItem)
 		case isParametr(lineItem, "mac-address"):
 			d.macAddress = parseParamertToStr(lineItem)
 		case isParametr(lineItem, "src-mac-address"):
 			d.srcMacAddress = parseParamertToStr(lineItem)
 		case isComment(lineItem, "comment"):
-			d.comment = parseParamertToComment(lineItem)
+			d.Comment = parseParamertToComment(lineItem)
 		case isParametr(lineItem, "status"):
 			d.status = parseParamertToStr(lineItem)
 			*ds = append(*ds, d)
 			d = DeviceType{}
 		case addedTo == "address-lists":
-			d.addressLists = d.addressLists + "," + lineItem
+			d.AddressLists = d.AddressLists + "," + lineItem
 		}
 
 	}

@@ -9,14 +9,17 @@ import (
 func main() {
 	cfg := newConfig()
 
-	if err := CheckPIDFile(cfg.Pidfile); err != nil {
-		log.Error(err)
-		os.Exit(2)
+	if !cfg.Debug {
+		if err := CheckPIDFile(cfg.Pidfile); err != nil {
+			log.Error(err)
+			os.Exit(2)
+		}
 	}
 	if err := writePID(cfg.Pidfile); err != nil {
 		log.Error(err)
 		os.Exit(2)
 	}
+
 	// TODO проверка на установленную программу
 	// TODO если программа не установлена, то предложить установить её
 	// TODO в случае согласия раскидать все файлы по папкам и установиться в systemd

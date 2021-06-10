@@ -56,17 +56,17 @@
             {{ range $k, $v := .ArrayDisplay }}
             <tr>
                 <th>{{$k}}</th>
-                <th {{ if and (le $s.Average $v.VolumePerDay) (ne $k 0) }} style="background-color: rgb(252, 210, 186);" {{ else }} {{ end }}><a href="/editalias?alias={{$v.Alias}}" title="Редактировать пользователя">{{$v.Alias}}</a></th>
+                <th {{if and (le $s.Average $v.VolumePerDay) (ne $k 0)}} style="background-color: rgb(252, 210, 186);" {{else}} {{end}}><a href="/editalias?alias={{$v.Alias}}" title="Редактировать пользователя">{{$v.Alias}}</a></th>
                 <th{{if $v.Blocked}} style="background-color: rgb(252, 210, 186);" {{end}}>{{$v.HostName}}</th>
                     <th>{{$v.Name}}</th>
                     <th>{{$v.Comment}}</th>
-                    <th {{if $v.ShouldBeBlocked}} style="background-color: rgb(248, 74, 74);" {{end}} {{if and (le $.SizeOneGigabyte $v.VolumePerDay) (ne $k 0)}} style="color: rgb(179, 8, 185);" {{else if and (ge $.SizeOneKilobyte $v.VolumePerDay) (ne $k 0)}} style="color: #12c470;"
-                        {{else if and (ge $.SizeOneMegabyte $v.VolumePerDay) (ne $k 0)}} style="color: rgb(77, 182, 245);" {{end}}>{{ FormatSize $v.VolumePerDay $.SizeOneKilobyte}}</th>
+                    <th {{if $v.InfoType.QuotaType.ShouldBeBlocked}} style="background-color: rgb(248, 74, 74);" {{end}} {{if and (le $.SizeOneGigabyte $v.VolumePerDay) (ne $k 0)}} style="color: rgb(179, 8, 185);" {{else if and (ge $.SizeOneKilobyte $v.VolumePerDay) (ne
+                        $k 0)}} style="color: #12c470;" {{else if and (ge $.SizeOneMegabyte $v.VolumePerDay) (ne $k 0)}} style="color: rgb(77, 182, 245);" {{end}}>{{ FormatSize $v.VolumePerDay $.SizeOneKilobyte}}</th>
                     <th>{{$v.Precent}}.%</th>
-                    {{range $value := $v.VolumePerHour}}
+                    {{range $value := $v.StatPerHour}}
                     <!-- <th>{{$value}}</th> -->
-                    <th {{if and (le $v.HourlyQuota $value) (ne $k 0)}} style="background-color: rgb(252, 210, 186);" {{end}} {{if and (le $.SizeOneGigabyte $value) (ne $k 0)}} style="color: rgb(179, 8, 185);" {{else if and (ge $.SizeOneKilobyte $value) (ne $k 0)}} style="color: #12c470"
-                        {{else if and (ge $.SizeOneMegabyte $value) (ne $k 0)}} style="color: rgb(77, 182, 245);" {{end}}>{{ FormatSize $value $.SizeOneKilobyte}}</th>
+                    <th {{if and (le $.HourlyQuota $value.PerHour) (ne $k 0)}} style="background-color: rgb(252, 210, 186);" {{end}} {{if and (le $.SizeOneGigabyte $value.PerHour) (ne $k 0)}} style="color: rgb(179, 8, 185);" {{else if and (ge $.SizeOneKilobyte $value.PerHour)
+                        (ne $k 0)}} style="color: #12c470" {{else if and (ge $.SizeOneMegabyte $value.PerHour) (ne $k 0)}} style="color: rgb(77, 182, 245);" {{end}}>{{ FormatSize $value.PerHour $.SizeOneKilobyte}}</th>
                     {{end}}
             </tr>
             {{ else }}

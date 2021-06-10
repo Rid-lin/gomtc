@@ -3,6 +3,8 @@ package main
 import (
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func (t *Transport) getDevices() {
@@ -14,7 +16,9 @@ func (t *Transport) getDevices() {
 		Location:         t.Location,
 	})
 	for _, device := range devices {
-		t.devices[KeyDevice{ip: device.activeAddress, mac: device.activeMacAddress}] = device
+		device.Manual = inAddressList(device.AddressLists, t.ManualAddresList)
+		device.Blocked = inAddressList(device.AddressLists, t.BlockAddressList)
+		t.devices[KeyDevice{ip: device.ActiveAddress, mac: device.ActiveMacAddress}] = device
 	}
 	t.lastUpdatedMT = time.Now()
 	t.Unlock()
@@ -22,7 +26,7 @@ func (t *Transport) getDevices() {
 
 func (d *DeviceType) ToQuota() QuotaType {
 	var q QuotaType
-	commentArray := strings.Split(d.comment, "/")
+	commentArray := strings.Split(d.Comment, "/")
 	for _, value := range commentArray {
 		switch {
 		case strings.Contains(value, "quotahourly="):
@@ -31,9 +35,11 @@ func (d *DeviceType) ToQuota() QuotaType {
 			q.DailyQuota = parseParamertToUint(value)
 		case strings.Contains(value, "quotamonthly="):
 			q.MonthlyQuota = parseParamertToUint(value)
-		case strings.Contains(value, "manual="):
-			q.Manual = parseParamertToBool(value)
+			// case strings.Contains(value, "manual="):
+			// 	q.Manual = parseParamertToBool(value)
 		}
+		q.Blocked = q.Blocked || d.Blocked
+		q.Disabled = q.Disabled || paramertToBool(d.disabledL)
 	}
 	return q
 }
@@ -41,7 +47,7 @@ func (d *DeviceType) ToQuota() QuotaType {
 func (d *DeviceType) ToPerson() PersonType {
 	var p PersonType
 	var comments string
-	commentArray := strings.Split(d.comment, "/")
+	commentArray := strings.Split(d.Comment, "/")
 	for _, value := range commentArray {
 		switch {
 		// case strings.Contains(value, "tel="):
@@ -84,7 +90,7 @@ func (d *DeviceType) ToPerson() PersonType {
 
 func (d *DeviceType) ParseComment() {
 	var comments string
-	commentArray := strings.Split(d.comment, "/")
+	commentArray := strings.Split(d.Comment, "/")
 	for _, value := range commentArray {
 		switch {
 		case strings.Contains(value, "tel="):
@@ -110,17 +116,21 @@ func (d *DeviceType) ParseComment() {
 }
 
 func (d DeviceType) addBlockGroup(group string) DeviceType {
-	d.addressLists = d.addressLists + "," + group
-	d.addressLists = strings.Trim(d.addressLists, ",")
-	d.addressLists = strings.ReplaceAll(d.addressLists, `"`, "")
+	d.AddressLists = d.AddressLists + "," + group
+	d.AddressLists = strings.Trim(d.AddressLists, ",")
+	d.AddressLists = strings.ReplaceAll(d.AddressLists, `"`, "")
+	d.Blocked = true
+	log.Debugf("Device (%15v;%17v) was disabled due to exceeding the quota", d.ActiveAddress, d.ActiveMacAddress)
 	return d
 }
 
 func (d DeviceType) delBlockGroup(group string) DeviceType {
-	d.addressLists = strings.Replace(d.addressLists, group, "", 1)
-	d.addressLists = strings.ReplaceAll(d.addressLists, ",,", ",")
-	d.addressLists = strings.Trim(d.addressLists, ",")
-	d.addressLists = strings.ReplaceAll(d.addressLists, `"`, "")
+	d.AddressLists = strings.Replace(d.AddressLists, group, "", 1)
+	d.AddressLists = strings.ReplaceAll(d.AddressLists, ",,", ",")
+	d.AddressLists = strings.Trim(d.AddressLists, ",")
+	d.AddressLists = strings.ReplaceAll(d.AddressLists, `"`, "")
+	log.Debugf("Device (%15v;%17v) has been enabled, the quota has not been exceeded", d.ActiveAddress, d.ActiveMacAddress)
+	d.Blocked = false
 	return d
 }
 

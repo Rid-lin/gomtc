@@ -17,18 +17,20 @@ type AliasType struct {
 }
 
 type Transport struct {
-	Aliases             map[string]AliasType
-	statofYears         map[int]StatOfYearType
-	AliasesStrArr       map[string][]string
-	change              BlockDevices
-	devices             DevicesMapType
-	logs                []LogsOfJob
-	friends             []string
-	AssetsPath          string
-	BlockAddressList    string
-	SizeOneKilobyte     uint64
-	DevicesRetryDelay   string
-	pidfile             string
+	Aliases           map[string]AliasType
+	statofYears       map[int]StatOfYearType
+	AliasesStrArr     map[string][]string
+	change            BlockDevices
+	devices           DevicesMapType
+	logs              []LogsOfJob
+	friends           []string
+	AssetsPath        string
+	BlockAddressList  string
+	ManualAddresList  string
+	SizeOneKilobyte   uint64
+	DevicesRetryDelay string
+	pidfile           string
+	// debug               bool
 	sshCredentials      SSHCredentials
 	fileDestination     *os.File
 	csvFiletDestination *os.File
@@ -60,7 +62,8 @@ type request struct {
 
 type ResponseType struct {
 	Comments string
-	DeviceOldType
+	Mac      string
+	HostName string
 }
 
 type QuotaType struct {
@@ -71,39 +74,26 @@ type QuotaType struct {
 	Disabled        bool
 	Dynamic         bool
 	Blocked         bool
-	Manual          bool
 	ShouldBeBlocked bool
-}
-
-type DeviceOldType struct {
-	Id       string
-	IP       string
-	Mac      string
-	AMac     string
-	HostName string
-	Groups   string
-	timeout  time.Time
-	TypeD    string
 }
 
 type DeviceType struct {
 	// From MT
 	Id                  string
-	activeAddress       string // 192.168.65.85
+	ActiveAddress       string // 192.168.65.85
 	activeClientId      string // 1:e8:d8:d1:47:55:93
 	allowDualStackQueue string
-	activeMacAddress    string // E8:D8:D1:47:55:93
+	ActiveMacAddress    string // E8:D8:D1:47:55:93
 	activeServer        string // dhcp_lan
 	address             string // pool_admin
-	addressLists        string // inet
-	blocked             string // false
+	AddressLists        string // inet
 	clientId            string // 1:e8:d8:d1:47:55:93
-	comment             string // nb=Vlad/com=UTTiST/col=Admin/quotahourly=500000000/quotadaily=50000000000
+	Comment             string // nb=Vlad/com=UTTiST/col=Admin/quotahourly=500000000/quotadaily=50000000000
 	dhcpOption          string //
 	disabledL           string // false
 	dynamic             string // false
 	expiresAfter        string // 6m32s
-	hostName            string // root-hp
+	HostName            string // root-hp
 	lastSeen            string // 3m28s
 	macAddress          string // E8:D8:D1:47:55:93
 	radius              string // false
@@ -120,17 +110,17 @@ type DeviceType struct {
 	srcMacAddress       string
 	alwaysBroadcast     string
 	//User Defined
+	// timeout         time.Time
 	Hardware        bool
 	Manual          bool
+	Blocked         bool
 	ShouldBeBlocked bool
-	timeout         time.Time
 	TypeD           string
-	StatOldType
+	// StatOldType
 }
 
 type DevicesType []DeviceType
 type DevicesMapType map[KeyDevice]DeviceType
-
 type BlockDevices map[KeyDevice]DeviceToBlock
 
 type DeviceToBlock struct {
@@ -160,12 +150,6 @@ type lineOfLogType struct {
 	timestamp   int64
 	month       time.Month
 	sizeInBytes uint64
-}
-
-type InfoOldType struct {
-	DeviceOldType
-	PersonType
-	QuotaType
 }
 
 type InfoType struct {
@@ -200,8 +184,8 @@ type Count struct {
 type LineOfDisplay struct {
 	Alias string
 	Login string
-	InfoOldType
-	StatOldType
+	InfoType
+	StatDeviceType
 }
 
 type DisplayDataType struct {
@@ -242,15 +226,15 @@ type RequestForm struct {
 	report   string
 }
 
-type StatOldType struct {
-	VolumePerHour     [24]uint64
-	Site              string
-	Precent           float64
-	VolumeOfPrecentil uint64
-	Average           uint64
-	VolumePerDay      uint64
-	Count             uint32
-}
+// type StatOldType struct {
+// 	VolumePerHour     [24]uint64
+// 	Site              string
+// 	Precent           float64
+// 	VolumeOfPrecentil uint64
+// 	Average           uint64
+// 	VolumePerDay      uint64
+// 	Count             uint32
+// }
 
 type StatType struct {
 	StatPerHour     [24]VolumePerType
@@ -324,18 +308,20 @@ func NewTransport(cfg *Config) *Transport {
 		pidfile:             cfg.Pidfile,
 		DevicesRetryDelay:   cfg.DevicesRetryDelay,
 		BlockAddressList:    cfg.BlockGroup,
+		ManualAddresList:    cfg.ManualGroup,
 		fileDestination:     fileDestination,
 		csvFiletDestination: csvFiletDestination,
 		logs:                []LogsOfJob{},
 		friends:             cfg.Friends,
 		AssetsPath:          cfg.AssetsPath,
 		SizeOneKilobyte:     cfg.SizeOneKilobyte,
-		stopReadFromUDP:     make(chan uint8, 2),
-		parseChan:           make(chan *time.Time),
-		outputChannel:       make(chan decodedRecord, 100),
-		renewOneMac:         make(chan string, 100),
-		newLogChan:          getNewLogSignalsChannel(),
-		exitChan:            getExitSignalsChannel(),
+		// debug:               cfg.Debug,
+		stopReadFromUDP: make(chan uint8, 2),
+		parseChan:       make(chan *time.Time),
+		outputChannel:   make(chan decodedRecord, 100),
+		renewOneMac:     make(chan string, 100),
+		newLogChan:      getNewLogSignalsChannel(),
+		exitChan:        getExitSignalsChannel(),
 		sshCredentials: SSHCredentials{
 			SSHHost:       cfg.MTAddr,
 			SSHPort:       "22",

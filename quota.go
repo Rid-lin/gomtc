@@ -9,12 +9,12 @@ func (t *Transport) GetInfo(request *request) ResponseType {
 	t.RLock()
 	for _, device := range t.devices {
 		switch {
-		case request.IP == device.activeAddress && device.activeMacAddress != "":
-			response.Mac = device.activeMacAddress
-			response.Comments = device.comment
-		case request.IP == device.activeAddress && device.activeMacAddress == "":
+		case request.IP == device.ActiveAddress && device.ActiveMacAddress != "":
+			response.Mac = device.ActiveMacAddress
+			response.Comments = device.Comment
+		case request.IP == device.ActiveAddress && device.ActiveMacAddress == "":
 			response.Mac = request.IP
-			response.Comments = device.comment
+			response.Comments = device.Comment
 		}
 	}
 	t.RUnlock()
@@ -25,12 +25,12 @@ func (t *Transport) GetInfo(request *request) ResponseType {
 	return response
 }
 
-func checkNULLQuota(setValue, deafultValue uint64) uint64 {
-	if setValue == 0 {
-		return uint64(deafultValue)
-	}
-	return uint64(setValue)
-}
+// func checkNULLQuota(setValue, deafultValue uint64) uint64 {
+// 	if setValue == 0 {
+// 		return uint64(deafultValue)
+// 	}
+// 	return uint64(setValue)
+// }
 
 func checkNULLQuotas(setValue, deafultValue QuotaType) QuotaType {
 	quotaReturned := setValue

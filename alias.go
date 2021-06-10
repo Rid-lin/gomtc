@@ -191,20 +191,19 @@ func (a *AliasType) UpdateFromForm(params url.Values) {
 	} else {
 		a.MonthlyQuota = 0
 	}
-
 }
 
 func (t *Transport) addBlockGroup(a AliasType, group string) {
 	t.Lock()
 	for _, key := range a.KeyArr {
 		device := t.devices[key]
-		if device.Manual {
+		if device.Manual || device.Blocked {
 			continue
 		}
 		device = device.addBlockGroup(group)
 		t.change[key] = DeviceToBlock{
 			Id:       device.Id,
-			Groups:   device.addressLists,
+			Groups:   device.AddressLists,
 			Disabled: paramertToBool(device.disabledL),
 		}
 	}
@@ -215,7 +214,7 @@ func (t *Transport) delBlockGroup(a AliasType, group string) {
 	t.Lock()
 	for _, key := range a.KeyArr {
 		device := t.devices[key]
-		if device.Manual {
+		if device.Manual || !device.Blocked {
 			continue
 		}
 		device = device.delBlockGroup(group)
