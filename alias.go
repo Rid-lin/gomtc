@@ -198,6 +198,9 @@ func (t *Transport) addBlockGroup(a AliasType, group string) {
 	t.Lock()
 	for _, key := range a.KeyArr {
 		device := t.devices[key]
+		if device.Manual {
+			continue
+		}
 		device = device.addBlockGroup(group)
 		t.change[key] = DeviceToBlock{
 			Id:       device.Id,
@@ -212,6 +215,9 @@ func (t *Transport) delBlockGroup(a AliasType, group string) {
 	t.Lock()
 	for _, key := range a.KeyArr {
 		device := t.devices[key]
+		if device.Manual {
+			continue
+		}
 		device = device.delBlockGroup(group)
 	}
 	t.Unlock()
