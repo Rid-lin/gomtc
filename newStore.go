@@ -127,7 +127,7 @@ func (t *Transport) parseDirToMapNew(cfg *Config) error {
 
 func (t *Transport) parseFileToMapNew(info os.FileInfo, cfg *Config) error {
 	if !strings.HasPrefix(info.Name(), cfg.FnStartsWith) {
-		return fmt.Errorf("don't match to paramert fnStartsWith='%s'", cfg.FnStartsWith)
+		return fmt.Errorf("%s don't match to paramert fnStartsWith='%s'", info.Name(), cfg.FnStartsWith)
 	}
 	FullFileName := filepath.Join(cfg.LogPath, info.Name())
 	file, err := os.Open(FullFileName)
