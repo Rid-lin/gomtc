@@ -72,19 +72,42 @@ func parseDataFromURL(r *http.Request) RequestForm {
 	if len(m["report"]) > 0 {
 		request.report = m["report"][0]
 	}
+	var dateFrom, dateTo time.Time
+	if len(m["direct"]) > 0 {
+		dateFrom, err = time.Parse("2006-01-02", request.dateFrom)
+		if err != nil {
+			dateFrom = time.Now()
+		}
+		dateTo, err = time.Parse("2006-01-02", request.dateFrom)
+		if err != nil {
+			dateTo = time.Now()
+		}
+		if m["direct"][0] == "next" {
+			dateFrom = dateFrom.AddDate(0, 0, 1)
+		} else if m["direct"][0] == "prev" {
+			dateFrom = dateFrom.AddDate(0, 0, -1)
+		}
+		if m["direct"][0] == "next" {
+			dateTo = dateTo.AddDate(0, 0, 1)
+		} else if m["direct"][0] == "prev" {
+			dateTo = dateTo.AddDate(0, 0, -1)
+		}
+		request.dateFrom = dateFrom.Format("2006-01-02")
+		request.dateTo = dateTo.Format("2006-01-02")
+	}
 
 	return request
 }
 
 func (data *Transport) handleIndex(w http.ResponseWriter, r *http.Request) {
-	data.handleNewReport(w, false, "", r)
+	data.handleNewReport(w, false, r)
 }
 
 func (data *Transport) handleIndexWithFriends(w http.ResponseWriter, r *http.Request) {
-	data.handleNewReport(w, true, "wf", r)
+	data.handleNewReport(w, true, r)
 }
 
-func (t *Transport) handleNewReport(w http.ResponseWriter, withfriends bool, preffix string, r *http.Request) {
+func (t *Transport) handleNewReport(w http.ResponseWriter, withfriends bool, r *http.Request) {
 
 	request := parseDataFromURL(r)
 	request.referURL = r.Host + r.URL.Path
@@ -101,8 +124,8 @@ func (t *Transport) handleNewReport(w http.ResponseWriter, withfriends bool, pre
 	fmap := template.FuncMap{
 		"FormatSize": FormatSize,
 	}
-	templ := template.Must(template.New("index"+preffix).Funcs(fmap).ParseFiles(
-		assetsPath+"/index"+preffix+".html",
+	templ := template.Must(template.New("index").Funcs(fmap).ParseFiles(
+		assetsPath+"/index.html",
 		assetsPath+"/header.html",
 		assetsPath+"/footer.html"))
 	err = templ.Execute(w, DisplayData)

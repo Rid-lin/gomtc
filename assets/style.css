@@ -45,6 +45,14 @@ header {
     text-align: center;
 }
 
+.input_block{
+    display: block ruby;
+}
+
+.input_block form{
+    padding: 0 0.1rem;
+}
+
 div.postheader {
     display: grid;
     margin: 0 auto;
@@ -115,11 +123,6 @@ html body div.body_report table tbody tr th:nth-child(3) {
 html body div.body_report table tbody tr th:nth-child(4) {
     text-align: left;
 }
-
-/* .body_report table tbody tr th:nth-child(7) {
-    min-width: 3rem;
-    background-color: rgb(252, 210, 186);
-} */
 
 .body_report table tbody tr th:nth-child(2) {
     padding: 0 0.3rem 0 0.3rem;

@@ -224,6 +224,8 @@ type RequestForm struct {
 	path     string
 	referURL string
 	report   string
+	// dateFromT time.Time
+	// dateToT   time.Time
 }
 
 // type StatOldType struct {
