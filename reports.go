@@ -8,7 +8,7 @@ import (
 
 type ReportDataType []LineOfDisplay
 
-func (t *Transport) reportTrafficHourlyByLoginsNew(request RequestForm, showFriends bool) (DisplayDataType, error) {
+func (t *Transport) reportTrafficHourlyByLoginsNew(rq RequestForm, showFriends bool) (DisplayDataType, error) {
 	start := time.Now()
 	t.RLock()
 	// data := t.statofYears
@@ -20,24 +20,7 @@ func (t *Transport) reportTrafficHourlyByLoginsNew(request RequestForm, showFrie
 	LastUpdated := t.lastUpdated.Format("2006-01-02 15:04:05.999")
 	LastUpdatedMT := t.lastUpdatedMT.Format("2006-01-02 15:04:05.999")
 	t.RUnlock()
-	day := t.getDay(lNow())
-	// tn, err := time.Parse("2006-01-02", request.dateFrom)
-	// if err != nil {
-	// 	tn = time.Now()
-	// }
-	// yearStat, ok := data[tn.Year()]
-	// if !ok {
-	// 	return DisplayDataType{}, fmt.Errorf("Year(%d) missing from statistics", tn.Year())
-	// }
-	// monthStat, ok := yearStat.monthsStat[tn.Month()]
-	// if !ok {
-	// 	return DisplayDataType{}, fmt.Errorf("Month(%s) missing from statistics", tn.Month().String())
-	// }
-	// day, ok := monthStat.daysStat[tn.Day()]
-	// if !ok {
-	// 	return DisplayDataType{}, fmt.Errorf("Day(%d) missing from statistics", tn.Day())
-	// }
-
+	day := t.getDay(rq.ToLine())
 	ReportData := ReportDataType{}
 	line := LineOfDisplay{}
 	var totalVolumePerDay uint64
@@ -75,13 +58,13 @@ func (t *Transport) reportTrafficHourlyByLoginsNew(request RequestForm, showFrie
 		ArrayDisplay:   ReportData,
 		Logs:           []LogsOfJob{},
 		Header:         "Отчёт почасовой по трафику пользователей с логинами и IP-адресами",
-		DateFrom:       request.dateFrom,
+		DateFrom:       rq.dateFrom,
 		DateTo:         "",
 		LastUpdated:    LastUpdated,
 		LastUpdatedMT:  LastUpdatedMT,
 		TimeToGenerate: time.Since(start),
-		ReferURL:       request.referURL,
-		Path:           request.path,
+		ReferURL:       rq.referURL,
+		Path:           rq.path,
 		SizeOneType: SizeOneType{
 			SizeOneKilobyte: SizeOneKilobyte,
 			SizeOneMegabyte: SizeOneKilobyte * SizeOneKilobyte,
@@ -159,4 +142,18 @@ func add(slice []LineOfDisplay, line LineOfDisplay) []LineOfDisplay {
 		}
 	}
 	return append(slice, line)
+}
+
+func (rq *RequestForm) ToLine() *lineOfLogType {
+	l := lineOfLogType{}
+	tn, err := time.Parse("2006-01-02", rq.dateFrom)
+	if err != nil {
+		tn = time.Now()
+	}
+	l.year = tn.Year()
+	l.month = tn.Month()
+	l.day = tn.Day()
+	l.hour = tn.Hour()
+	l.minute = tn.Minute()
+	return &l
 }
