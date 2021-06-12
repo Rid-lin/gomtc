@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"strings"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -65,10 +64,10 @@ func (t *Transport) updateAliases(p parseType) {
 							alias.UpdateQuota(device.ToQuota())
 							alias.UpdatePerson(device.ToPerson())
 							goto gotAlias
-						case alias.IPOnlyInAlias(key) && day.day == time.Now().Day():
-							alias.UpdateQuota(device.ToQuota())
-							alias.UpdatePerson(device.ToPerson())
-							goto gotAlias
+						// case alias.IPOnlyInAlias(key) && day.day == time.Now().Day():
+						// 	alias.UpdateQuota(device.ToQuota())
+						// 	alias.UpdatePerson(device.ToPerson())
+						// 	goto gotAlias
 						case alias.MacInAlias(key):
 							alias.UpdateQuota(device.ToQuota())
 							alias.UpdatePerson(device.ToPerson())
@@ -78,8 +77,10 @@ func (t *Transport) updateAliases(p parseType) {
 					if !contains {
 						device := t.devices[key]
 						t.Aliases[deviceStat.mac] = AliasType{
-							AliasName:  deviceStat.mac,
-							KeyArr:     []KeyDevice{{ip: deviceStat.ip, mac: deviceStat.mac}},
+							AliasName: deviceStat.mac,
+							KeyArr: []KeyDevice{{
+								// ip: deviceStat.ip,
+								mac: deviceStat.mac}},
 							QuotaType:  checkNULLQuotas(device.ToQuota(), p.QuotaType),
 							PersonType: device.ToPerson(),
 						}
@@ -101,15 +102,15 @@ func (a *AliasType) DeviceInAlias(key KeyDevice) bool {
 	return false
 }
 
-func (a *AliasType) IPOnlyInAlias(key KeyDevice) bool {
-	for _, item := range a.KeyArr {
-		// Если ip алиаса совпадают с маком устройства или мак пустой, то указан только ip
-		if item.ip == key.ip && item.mac == "" || item.ip == key.ip && item.mac == key.ip {
-			return true
-		}
-	}
-	return false
-}
+// func (a *AliasType) IPOnlyInAlias(key KeyDevice) bool {
+// 	for _, item := range a.KeyArr {
+// 		// Если ip алиаса совпадают с маком устройства или мак пустой, то указан только ip
+// 		if item.ip == key.ip && item.mac == "" || item.ip == key.ip && item.mac == key.ip {
+// 			return true
+// 		}
+// 	}
+// 	return false
+// }
 
 func (a *AliasType) MacInAlias(key KeyDevice) bool {
 	for _, item := range a.KeyArr {
@@ -193,14 +194,18 @@ func (a *AliasType) UpdateFromForm(params url.Values) {
 	}
 }
 
-func (t *Transport) addBlockGroup(a AliasType, group string) {
+func (t *Transport) BlockAlias(a AliasType, group string) {
 	t.Lock()
 	for _, key := range a.KeyArr {
 		device := t.devices[key]
+		if device.IsNULL() {
+			delete(t.devices, key)
+			continue
+		}
 		if device.Manual || device.Blocked {
 			continue
 		}
-		device = device.addBlockGroup(group)
+		device = device.Block(group, key)
 		t.change[key] = DeviceToBlock{
 			Id:       device.Id,
 			Groups:   device.AddressLists,
@@ -210,14 +215,82 @@ func (t *Transport) addBlockGroup(a AliasType, group string) {
 	t.Unlock()
 }
 
-func (t *Transport) delBlockGroup(a AliasType, group string) {
+func (t *Transport) UnBlockAlias(a AliasType, group string) {
 	t.Lock()
 	for _, key := range a.KeyArr {
 		device := t.devices[key]
 		if device.Manual || !device.Blocked {
 			continue
 		}
-		device = device.delBlockGroup(group)
+		device = device.UnBlock(group, key)
 	}
 	t.Unlock()
+}
+
+func (d *DeviceType) IsNULL() bool {
+	switch {
+	case d.activeClientId != "":
+		return false
+	case d.activeServer != "":
+		return false
+	case d.address != "":
+		return false
+	case d.agentCircuitId != "":
+		return false
+	case d.agentRemoteId != "":
+		return false
+	case d.allowDualStackQueue != "":
+		return false
+	case d.alwaysBroadcast != "":
+		return false
+	case d.blockAccess != "":
+		return false
+	case d.clientId != "":
+		return false
+	case d.dhcpOption != "":
+		return false
+	case d.dhcpOptionSet != "":
+		return false
+	case d.disabledL != "":
+		return false
+	case d.dynamic != "":
+		return false
+	case d.expiresAfter != "":
+		return false
+	case d.insertQueueBefore != "":
+		return false
+	case d.lastSeen != "":
+		return false
+	case d.leaseTime != "":
+		return false
+	case d.macAddress != "":
+		return false
+	case d.radius != "":
+		return false
+	case d.rateLimit != "":
+		return false
+	case d.server != "":
+		return false
+	case d.srcMacAddress != "":
+		return false
+	case d.status != "":
+		return false
+	case d.useSrcMac != "":
+		return false
+	case d.ActiveAddress != "":
+		return false
+	case d.ActiveMacAddress != "":
+		return false
+	case d.AddressLists != "":
+		return false
+	case d.Comment != "":
+		return false
+	case d.HostName != "":
+		return false
+	case d.Id != "":
+		return false
+	case d.TypeD != "":
+		return false
+	}
+	return true
 }

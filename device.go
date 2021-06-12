@@ -18,7 +18,9 @@ func (t *Transport) getDevices() {
 	for _, device := range devices {
 		device.Manual = inAddressList(device.AddressLists, t.ManualAddresList)
 		device.Blocked = inAddressList(device.AddressLists, t.BlockAddressList)
-		t.devices[KeyDevice{ip: device.ActiveAddress, mac: device.ActiveMacAddress}] = device
+		t.devices[KeyDevice{
+			// ip: device.ActiveAddress,
+			mac: device.ActiveMacAddress}] = device
 	}
 	t.lastUpdatedMT = time.Now()
 	t.Unlock()
@@ -115,22 +117,22 @@ func (d *DeviceType) ParseComment() {
 	}
 }
 
-func (d DeviceType) addBlockGroup(group string) DeviceType {
+func (d DeviceType) Block(group string, key KeyDevice) DeviceType {
 	d.AddressLists = d.AddressLists + "," + group
 	d.AddressLists = strings.Trim(d.AddressLists, ",")
 	d.AddressLists = strings.ReplaceAll(d.AddressLists, `"`, "")
 	d.Blocked = true
 	d.ShouldBeBlocked = true
-	log.Debugf("Device (%15v;%17v) was disabled due to exceeding the quota", d.ActiveAddress, d.ActiveMacAddress)
+	log.Debugf("Device (%17v;%15v;%17v;%17v) was disabled due to exceeding the quota", key.mac, d.ActiveAddress, d.ActiveMacAddress, d.macAddress)
 	return d
 }
 
-func (d DeviceType) delBlockGroup(group string) DeviceType {
+func (d DeviceType) UnBlock(group string, key KeyDevice) DeviceType {
 	d.AddressLists = strings.Replace(d.AddressLists, group, "", 1)
 	d.AddressLists = strings.ReplaceAll(d.AddressLists, ",,", ",")
 	d.AddressLists = strings.Trim(d.AddressLists, ",")
 	d.AddressLists = strings.ReplaceAll(d.AddressLists, `"`, "")
-	log.Debugf("Device (%15v;%17v) has been enabled, the quota has not been exceeded", d.ActiveAddress, d.ActiveMacAddress)
+	log.Debugf("Device (%17v;%15v;%17v;%17v) has been enabled, the quota has not been exceeded", key.mac, d.ActiveAddress, d.ActiveMacAddress, d.macAddress)
 	d.Blocked = false
 	d.ShouldBeBlocked = false
 	return d
