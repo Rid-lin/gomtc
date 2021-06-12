@@ -75,11 +75,14 @@
 					<th{{if $v.DeviceType.Blocked}} style="background-color: rgb(252, 210, 186);" {{end}}>
 						{{$v.HostName}}</th>
 					<th style="text-align: left;">{{$v.DeviceType.Comment}}</th>
-					<th {{if $v.DeviceType.ShouldBeBlocked}} style="background-color: rgb(248, 74, 74);" {{end}}
-							{{if and (le $.SizeOneGigabyte $v.VolumePerDay) (ne $k 0)}}
-								style="color: rgb(179, 8, 185);"
-							{{else if and (ge $.SizeOneKilobyte $v.VolumePerDay) (ne $k 0)}}
-								style="color: #12c470;"
+					<th
+						{{if and (ge $v.VolumePerDay $.DailyQuota) (ne $k 0)}}
+							style="background-color: rgb(252, 210, 186);"
+						{{end}}
+						{{if and (le $.SizeOneGigabyte $v.VolumePerDay) (ne $k 0)}}
+							style="color: rgb(179, 8, 185);"
+						{{else if and (ge $.SizeOneKilobyte $v.VolumePerDay) (ne $k 0)}}
+							style="color: #12c470;"
 						{{else if and (ge $.SizeOneMegabyte $v.VolumePerDay) (ne $k 0)}}
 							style="color: rgb(77, 182, 245);"
 						{{end}}>
