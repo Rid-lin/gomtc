@@ -8,7 +8,7 @@ import (
 
 type ReportDataType []LineOfDisplay
 
-func (t *Transport) reportTrafficHourlyByLoginsNew(rq RequestForm, showFriends bool) (DisplayDataType, error) {
+func (t *Transport) reportDailyHourlyByMac(rq RequestForm, showFriends bool) (DisplayDataType, error) {
 	start := time.Now()
 	t.RLock()
 	// data := t.statofYears

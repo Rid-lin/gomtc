@@ -115,7 +115,7 @@ func (t *Transport) handleNewReport(w http.ResponseWriter, withfriends bool, r *
 	t.RLock()
 	assetsPath := t.AssetsPath
 	t.RUnlock()
-	DisplayData, err := t.reportTrafficHourlyByLoginsNew(request, withfriends)
+	DisplayData, err := t.reportDailyHourlyByMac(request, withfriends)
 	if err != nil {
 		fmt.Fprintf(w, "Проверьте налиие логов за запрашиваемый период<br> или подождите несколько минут.")
 
