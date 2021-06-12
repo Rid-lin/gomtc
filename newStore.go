@@ -41,7 +41,7 @@ type StatDeviceType struct {
 	StatType
 }
 
-func (t *Transport) parseAllFilesAndCountingTrafficNew(cfg *Config) {
+func (t *Transport) parseAllFilesAndCountingTraffic(cfg *Config) {
 	// Getting the current time to calculate the running time
 	t.newCount.startTime = time.Now()
 	fmt.Printf("Parsing has started.\r")
@@ -262,7 +262,7 @@ func (t *Transport) addLineOutToMapOfReportsSuperNew(l *lineOfLogType) {
 	t.Unlock()
 }
 
-func (t *Transport) checkQuotasNew() {
+func (t *Transport) checkQuotas() {
 	t.RLock()
 	p := parseType{
 		SSHCredentials:   t.sshCredentials,
@@ -272,40 +272,37 @@ func (t *Transport) checkQuotasNew() {
 	}
 	t.RUnlock()
 	hour := time.Now().Hour()
-	statOfDay := t.getDay(lNow())
+	day := t.getDay(lNow())
 
 	for _, alias := range t.Aliases {
 		var VolumePerDay, VolumePerCheck uint64
 		var StatPerHour [24]VolumePerType
 		for _, key := range alias.KeyArr {
-			VolumePerDay += statOfDay.devicesStat[key].VolumePerDay
-			VolumePerCheck += statOfDay.devicesStat[key].VolumePerCheck
-			for index := range statOfDay.devicesStat[key].StatPerHour {
-				StatPerHour[index].PerHour += statOfDay.devicesStat[key].StatPerHour[index].PerHour
+			VolumePerDay += day.devicesStat[key].VolumePerDay
+			VolumePerCheck += day.devicesStat[key].VolumePerCheck
+			for index := range day.devicesStat[key].StatPerHour {
+				StatPerHour[index].PerHour += day.devicesStat[key].StatPerHour[index].PerHour
 			}
-
-			switch {
-			case (VolumePerDay >= alias.DailyQuota || StatPerHour[hour].PerHour >= alias.HourlyQuota) && alias.Blocked && alias.ShouldBeBlocked:
-				continue
-			case VolumePerDay >= alias.DailyQuota && !alias.Blocked:
-				alias.ShouldBeBlocked = true
-				// alias.TimeoutBlock = setDailyTimeout()
-				t.addBlockGroup(alias, p.BlockAddressList)
-				alias.Blocked = true
-			case StatPerHour[hour].PerHour >= alias.HourlyQuota && !alias.Blocked:
-				alias.ShouldBeBlocked = true
-				// alias.TimeoutBlock = setHourlyTimeout()
-				t.addBlockGroup(alias, p.BlockAddressList)
-				alias.Blocked = true
-			case alias.Blocked:
-				alias.ShouldBeBlocked = false
-				t.delBlockGroup(alias, p.BlockAddressList)
-				alias.Blocked = false
-			}
-			t.Lock()
-			t.Aliases[alias.AliasName] = alias
-			t.Unlock()
 		}
+		switch {
+		case (VolumePerDay >= alias.DailyQuota || StatPerHour[hour].PerHour >= alias.HourlyQuota) && alias.Blocked && alias.ShouldBeBlocked:
+			continue
+		case VolumePerDay >= alias.DailyQuota && !alias.Blocked:
+			alias.ShouldBeBlocked = true
+			t.addBlockGroup(alias, p.BlockAddressList)
+			alias.Blocked = true
+		case StatPerHour[hour].PerHour >= alias.HourlyQuota && !alias.Blocked:
+			alias.ShouldBeBlocked = true
+			t.addBlockGroup(alias, p.BlockAddressList)
+			alias.Blocked = true
+		case alias.Blocked:
+			alias.ShouldBeBlocked = false
+			t.delBlockGroup(alias, p.BlockAddressList)
+			alias.Blocked = false
+		}
+		t.Lock()
+		t.Aliases[alias.AliasName] = alias
+		t.Unlock()
 
 	}
 	t.Lock()

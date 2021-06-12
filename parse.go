@@ -22,9 +22,9 @@ func (t *Transport) runOnce(cfg *Config) {
 
 	t.getDevices()
 	t.delOldData(t.newCount.LastDateNew, t.Location)
-	t.parseAllFilesAndCountingTrafficNew(cfg)
+	t.parseAllFilesAndCountingTraffic(cfg)
 	t.updateAliases(p)
-	t.checkQuotasNew()
+	t.checkQuotas()
 	t.SendGroupStatus()
 
 	t.writeLog(cfg)

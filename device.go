@@ -120,6 +120,7 @@ func (d DeviceType) addBlockGroup(group string) DeviceType {
 	d.AddressLists = strings.Trim(d.AddressLists, ",")
 	d.AddressLists = strings.ReplaceAll(d.AddressLists, `"`, "")
 	d.Blocked = true
+	d.ShouldBeBlocked = true
 	log.Debugf("Device (%15v;%17v) was disabled due to exceeding the quota", d.ActiveAddress, d.ActiveMacAddress)
 	return d
 }
@@ -131,6 +132,7 @@ func (d DeviceType) delBlockGroup(group string) DeviceType {
 	d.AddressLists = strings.ReplaceAll(d.AddressLists, `"`, "")
 	log.Debugf("Device (%15v;%17v) has been enabled, the quota has not been exceeded", d.ActiveAddress, d.ActiveMacAddress)
 	d.Blocked = false
+	d.ShouldBeBlocked = false
 	return d
 }
 
