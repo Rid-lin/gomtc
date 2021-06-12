@@ -52,6 +52,7 @@ type Config struct {
 	UseTLS                 bool     `default:"false" usage:"Using TLS to connect to a router"`
 	CSV                    bool     `default:"false" usage:"Output to csv"`
 	NoFlow                 bool     `default:"true" usage:"When this parameter is specified, the netflow packet listener is not launched, therefore, log files are not created, but only parsed."`
+	NoControl              bool     `default:"true" usage:"No need to control the Mikrotik, just read."`
 	Debug                  bool     `default:"false" usage:"For debug, not create pid-file"`
 	Location               *time.Location
 	startTime              time.Time

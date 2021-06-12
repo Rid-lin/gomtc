@@ -25,7 +25,9 @@ func (t *Transport) runOnce(cfg *Config) {
 	t.parseAllFilesAndCountingTraffic(cfg)
 	t.updateAliases(p)
 	t.checkQuotas()
-	t.SendGroupStatus()
+	if !cfg.NoControl {
+		t.SendGroupStatus()
+	}
 
 	t.writeLog(cfg)
 	t.newCount.Count = Count{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
