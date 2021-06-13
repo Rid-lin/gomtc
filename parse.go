@@ -25,6 +25,7 @@ func (t *Transport) runOnce(cfg *Config) {
 	t.parseAllFilesAndCountingTraffic(cfg)
 	t.updateAliases(p)
 	t.checkQuotas()
+	t.BlockDevices()
 	if !cfg.NoControl {
 		t.SendGroupStatus()
 	}
