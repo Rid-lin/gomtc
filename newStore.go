@@ -269,17 +269,16 @@ func (t *Transport) addLineOutToMapOfReportsSuperNew(l *lineOfLogType) {
 }
 
 func (t *Transport) checkQuotas() {
-	t.RLock()
-	p := parseType{
-		SSHCredentials:   t.sshCredentials,
-		QuotaType:        t.QuotaType,
-		BlockAddressList: t.BlockAddressList,
-		Location:         t.Location,
-	}
-	t.RUnlock()
+	// t.RLock()
+	// p := parseType{
+	// 	SSHCredentials:   t.sshCredentials,
+	// 	QuotaType:        t.QuotaType,
+	// 	BlockAddressList: t.BlockAddressList,
+	// 	Location:         t.Location,
+	// }
+	// t.RUnlock()
 	hour := time.Now().Hour()
 	day := t.getDay(lNow())
-
 	for _, alias := range t.Aliases {
 		var VolumePerDay, VolumePerCheck uint64
 		var StatPerHour [24]VolumePerType
@@ -291,9 +290,11 @@ func (t *Transport) checkQuotas() {
 			}
 		}
 		if VolumePerDay >= alias.DailyQuota || StatPerHour[hour].PerHour >= alias.HourlyQuota {
-			t.BlockAlias(alias, p.BlockAddressList)
+			alias.ShouldBeBlocked = true
+			// t.BlockAlias(alias, p.BlockAddressList)
 		} else {
-			t.UnBlockAlias(alias, p.BlockAddressList)
+			alias.ShouldBeBlocked = false
+			// t.UnBlockAlias(alias, p.BlockAddressList)
 		}
 		// switch {
 		// case (VolumePerDay >= alias.DailyQuota || StatPerHour[hour].PerHour >= alias.HourlyQuota) && alias.Blocked && alias.ShouldBeBlocked:
@@ -358,4 +359,44 @@ func (t *Transport) getDay(l *lineOfLogType) StatOfDayType {
 	}
 	t.Unlock()
 	return day
+}
+
+func (t *Transport) BlockDevices() {
+	t.Lock()
+	for _, d := range t.devices {
+		if d.Manual {
+			continue
+		}
+		key := KeyDevice{}
+		switch {
+		case d.ActiveMacAddress != "":
+			key = KeyDevice{mac: d.ActiveMacAddress}
+		case d.macAddress != "":
+			key = KeyDevice{mac: d.macAddress}
+		}
+		// TODO подумать над преобразованием ClientID в мак адрес
+		switch {
+		case (d.Blocked && t.Aliases[key.mac].ShouldBeBlocked) || (!d.Blocked && !t.Aliases[key.mac].ShouldBeBlocked):
+			continue
+		case d.Blocked && !t.Aliases[key.mac].ShouldBeBlocked:
+			d = d.UnBlock(t.BlockAddressList, key)
+			t.change[key] = DeviceToBlock{
+				Id:       d.Id,
+				Mac:      key.mac,
+				IP:       d.ActiveAddress,
+				Groups:   d.AddressLists,
+				Disabled: paramertToBool(d.disabledL),
+			}
+		case !d.Blocked && t.Aliases[key.mac].ShouldBeBlocked:
+			d = d.Block(t.BlockAddressList, key)
+			t.change[key] = DeviceToBlock{
+				Id:       d.Id,
+				Mac:      key.mac,
+				IP:       d.ActiveAddress,
+				Groups:   d.AddressLists,
+				Disabled: paramertToBool(d.disabledL),
+			}
+		}
+	}
+	t.Unlock()
 }
