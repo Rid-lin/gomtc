@@ -22,10 +22,14 @@ func (t *Transport) runOnce(cfg *Config) {
 
 	t.getDevices()
 	t.delOldData(t.newCount.LastDateNew, t.Location)
-	t.parseAllFilesAndCountingTrafficNew(cfg)
+	t.parseAllFilesAndCountingTraffic(cfg)
 	t.updateAliases(p)
-	t.checkQuotasNew()
-	t.SendGroupStatus()
+	t.checkQuotas()
+	t.BlockDevices()
+	if !cfg.NoControl {
+		t.SendGroupStatus()
+	}
+	t.getDevices()
 
 	t.writeLog(cfg)
 	t.newCount.Count = Count{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}

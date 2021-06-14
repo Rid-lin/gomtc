@@ -3,6 +3,8 @@ package main
 import (
 	"os"
 
+	_ "net/http/pprof"
+
 	log "github.com/sirupsen/logrus"
 )
 

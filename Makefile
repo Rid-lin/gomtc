@@ -89,4 +89,5 @@ ci:
 	$(foreach FILE, $(shell busybox find ./bin/ -type f -name "gomtc*"),\
 	$(shell 7z a -tzip -m0=lzma -mx=9 $(PWD)/release/$(shell basename $(FILE)).zip $(PWD)/bin/$(shell basename $(FILE)) $(PWD)/build/for_release/* ))
 
-cbpci: clean dep build_all pack cleanrelease ci
+cbpci: clean dep build_all pack ci
+cbpсci: clean dep build_all pack cleanrelease ci

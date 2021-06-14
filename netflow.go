@@ -126,18 +126,18 @@ func (t *Transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) (str
 		response := t.GetInfo(&request{
 			IP:   intToIPv4Addr(binRecord.Ipv4DstAddrInt).String(),
 			Time: fmt.Sprint(header.UnixSec)})
-		message = fmt.Sprintf("%v.000 %6v %v %v/- %v HEAD %v:%v %v FIRSTUP_PARENT/%v packet_netflow/%v/:%v %v %v",
+		message = fmt.Sprintf("%v.000 %6v %v %v/- %v HEAD %v:%v %v FIRSTUP_PARENT/%v packet_netflow/:%v %v %v",
 			header.UnixSec,                                   // time
 			binRecord.LastInt-binRecord.FirstInt,             //delay
 			intToIPv4Addr(binRecord.Ipv4DstAddrInt).String(), // dst ip
 			protocol,          // protocol
 			binRecord.InBytes, // size
 			intToIPv4Addr(binRecord.Ipv4SrcAddrInt).String(), //src ip
-			binRecord.L4SrcPort,                // src port
-			response.Mac,                       // dstmac
-			remoteAddr,                         // routerIP
-			net.HardwareAddr(srcmacB).String(), // srcmac
-			binRecord.L4DstPort,                // dstport
+			binRecord.L4DstPort, // dstport
+			response.Mac,        // dstmac
+			remoteAddr,          // routerIP
+			// net.HardwareAddr(srcmacB).String(), // srcmac
+			binRecord.L4SrcPort, // src port
 			response.HostName,
 			response.Comments,
 		)
@@ -160,18 +160,18 @@ func (t *Transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) (str
 		response := t.GetInfo(&request{
 			IP:   intToIPv4Addr(binRecord.Ipv4SrcAddrInt).String(),
 			Time: fmt.Sprint(header.UnixSec)})
-		message = fmt.Sprintf("%v.000 %6v %v %v/- %v HEAD %v:%v %v FIRSTUP_PARENT/%v packet_netflow_inverse/%v/:%v %v %v",
+		message = fmt.Sprintf("%v.000 %6v %v %v/- %v HEAD %v:%v %v FIRSTUP_PARENT/%v packet_netflow_inverse/:%v %v %v",
 			header.UnixSec,                                   // time
 			binRecord.LastInt-binRecord.FirstInt,             //delay
 			intToIPv4Addr(binRecord.Ipv4SrcAddrInt).String(), //src ip - Local
 			protocol,          // protocol
 			binRecord.InBytes, // size
 			intToIPv4Addr(binRecord.Ipv4DstAddrInt).String(), // dst ip - Inet
-			binRecord.L4SrcPort,                // src port
-			response.Mac,                       // dstmac
-			remoteAddr,                         // routerIP
-			net.HardwareAddr(srcmacB).String(), // srcmac
-			binRecord.L4DstPort,                // dstport
+			binRecord.L4DstPort, // dstport
+			response.Mac,        // dstmac
+			remoteAddr,          // routerIP
+			// net.HardwareAddr(srcmacB).String(), // srcmac
+			binRecord.L4SrcPort, // src port
 			response.HostName,
 			response.Comments,
 		)

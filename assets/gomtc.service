@@ -4,10 +4,11 @@
  
 [Service]
   ExecStart=/usr/local/bin/gomtc
-  ExecStop=/bin/kill -HUP $MAINPID
+  ExecStop=/bin/kill -SIGTERM $MAINPID
   Type=idle
   KillMode=process
   Restart=on-failure
+  RestartSec=5s
 
   SyslogIdentifier=gomtc
   SyslogFacility=daemon

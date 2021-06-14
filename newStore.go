@@ -31,7 +31,7 @@ type StatOfDayType struct {
 }
 
 type KeyDevice struct {
-	ip  string
+	// ip  string
 	mac string
 }
 
@@ -41,7 +41,7 @@ type StatDeviceType struct {
 	StatType
 }
 
-func (t *Transport) parseAllFilesAndCountingTrafficNew(cfg *Config) {
+func (t *Transport) parseAllFilesAndCountingTraffic(cfg *Config) {
 	// Getting the current time to calculate the running time
 	t.newCount.startTime = time.Now()
 	fmt.Printf("Parsing has started.\r")
@@ -239,10 +239,14 @@ func (t *Transport) addLineOutToMapOfReportsSuperNew(l *lineOfLogType) {
 			day:         l.day}
 		month.daysStat[l.day] = daysStat
 	}
-	deviceStat, ok := daysStat.devicesStat[KeyDevice{ip: l.ipaddress, mac: l.login}]
+	deviceStat, ok := daysStat.devicesStat[KeyDevice{
+		// ip: l.ipaddress,
+		mac: l.login}]
 	if !ok {
 		deviceStat = StatDeviceType{mac: l.login, ip: l.ipaddress}
-		daysStat.devicesStat[KeyDevice{ip: l.ipaddress, mac: l.login}] = deviceStat
+		daysStat.devicesStat[KeyDevice{
+			// ip: l.ipaddress,
+			mac: l.login}] = deviceStat
 	}
 	// Расчет суммы трафика для устройства для дальшейшего отображения
 	deviceStat.VolumePerDay = deviceStat.VolumePerDay + l.sizeInBytes
@@ -255,74 +259,78 @@ func (t *Transport) addLineOutToMapOfReportsSuperNew(l *lineOfLogType) {
 	daysStat.StatPerHour[l.hour].PerHour = daysStat.StatPerHour[l.hour].PerHour + l.sizeInBytes
 	daysStat.StatPerHour[l.hour].PerMinute[l.minute] = daysStat.StatPerHour[l.hour].PerMinute[l.minute] + l.sizeInBytes
 	// Возвращаем данные обратно
-	daysStat.devicesStat[KeyDevice{ip: l.ipaddress, mac: l.login}] = deviceStat
+	daysStat.devicesStat[KeyDevice{
+		// ip: l.ipaddress,
+		mac: l.login}] = deviceStat
 	month.daysStat[l.day] = daysStat
 	year.monthsStat[l.month] = month
 	t.statofYears[l.year] = year
 	t.Unlock()
 }
 
-func (t *Transport) checkQuotasNew() {
-	t.RLock()
-	p := parseType{
-		SSHCredentials:   t.sshCredentials,
-		QuotaType:        t.QuotaType,
-		BlockAddressList: t.BlockAddressList,
-		Location:         t.Location,
-	}
-	t.RUnlock()
+func (t *Transport) checkQuotas() {
+	// t.RLock()
+	// p := parseType{
+	// 	SSHCredentials:   t.sshCredentials,
+	// 	QuotaType:        t.QuotaType,
+	// 	BlockAddressList: t.BlockAddressList,
+	// 	Location:         t.Location,
+	// }
+	// t.RUnlock()
 	hour := time.Now().Hour()
-	statOfDay := t.getDay(lNow())
-
+	day := t.getDay(lNow())
 	for _, alias := range t.Aliases {
 		var VolumePerDay, VolumePerCheck uint64
 		var StatPerHour [24]VolumePerType
 		for _, key := range alias.KeyArr {
-			VolumePerDay += statOfDay.devicesStat[key].VolumePerDay
-			VolumePerCheck += statOfDay.devicesStat[key].VolumePerCheck
-			for index := range statOfDay.devicesStat[key].StatPerHour {
-				StatPerHour[index].PerHour += statOfDay.devicesStat[key].StatPerHour[index].PerHour
-			}
-
-			switch {
-			case (VolumePerDay >= alias.DailyQuota || StatPerHour[hour].PerHour >= alias.HourlyQuota) && alias.Blocked && alias.ShouldBeBlocked:
-				continue
-			case VolumePerDay >= alias.DailyQuota && !alias.Blocked:
-				alias.ShouldBeBlocked = true
-				// alias.TimeoutBlock = setDailyTimeout()
-				t.addBlockGroup(alias, p.BlockAddressList)
-				alias.Blocked = true
-			case StatPerHour[hour].PerHour >= alias.HourlyQuota && !alias.Blocked:
-				alias.ShouldBeBlocked = true
-				// alias.TimeoutBlock = setHourlyTimeout()
-				t.addBlockGroup(alias, p.BlockAddressList)
-				alias.Blocked = true
-			case alias.Blocked:
-				alias.ShouldBeBlocked = false
-				t.delBlockGroup(alias, p.BlockAddressList)
-				alias.Blocked = false
-			}
-			t.Lock()
-			t.Aliases[alias.AliasName] = alias
-			t.Unlock()
-		}
-
-	}
-	t.Lock()
-	for key, device := range t.devices {
-		if _, ok := t.change[key]; !ok {
-			if device.Blocked {
-				device.ShouldBeBlocked = false
-				device = device.delBlockGroup(p.BlockAddressList)
-				t.change[key] = DeviceToBlock{
-					Id:       device.Id,
-					Groups:   device.AddressLists,
-					Disabled: paramertToBool(device.disabledL),
-				}
+			VolumePerDay += day.devicesStat[key].VolumePerDay
+			VolumePerCheck += day.devicesStat[key].VolumePerCheck
+			for index := range day.devicesStat[key].StatPerHour {
+				StatPerHour[index].PerHour += day.devicesStat[key].StatPerHour[index].PerHour
 			}
 		}
+		if VolumePerDay >= alias.DailyQuota || StatPerHour[hour].PerHour >= alias.HourlyQuota {
+			alias.ShouldBeBlocked = true
+			// t.BlockAlias(alias, p.BlockAddressList)
+		} else {
+			alias.ShouldBeBlocked = false
+			// t.UnBlockAlias(alias, p.BlockAddressList)
+		}
+		// switch {
+		// case (VolumePerDay >= alias.DailyQuota || StatPerHour[hour].PerHour >= alias.HourlyQuota) && alias.Blocked && alias.ShouldBeBlocked:
+		// 	continue
+		// case VolumePerDay >= alias.DailyQuota && !alias.Blocked:
+		// 	alias.ShouldBeBlocked = true
+		// 	t.addBlockGroup(alias, p.BlockAddressList)
+		// 	alias.Blocked = true
+		// case StatPerHour[hour].PerHour >= alias.HourlyQuota && !alias.Blocked:
+		// 	alias.ShouldBeBlocked = true
+		// 	t.addBlockGroup(alias, p.BlockAddressList)
+		// 	alias.Blocked = true
+		// case alias.Blocked:
+		// 	alias.ShouldBeBlocked = false
+		// 	t.delBlockGroup(alias, p.BlockAddressList)
+		// 	alias.Blocked = false
+		// }
+		t.Lock()
+		t.Aliases[alias.AliasName] = alias
+		t.Unlock()
+
 	}
-	t.Unlock()
+	// t.Lock()
+	// for key, device := range t.devices {
+	// 	if _, ok := t.change[key]; !ok {
+	// 		if device.Blocked {
+	// 			device = device.UnBlock(p.BlockAddressList)
+	// 			t.change[key] = DeviceToBlock{
+	// 				Id:       device.Id,
+	// 				Groups:   device.AddressLists,
+	// 				Disabled: paramertToBool(device.disabledL),
+	// 			}
+	// 		}
+	// 	}
+	// }
+	// t.Unlock()
 }
 
 func (t *Transport) getDay(l *lineOfLogType) StatOfDayType {
@@ -351,4 +359,44 @@ func (t *Transport) getDay(l *lineOfLogType) StatOfDayType {
 	}
 	t.Unlock()
 	return day
+}
+
+func (t *Transport) BlockDevices() {
+	t.Lock()
+	for _, d := range t.devices {
+		if d.Manual {
+			continue
+		}
+		key := KeyDevice{}
+		switch {
+		case d.ActiveMacAddress != "":
+			key = KeyDevice{mac: d.ActiveMacAddress}
+		case d.macAddress != "":
+			key = KeyDevice{mac: d.macAddress}
+		}
+		// TODO подумать над преобразованием ClientID в мак адрес
+		switch {
+		case (d.Blocked && t.Aliases[key.mac].ShouldBeBlocked) || (!d.Blocked && !t.Aliases[key.mac].ShouldBeBlocked):
+			continue
+		case d.Blocked && !t.Aliases[key.mac].ShouldBeBlocked:
+			d = d.UnBlock(t.BlockAddressList, key)
+			t.change[key] = DeviceToBlock{
+				Id:       d.Id,
+				Mac:      key.mac,
+				IP:       d.ActiveAddress,
+				Groups:   d.AddressLists,
+				Disabled: paramertToBool(d.disabledL),
+			}
+		case !d.Blocked && t.Aliases[key.mac].ShouldBeBlocked:
+			d = d.Block(t.BlockAddressList, key)
+			t.change[key] = DeviceToBlock{
+				Id:       d.Id,
+				Mac:      key.mac,
+				IP:       d.ActiveAddress,
+				Groups:   d.AddressLists,
+				Disabled: paramertToBool(d.disabledL),
+			}
+		}
+	}
+	t.Unlock()
 }
