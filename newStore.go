@@ -379,7 +379,7 @@ func (t *Transport) BlockDevices() {
 		case (d.Blocked && t.Aliases[key.mac].ShouldBeBlocked) || (!d.Blocked && !t.Aliases[key.mac].ShouldBeBlocked):
 			continue
 		case d.Blocked && !t.Aliases[key.mac].ShouldBeBlocked:
-			d.UnBlock(t.BlockAddressList, key)
+			d = d.UnBlock(t.BlockAddressList, key)
 			t.change[key] = DeviceToBlock{
 				Id:       d.Id,
 				Mac:      key.mac,
@@ -388,7 +388,7 @@ func (t *Transport) BlockDevices() {
 				Disabled: paramertToBool(d.disabledL),
 			}
 		case !d.Blocked && t.Aliases[key.mac].ShouldBeBlocked:
-			d.Block(t.BlockAddressList, key)
+			d = d.Block(t.BlockAddressList, key)
 			t.change[key] = DeviceToBlock{
 				Id:       d.Id,
 				Mac:      key.mac,

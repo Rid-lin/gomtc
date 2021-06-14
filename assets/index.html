@@ -74,7 +74,13 @@
 					</th>
 					<th{{if $v.DeviceType.Blocked}} style="background-color: rgb(252, 210, 186);" {{end}}>
 						{{$v.HostName}}</th>
-					<th style="text-align: left;">{{$v.DeviceType.Comment}}</th>
+					<th 
+					{{if $v.QuotaType.ShouldBeBlocked}}
+						style="text-align: left; background-color: rgb(252, 210, 186);"
+					{{else}}
+						style="text-align: left;"
+					{{end}}
+					>{{$v.DeviceType.Comment}}</th>
 					<th
 						{{if and (ge $v.VolumePerDay $.DailyQuota) (ne $k 0)}}
 							style="background-color: rgb(252, 210, 186);"
