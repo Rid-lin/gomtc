@@ -57,13 +57,13 @@ func (t *Transport) parseAllFilesAndCountingTraffic(cfg *Config) {
 	t.newCount.endTime = time.Now() // Saves the current time to be inserted into the log table
 	t.newCount.lastUpdated = time.Now()
 	log.Infof("The parsing started at %v, ended at %v, and lasted %.3v seconds at a rate of %v lines per second.",
-		t.newCount.startTime.In(cfg.Location).Format(cfg.dateTimeLayout),
-		t.newCount.endTime.In(cfg.Location).Format(cfg.dateTimeLayout),
+		t.newCount.startTime.In(cfg.Location).Format(DateTimeLayout),
+		t.newCount.endTime.In(cfg.Location).Format(DateTimeLayout),
 		ExTime.Seconds(),
 		t.newCount.totalLineParsed/ExTimeInSec)
 	fmt.Printf("The parsing started at %v, ended at %v, and lasted %.3v seconds at a rate of %v lines per second.\n",
-		t.newCount.startTime.In(cfg.Location).Format(cfg.dateTimeLayout),
-		t.newCount.endTime.In(cfg.Location).Format(cfg.dateTimeLayout),
+		t.newCount.startTime.In(cfg.Location).Format(DateTimeLayout),
+		t.newCount.endTime.In(cfg.Location).Format(DateTimeLayout),
 		ExTime.Seconds(),
 		t.newCount.totalLineParsed/ExTimeInSec)
 }

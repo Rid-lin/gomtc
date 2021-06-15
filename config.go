@@ -11,15 +11,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type Config struct {
-	dateLayout     string
-	dateTimeLayout string
-	LastDate       int64
-	LastDay        int64
-	LastDayStr     string
-	LastDateStr    string
+const DateLayout = "2006-01-02"
+const DateTimeLayout = "2006-01-02 15:04:05"
 
-	GonsquidAddr           string   `default:":3030" usage:"Listen address for HTTP-server"`
+type Config struct {
+	LastDate    int64
+	LastDay     int64
+	LastDayStr  string
+	LastDateStr string
+
 	Pidfile                string   `default:"/run/gomtc.pid" usage:"PID-file"`
 	Friends                []string `default:"" usage:"List of aliases, IP addresses, friends' logins"`
 	ConfigPath             string   `default:"/etc/gomtc" usage:"folder path to all config files"`
@@ -53,7 +53,6 @@ type Config struct {
 	CSV                    bool     `default:"false" usage:"Output to csv"`
 	NoFlow                 bool     `default:"true" usage:"When this parameter is specified, the netflow packet listener is not launched, therefore, log files are not created, but only parsed."`
 	NoControl              bool     `default:"true" usage:"No need to control the Mikrotik, just read."`
-	Debug                  bool     `default:"false" usage:"For debug, not create pid-file"`
 	Location               *time.Location
 	startTime              time.Time
 	endTime                time.Time
@@ -101,6 +100,10 @@ func newConfig() *Config {
 			"./config/config.yaml",
 			"/etc/gomtc/config.yaml",
 			"/etc/gomtc/config/config.yaml",
+			"/usr/local/gomtc/config.yaml",
+			"/usr/local/gomtc/config/config.yaml",
+			"/opt/gomtc/config.yaml",
+			"/opt/gomtc/config/config.yaml",
 			// "./config.toml",
 			// "./config/config.toml",
 			// "/etc/gomtc/config.toml",
@@ -131,9 +134,6 @@ func newConfig() *Config {
 		log.Errorf("Error loading Location(%v):%v", cfg.Loc, err)
 		cfg.Location = time.UTC
 	}
-
-	cfg.dateLayout = "2006-01-02"
-	cfg.dateTimeLayout = "2006-01-02 15:04:05"
 
 	log.Debugf("Config %#v:", cfg)
 

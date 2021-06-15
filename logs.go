@@ -13,9 +13,9 @@ func (t *Transport) readLog(cfg *Config) {
 	cfg.LastDate = LogToDB.LastDate
 	log.Tracef("From DB LastDate=%v(%v),LastDay=%v(%v), ArrayLogsOfJob=%v",
 		LogToDB.LastDate,
-		time.Unix(LogToDB.LastDate, 0).Format(cfg.dateTimeLayout),
+		time.Unix(LogToDB.LastDate, 0).Format(DateTimeLayout),
 		findOutTheCurrentDay(LogToDB.LastDate, cfg.Location),
-		time.Unix(findOutTheCurrentDay(LogToDB.LastDate, cfg.Location), 0).Format(cfg.dateTimeLayout),
+		time.Unix(findOutTheCurrentDay(LogToDB.LastDate, cfg.Location), 0).Format(DateTimeLayout),
 		ArrayLogsOfJob)
 	t.Lock()
 	t.logs = ArrayLogsOfJob

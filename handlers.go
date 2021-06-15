@@ -56,29 +56,29 @@ func parseDataFromURL(r *http.Request) RequestForm {
 	if len(m["date_from"]) > 0 {
 		request.dateFrom = m["date_from"][0]
 	} else {
-		request.dateFrom = time.Now().Format("2006-01-02")
+		request.dateFrom = time.Now().Format(DateLayout)
 	}
 	if len(m["date_to"]) > 0 {
 		request.dateTo = m["date_to"][0]
 	} else {
-		request.dateTo = time.Now().Add(24 * time.Hour).Format("2006-01-02")
+		request.dateTo = time.Now().Add(24 * time.Hour).Format(DateLayout)
 	}
 	if request.dateFrom == "" {
-		request.dateFrom = time.Now().Format("2006-01-02")
+		request.dateFrom = time.Now().Format(DateLayout)
 	}
 	if request.dateTo == "" {
-		request.dateTo = time.Now().Add(24 * time.Hour).Format("2006-01-02")
+		request.dateTo = time.Now().Add(24 * time.Hour).Format(DateLayout)
 	}
 	if len(m["report"]) > 0 {
 		request.report = m["report"][0]
 	}
 	var dateFrom, dateTo time.Time
 	if len(m["direct"]) > 0 {
-		dateFrom, err = time.Parse("2006-01-02", request.dateFrom)
+		dateFrom, err = time.Parse(DateLayout, request.dateFrom)
 		if err != nil {
 			dateFrom = time.Now()
 		}
-		dateTo, err = time.Parse("2006-01-02", request.dateFrom)
+		dateTo, err = time.Parse(DateLayout, request.dateFrom)
 		if err != nil {
 			dateTo = time.Now()
 		}
@@ -92,8 +92,8 @@ func parseDataFromURL(r *http.Request) RequestForm {
 		} else if m["direct"][0] == "prev" {
 			dateTo = dateTo.AddDate(0, 0, -1)
 		}
-		request.dateFrom = dateFrom.Format("2006-01-02")
-		request.dateTo = dateTo.Format("2006-01-02")
+		request.dateFrom = dateFrom.Format(DateLayout)
+		request.dateTo = dateTo.Format(DateLayout)
 	}
 
 	return request

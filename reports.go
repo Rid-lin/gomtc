@@ -146,7 +146,7 @@ func add(slice []LineOfDisplay, line LineOfDisplay) []LineOfDisplay {
 
 func (rq *RequestForm) ToLine() *lineOfLogType {
 	l := lineOfLogType{}
-	tn, err := time.Parse("2006-01-02", rq.dateFrom)
+	tn, err := time.Parse(DateLayout, rq.dateFrom)
 	if err != nil {
 		tn = time.Now()
 	}
