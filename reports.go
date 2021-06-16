@@ -24,7 +24,7 @@ func (t *Transport) reportDailyHourlyByMac(rq RequestForm, showFriends bool) (Di
 	ReportData := ReportDataType{}
 	line := LineOfDisplay{}
 	var totalVolumePerDay uint64
-	var totalVolumePerHour [24]VolumePerType
+	var totalVolumePerHour [24]uint64
 	t.RLock()
 	for key, value := range day.devicesStat {
 
@@ -35,9 +35,9 @@ func (t *Transport) reportDailyHourlyByMac(rq RequestForm, showFriends bool) (Di
 		line.InfoType.PersonType = t.Aliases[key.mac].PersonType
 		line.InfoType.QuotaType = t.Aliases[key.mac].QuotaType
 		line.InfoType.DeviceType = t.devices[key]
-		for i := range line.StatPerHour {
-			line.StatPerHour[i].PerHour = value.StatPerHour[i].PerHour
-			totalVolumePerHour[i].PerHour += value.StatPerHour[i].PerHour
+		for i := range line.PerHour {
+			line.PerHour[i] = value.PerHour[i]
+			totalVolumePerHour[i] += value.PerHour[i]
 		}
 		ReportData = add(ReportData, line)
 	}
@@ -45,7 +45,7 @@ func (t *Transport) reportDailyHourlyByMac(rq RequestForm, showFriends bool) (Di
 	line = LineOfDisplay{}
 	line.Alias = "Всего"
 	line.VolumePerDay = totalVolumePerDay
-	line.StatPerHour = totalVolumePerHour
+	line.PerHour = totalVolumePerHour
 	ReportData = add(ReportData, line)
 
 	sort.Sort(ReportData)
@@ -136,7 +136,7 @@ func (rData ReportDataType) FiltredFriendS(friends []string) ReportDataType {
 func add(slice []LineOfDisplay, line LineOfDisplay) []LineOfDisplay {
 	for index, item := range slice {
 		if line.Alias == item.Alias {
-			slice[index].StatPerHour = line.StatPerHour
+			slice[index].PerHour = line.PerHour
 			return slice
 		}
 	}

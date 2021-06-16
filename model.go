@@ -239,7 +239,8 @@ type RequestForm struct {
 // }
 
 type StatType struct {
-	StatPerHour     [24]VolumePerType
+	PerMinute       [24][60]uint64
+	PerHour         [24]uint64
 	Precent         float64
 	SizeOfPrecentil uint64
 	Average         uint64
