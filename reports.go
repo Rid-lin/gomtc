@@ -75,7 +75,6 @@ func (t *Transport) reportDailyHourlyByMac(rq RequestForm, showFriends bool) (Di
 		},
 		QuotaType: Quota,
 	}, nil
-
 }
 
 func (a ReportDataType) Len() int           { return len(a) }

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path"
 	"sort"
 	"strconv"
 	"strings"
@@ -30,7 +31,8 @@ func (t *Transport) runOnce(cfg *Config) {
 		t.SendGroupStatus()
 	}
 	t.getDevices()
-
+	PrepareDB(path.Join(cfg.ConfigPath, "sqlite.db"))
+	t.SaveReport(path.Join(cfg.ConfigPath, "sqlite.db"))
 	t.writeLog(cfg)
 	t.newCount.Count = Count{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
