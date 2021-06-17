@@ -138,7 +138,10 @@ func (d DeviceType) UnBlock(group string, key KeyDevice) DeviceType {
 	return d
 }
 
-func (t *Transport) SendGroupStatus() {
+func (t *Transport) SendGroupStatus(NoControl bool) {
+	if !NoControl {
+		return
+	}
 	t.RLock()
 	p := parseType{
 		SSHCredentials:   t.sshCredentials,
