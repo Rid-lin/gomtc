@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -268,25 +269,27 @@ func (t *Transport) addLineOutToMapOfReportsSuperNew(l *lineOfLogType) {
 	t.Unlock()
 }
 
-func (t *Transport) checkQuotas() {
-	// t.RLock()
+func (t *Transport) checkQuotas(cfg *Config) {
+	t.Lock()
 	// p := parseType{
 	// 	SSHCredentials:   t.sshCredentials,
 	// 	QuotaType:        t.QuotaType,
 	// 	BlockAddressList: t.BlockAddressList,
 	// 	Location:         t.Location,
 	// }
+	tn := time.Now().In(cfg.Location)
 	// t.RUnlock()
-	hour := time.Now().Hour()
-	day := t.getDay(lNow())
+	hour := tn.Hour()
+	devicesStat := GetDayStat(tn.Year(), int(tn.Month()), tn.Day(), path.Join(cfg.ConfigPath, "sqlite.db"))
+	// devicesStat := t.GetDayStat(lNow())
 	for _, alias := range t.Aliases {
 		var VolumePerDay, VolumePerCheck uint64
 		var StatPerHour [24]VolumePerType
 		for _, key := range alias.KeyArr {
-			VolumePerDay += day.devicesStat[key].VolumePerDay
-			VolumePerCheck += day.devicesStat[key].VolumePerCheck
-			for index := range day.devicesStat[key].PerHour {
-				StatPerHour[index].PerHour += day.devicesStat[key].PerHour[index]
+			VolumePerDay += devicesStat[key].VolumePerDay
+			VolumePerCheck += devicesStat[key].VolumePerCheck
+			for index := range devicesStat[key].PerHour {
+				StatPerHour[index].PerHour += devicesStat[key].PerHour[index]
 			}
 		}
 		if VolumePerDay >= alias.DailyQuota || StatPerHour[hour].PerHour >= alias.HourlyQuota {
@@ -312,9 +315,9 @@ func (t *Transport) checkQuotas() {
 		// 	t.delBlockGroup(alias, p.BlockAddressList)
 		// 	alias.Blocked = false
 		// }
-		t.Lock()
+		// t.Lock()
 		t.Aliases[alias.AliasName] = alias
-		t.Unlock()
+		// t.Unlock()
 
 	}
 	// t.Lock()
@@ -330,10 +333,38 @@ func (t *Transport) checkQuotas() {
 	// 		}
 	// 	}
 	// }
-	// t.Unlock()
+	t.Unlock()
 }
 
-func (t *Transport) getDay(l *lineOfLogType) StatOfDayType {
+// func (t *Transport) getDay(l *lineOfLogType) StatOfDayType {
+// 	t.Lock()
+// 	year, ok := t.statofYears[l.year]
+// 	if !ok {
+// 		year = StatOfYearType{
+// 			year:       l.year,
+// 			monthsStat: map[time.Month]StatOfMonthType{},
+// 		}
+// 		t.statofYears[l.year] = year
+// 	}
+// 	month, ok := year.monthsStat[l.month]
+// 	if !ok {
+// 		month = StatOfMonthType{
+// 			daysStat: map[int]StatOfDayType{},
+// 			month:    l.month}
+// 		year.monthsStat[l.month] = month
+// 	}
+// 	day, ok := month.daysStat[l.day]
+// 	if !ok {
+// 		day = StatOfDayType{
+// 			devicesStat: map[KeyDevice]StatDeviceType{},
+// 			day:         l.day}
+// 		month.daysStat[l.day] = day
+// 	}
+// 	t.Unlock()
+// 	return day
+// }
+
+func (t *Transport) GetDayStat(l *lineOfLogType) map[KeyDevice]StatDeviceType {
 	t.Lock()
 	year, ok := t.statofYears[l.year]
 	if !ok {
@@ -358,7 +389,7 @@ func (t *Transport) getDay(l *lineOfLogType) StatOfDayType {
 		month.daysStat[l.day] = day
 	}
 	t.Unlock()
-	return day
+	return day.devicesStat
 }
 
 func (t *Transport) BlockDevices() {

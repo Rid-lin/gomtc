@@ -82,14 +82,14 @@ func parseDataFromURL(r *http.Request) RequestForm {
 		if err != nil {
 			dateTo = time.Now()
 		}
-		if m["direct"][0] == "next" {
+		if m["direct"][0] == ">" {
 			dateFrom = dateFrom.AddDate(0, 0, 1)
-		} else if m["direct"][0] == "prev" {
+		} else if m["direct"][0] == "<" {
 			dateFrom = dateFrom.AddDate(0, 0, -1)
 		}
-		if m["direct"][0] == "next" {
+		if m["direct_to"][0] == ">" {
 			dateTo = dateTo.AddDate(0, 0, 1)
-		} else if m["direct"][0] == "prev" {
+		} else if m["direct_to"][0] == "<" {
 			dateTo = dateTo.AddDate(0, 0, -1)
 		}
 		request.dateFrom = dateFrom.Format(DateLayout)
@@ -99,8 +99,8 @@ func parseDataFromURL(r *http.Request) RequestForm {
 	return request
 }
 
-func (data *Transport) handleIndex(w http.ResponseWriter, r *http.Request) {
-	data.handleNewReport(w, false, r)
+func (t *Transport) handleIndex(w http.ResponseWriter, r *http.Request) {
+	t.handleNewReport(w, false, r)
 }
 
 func (data *Transport) handleIndexWithFriends(w http.ResponseWriter, r *http.Request) {

@@ -17,15 +17,16 @@ import (
 const (
 	insertSQL = `
 INSERT INTO stat (
-	year, month, day, hour, size, login, ipaddress
+	date_str, year, month, day, hour, size, login, ipaddress
 ) VALUES (
-	?,?,?,?,?,?,?
+	?,?,?,?,?,?,?,?
 )
 `
 
 	schemaSQL = `
 CREATE TABLE IF NOT EXISTS "stat" (
 	"id"	INTEGER NOT NULL UNIQUE,
+	"date_str"	TEXT NOT NULL DEFAULT '1970-01-01',
 	"year"	INTEGER NOT NULL,
 	"month"	INTEGER NOT NULL,
 	"day"	INTEGER NOT NULL,
@@ -40,6 +41,7 @@ CREATE TABLE IF NOT EXISTS "stat" (
 
 // Stat is a buy/sell trade for symbol.
 type Stat struct {
+	Date                   string
 	Year, Month, Day, Hour int
 	Size                   uint64
 	Login, Ipaddress       string
@@ -80,6 +82,17 @@ func NewDBStat(dbFile string, bufSize int) (*DB, error) {
 	return &db, nil
 }
 
+// NewDB constructs a Trades value for managing stock trades in a
+// SQLite database. This API is not thread safe.
+func OpenDB(dbFile string) (*sql.DB, error) {
+	sqlDB, err := sql.Open("sqlite3", dbFile)
+	if err != nil {
+		return nil, err
+	}
+
+	return sqlDB, nil
+}
+
 // AddStat stores a stat into the buffer. Once the buffer is full, the
 // stats are flushed to the database.
 func (db *DB) AddStat(stat Stat) error {
@@ -105,7 +118,7 @@ func (db *DB) FlushStat() error {
 	}
 
 	for _, stat := range db.buffer {
-		_, err := tx.Stmt(db.stmt).Exec(stat.Year, stat.Month, stat.Day, stat.Hour, stat.Size, stat.Login, stat.Ipaddress)
+		_, err := tx.Stmt(db.stmt).Exec(stat.Date, stat.Year, stat.Month, stat.Day, stat.Hour, stat.Size, stat.Login, stat.Ipaddress)
 		if err != nil {
 			tx.Rollback()
 			return err

@@ -3,18 +3,16 @@
 	<h2>{{.Header}}</h2>
 	<div class="input_block">
 		<form method="get" id="report">
-					<input type="submit"name="direct" value="prev"/>
-					<input type="date" id="date_from" name="date_from" value="{{.DateFrom}}" hidden />
-		</form>
-		<form method="get" id="report">
-					<label for="date_from">Дата: </label>
-					<input type="date" id="date_from" name="date_from" value="{{.DateFrom}}" />
-					<input type="submit" value="Загрузить" />
-		</form>
-		<form method="get" id="report">
-					<input type="submit" name="direct" value="next"/>
-					<input type="date" id="date_from" name="date_from" value="{{.DateFrom}}" hidden />
-		</form>
+			<input type="submit" name="direct" value="<"/>
+			<label for="date_from">Дата начала: </label>
+			<input type="date" id="date_from" name="date_from" value="{{.DateFrom}}" />
+			<input type="submit" name="direct" value=">"/>
+			<input type="submit" name="direct_to" value="<"/>
+			<label for="date_to">Дата конца: </label>
+			<input type="date" id="date_to" name="date_to" value="{{.DateTo}}" />
+			<input type="submit" name="direct_to" value=">"/>
+			<input type="submit" value="Загрузить" />
+	</form>
 	</div>
 </header>
 <div class="postheader">

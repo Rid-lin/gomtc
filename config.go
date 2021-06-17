@@ -60,7 +60,9 @@ type Config struct {
 }
 
 var (
-	cfg Config
+	cfg                 Config
+	fileDestination     *os.File
+	csvFiletDestination *os.File
 )
 
 type newContType struct {

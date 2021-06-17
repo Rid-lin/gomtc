@@ -2,6 +2,7 @@ package main
 
 import (
 	"math"
+	"path"
 	"sort"
 	"time"
 )
@@ -20,13 +21,16 @@ func (t *Transport) reportDailyHourlyByMac(rq RequestForm, showFriends bool) (Di
 	LastUpdated := t.lastUpdated.Format("2006-01-02 15:04:05.999")
 	LastUpdatedMT := t.lastUpdatedMT.Format("2006-01-02 15:04:05.999")
 	t.RUnlock()
-	day := t.getDay(rq.ToLine())
 	ReportData := ReportDataType{}
 	line := LineOfDisplay{}
 	var totalVolumePerDay uint64
 	var totalVolumePerHour [24]uint64
 	t.RLock()
-	for key, value := range day.devicesStat {
+	// devicesStat := t.GetDayStat(rq.ToLine())
+	y, m, d, _, _ := rq.getDateFrom(t.Location)
+	// y1, m1, d1, _, _ := rq.getDateTo(t.Location)
+	devicesStat := GetDayStat(y, m, d, path.Join(t.ConfigPath, "sqlite.db"))
+	for key, value := range devicesStat {
 
 		line.Alias = key.mac
 		line.VolumePerDay = value.VolumePerDay
@@ -59,7 +63,7 @@ func (t *Transport) reportDailyHourlyByMac(rq RequestForm, showFriends bool) (Di
 		Logs:           []LogsOfJob{},
 		Header:         "Отчёт почасовой по трафику пользователей с логинами и IP-адресами",
 		DateFrom:       rq.dateFrom,
-		DateTo:         "",
+		DateTo:         rq.dateTo,
 		LastUpdated:    LastUpdated,
 		LastUpdatedMT:  LastUpdatedMT,
 		TimeToGenerate: time.Since(start),
@@ -155,4 +159,12 @@ func (rq *RequestForm) ToLine() *lineOfLogType {
 	l.hour = tn.Hour()
 	l.minute = tn.Minute()
 	return &l
+}
+
+func (rq *RequestForm) getDateFrom(Loc *time.Location) (int, int, int, int, int) {
+	tn, err := time.Parse(DateLayout, rq.dateFrom)
+	if err != nil {
+		return 0, 0, 0, 0, 0
+	}
+	return tn.In(Loc).Year(), int(tn.In(Loc).Month()), tn.In(Loc).Day(), tn.In(Loc).Hour(), tn.In(Loc).Minute()
 }
