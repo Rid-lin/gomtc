@@ -94,19 +94,19 @@
 						{{end}}>
 					{{ FormatSize $v.VolumePerDay $.SizeOneKilobyte}}</th>
 					<th>{{$v.Precent}}.%</th>
-					{{range $value := $v.StatPerHour}}
+					{{range $value := $v.PerHour}}
 						<th
-							{{if and (le $.HourlyQuota $value.PerHour) (ne $k 0)}}
+							{{if and (le $.HourlyQuota $value) (ne $k 0)}}
 								style="background-color: rgb(252, 210, 186);"
 							{{end}}
-							{{if and (le $.SizeOneGigabyte $value.PerHour) (ne $k 0)}}
+							{{if and (le $.SizeOneGigabyte $value) (ne $k 0)}}
 								style="color: rgb(179, 8, 185);"
-							{{else if and (ge $.SizeOneKilobyte $value.PerHour) (ne $k 0)}}
+							{{else if and (ge $.SizeOneKilobyte $value) (ne $k 0)}}
 								style="color: #12c470"
-							{{else if and (ge $.SizeOneMegabyte $value.PerHour) (ne $k 0)}}
+							{{else if and (ge $.SizeOneMegabyte $value) (ne $k 0)}}
 								style="color: rgb(77, 182, 245);"
 							{{end}}
-						>{{ FormatSize $value.PerHour $.SizeOneKilobyte}}</th>
+						>{{ FormatSize $value $.SizeOneKilobyte}}</th>
 					{{end}}
 				</tr>
 				{{ else }}

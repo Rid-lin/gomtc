@@ -252,12 +252,12 @@ func (t *Transport) addLineOutToMapOfReportsSuperNew(l *lineOfLogType) {
 	deviceStat.VolumePerDay = deviceStat.VolumePerDay + l.sizeInBytes
 	deviceStat.VolumePerCheck = deviceStat.VolumePerCheck + l.sizeInBytes
 	deviceStat.PerHour[l.hour] = deviceStat.PerHour[l.hour] + l.sizeInBytes
-	deviceStat.PerMinute[l.hour][l.minute] = deviceStat.PerMinute[l.hour][l.minute] + l.sizeInBytes
+	// deviceStat.PerMinute[l.hour][l.minute] = deviceStat.PerMinute[l.hour][l.minute] + l.sizeInBytes
 	// Расчет суммы трафика для дня для дальшейшего отображения
-	daysStat.VolumePerDay = daysStat.VolumePerDay + l.sizeInBytes
-	daysStat.VolumePerCheck = daysStat.VolumePerCheck + l.sizeInBytes
-	daysStat.PerHour[l.hour] = daysStat.PerHour[l.hour] + l.sizeInBytes
-	daysStat.PerMinute[l.hour][l.minute] = daysStat.PerMinute[l.hour][l.minute] + l.sizeInBytes
+	// daysStat.VolumePerDay = daysStat.VolumePerDay + l.sizeInBytes
+	// daysStat.VolumePerCheck = daysStat.VolumePerCheck + l.sizeInBytes
+	// daysStat.PerHour[l.hour] = daysStat.PerHour[l.hour] + l.sizeInBytes
+	// daysStat.PerMinute[l.hour][l.minute] = daysStat.PerMinute[l.hour][l.minute] + l.sizeInBytes
 	// Возвращаем данные обратно
 	daysStat.devicesStat[KeyDevice{
 		// ip: l.ipaddress,

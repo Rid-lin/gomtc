@@ -32,7 +32,7 @@ func (t *Transport) runOnce(cfg *Config) {
 	}
 	t.getDevices()
 	PrepareDB(path.Join(cfg.ConfigPath, "sqlite.db"))
-	t.SaveReport(path.Join(cfg.ConfigPath, "sqlite.db"))
+	t.SaveReport(path.Join(cfg.ConfigPath, "sqlite.db"), cfg)
 	t.writeLog(cfg)
 	t.newCount.Count = Count{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
