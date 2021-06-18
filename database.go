@@ -98,22 +98,23 @@ func (t *Transport) SaveStatisticswithBuffer(fileName string, bufSize int) {
 	log.Debugf("Statistics save Execution time:%v speed:%v\n", deltaTime.Seconds(), float64(lineAdded)/deltaTime.Seconds())
 }
 
-func GetDayStat(y, m, d int, fileName string) map[KeyDevice]StatDeviceType {
+func GetDayStat(from, to string, fileName string) map[KeyDevice]StatDeviceType {
 	devStats := map[KeyDevice]StatDeviceType{}
 	db, err := store.OpenDB(fileName)
 	if err != nil {
 		return devStats
 	}
+	defer db.Close()
 	if db.Ping() != nil {
 		return devStats
 	}
-	rows, err := db.Query(`SELECT ipaddress, login, size, hour
+	SQL := fmt.Sprintf(`SELECT ipaddress, login, sum(size), hour
 	FROM stat
-	WHERE year = $1
-	AND month = $2
-	AND day = $3
-	ORDER BY size DESC`,
-		y, m, d)
+	WHERE date(date_str) BETWEEN date('%s') AND date('%s')
+	GROUP BY login, hour
+	ORDER BY sum(size) DESC;`, from, to)
+	fmt.Print(SQL)
+	rows, err := db.Query(SQL)
 	if err != nil {
 		return devStats
 	}

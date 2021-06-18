@@ -280,7 +280,8 @@ func (t *Transport) checkQuotas(cfg *Config) {
 	tn := time.Now().In(cfg.Location)
 	// t.RUnlock()
 	hour := tn.Hour()
-	devicesStat := GetDayStat(tn.Year(), int(tn.Month()), tn.Day(), path.Join(cfg.ConfigPath, "sqlite.db"))
+	tns := tn.Format(DateLayout)
+	devicesStat := GetDayStat(tns, tns, path.Join(cfg.ConfigPath, "sqlite.db"))
 	// devicesStat := t.GetDayStat(lNow())
 	for _, alias := range t.Aliases {
 		var VolumePerDay, VolumePerCheck uint64

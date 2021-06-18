@@ -11,9 +11,8 @@ import (
 func TestGetDayStat(t *testing.T) {
 	cfg := newConfig()
 	type args struct {
-		y        int
-		m        int
-		d        int
+		from     string
+		to       string
 		fileName string
 	}
 	tests := []struct {
@@ -23,13 +22,13 @@ func TestGetDayStat(t *testing.T) {
 	}{
 		{
 			name: "1",
-			args: args{2021, 6, 16, path.Join(cfg.ConfigPath, "sqlite.db")},
+			args: args{"2021-06-16", "2021-06-16", path.Join(cfg.ConfigPath, "sqlite.db")},
 			want: map[KeyDevice]StatDeviceType{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GetDayStat(tt.args.y, tt.args.m, tt.args.d, tt.args.fileName); !reflect.DeepEqual(got, tt.want) {
+			if got := GetDayStat(tt.args.from, tt.args.to, tt.args.fileName); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetDayStat() = %v, want %v", got, tt.want)
 			}
 		})

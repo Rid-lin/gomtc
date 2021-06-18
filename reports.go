@@ -27,9 +27,9 @@ func (t *Transport) reportDailyHourlyByMac(rq RequestForm, showFriends bool) (Di
 	var totalVolumePerHour [24]uint64
 	t.RLock()
 	// devicesStat := t.GetDayStat(rq.ToLine())
-	y, m, d, _, _ := rq.getDateFrom(t.Location)
+	// y, m, d, _, _ := rq.getDateFrom(t.Location)
 	// y1, m1, d1, _, _ := rq.getDateTo(t.Location)
-	devicesStat := GetDayStat(y, m, d, path.Join(t.ConfigPath, "sqlite.db"))
+	devicesStat := GetDayStat(rq.dateFrom, rq.dateTo, path.Join(t.ConfigPath, "sqlite.db"))
 	for key, value := range devicesStat {
 
 		line.Alias = key.mac
