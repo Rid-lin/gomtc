@@ -28,13 +28,13 @@ type Transport struct {
 	SizeOneKilobyte   uint64
 	DevicesRetryDelay string
 	pidfile           string
+	ConfigPath        string
 	// debug               bool
 	sshCredentials      SSHCredentials
 	fileDestination     *os.File
 	csvFiletDestination *os.File
 	conn                *net.UDPConn
 	timerParse          *time.Timer
-	Location            *time.Location
 	lastUpdated         time.Time
 	lastUpdatedMT       time.Time
 	renewOneMac         chan string
@@ -217,11 +217,13 @@ type DisplayDataUserType struct {
 }
 
 type RequestForm struct {
-	dateFrom string
-	dateTo   string
-	path     string
-	referURL string
-	report   string
+	dateFrom    string
+	dateTo      string
+	path        string
+	referURL    string
+	report      string
+	dateFromArr [3]int
+	dateToArr   [3]int
 	// dateFromT time.Time
 	// dateToT   time.Time
 }
@@ -237,7 +239,8 @@ type RequestForm struct {
 // }
 
 type StatType struct {
-	StatPerHour     [24]VolumePerType
+	// PerMinute       [24][60]uint64
+	PerHour         [24]uint64
 	Precent         float64
 	SizeOfPrecentil uint64
 	Average         uint64
@@ -264,10 +267,4 @@ type parseType struct {
 	SSHCredentials
 	QuotaType
 	BlockAddressList string
-	Location         *time.Location
 }
-
-var (
-	fileDestination     *os.File
-	csvFiletDestination *os.File
-)

@@ -2,9 +2,28 @@ package main
 
 import (
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
+
+func (t *Transport) getDevices() {
+	t.Lock()
+	devices := parseInfoFromMTAsValueToSlice(parseType{
+		SSHCredentials:   t.sshCredentials,
+		QuotaType:        t.QuotaType,
+		BlockAddressList: t.BlockAddressList,
+	})
+	for _, device := range devices {
+		device.Manual = inAddressList(device.AddressLists, t.ManualAddresList)
+		device.Blocked = inAddressList(device.AddressLists, t.BlockAddressList)
+		t.devices[KeyDevice{
+			// ip: device.ActiveAddress,
+			mac: device.ActiveMacAddress}] = device
+	}
+	t.lastUpdatedMT = time.Now()
+	t.Unlock()
+}
 
 func (d *DeviceType) ToQuota() QuotaType {
 	var q QuotaType
@@ -127,7 +146,6 @@ func (t *Transport) SendGroupStatus(NoControl bool) {
 		SSHCredentials:   t.sshCredentials,
 		QuotaType:        t.QuotaType,
 		BlockAddressList: t.BlockAddressList,
-		Location:         t.Location,
 	}
 	t.RUnlock()
 	t.change.sendLeaseSet(p)

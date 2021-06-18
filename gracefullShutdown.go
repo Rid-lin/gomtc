@@ -57,7 +57,7 @@ func (t *Transport) Exit(cfg *Config) {
 
 }
 
-func (t *Transport) ReOpenLogAfterLogroatate() {
+func (t *Transport) ReOpenLogAfterLogroatate(cfg *Config) {
 	<-t.newLogChan
 	var err error
 	t.Lock()

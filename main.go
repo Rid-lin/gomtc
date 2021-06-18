@@ -2,48 +2,11 @@ package main
 
 import (
 	"os"
-	"time"
 
 	_ "net/http/pprof"
 
 	log "github.com/sirupsen/logrus"
 )
-
-func (t *Transport) runOnce(cfg *Config) {
-	t.RLock()
-	p := parseType{
-		SSHCredentials:   t.sshCredentials,
-		BlockAddressList: t.BlockAddressList,
-		QuotaType:        t.QuotaType,
-		Location:         t.Location,
-	}
-	t.RUnlock()
-
-	t.readLog(cfg)
-
-	t.getDevicesToCashe()
-	t.delOldData(t.newCount.LastDateNew, t.Location)
-	t.parseAllFilesAndCountingTraffic(cfg)
-	t.updateAliases(p)
-	t.checkQuotas()
-	t.BlockDevices()
-	t.SendGroupStatus(cfg.NoControl)
-	t.getDevicesToCashe()
-
-	t.writeLog(cfg)
-	t.newCount.Count = Count{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-
-	t.setTimerParse(cfg.ParseDelay)
-}
-
-func (t *Transport) setTimerParse(IntervalStr string) {
-	interval, err := time.ParseDuration(IntervalStr)
-	if err != nil {
-		t.timerParse = time.NewTimer(15 * time.Minute)
-	} else {
-		t.timerParse = time.NewTimer(interval)
-	}
-}
 
 func main() {
 	cfg := newConfig()
@@ -68,7 +31,7 @@ func main() {
 	t := NewTransport(cfg)
 
 	go t.Exit(cfg)
-	go t.ReOpenLogAfterLogroatate()
+	go t.ReOpenLogAfterLogroatate(cfg)
 	t.getAliasesArr(cfg)
 
 	// Endless file parsing loop
