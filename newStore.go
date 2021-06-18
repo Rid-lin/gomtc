@@ -43,33 +43,13 @@ type StatDeviceType struct {
 }
 
 func (t *Transport) parseAllFilesAndCountingTraffic(cfg *Config) {
-	// Getting the current time to calculate the running time
-	t.newCount.startTime = time.Now()
-	fmt.Printf("Parsing has started.\r")
 	err := t.parseDirToMapNew(cfg)
 	if err != nil {
 		log.Error(err)
 	}
-	ExTime := time.Since(t.newCount.startTime)
-	ExTimeInSec := uint64(ExTime.Seconds())
-	if ExTimeInSec == 0 {
-		ExTimeInSec = 1
-	}
-	t.newCount.endTime = time.Now() // Saves the current time to be inserted into the log table
-	t.newCount.lastUpdated = time.Now()
-	log.Infof("The parsing started at %v, ended at %v, and lasted %.3v seconds at a rate of %v lines per second.",
-		t.newCount.startTime.In(cfg.Location).Format(DateTimeLayout),
-		t.newCount.endTime.In(cfg.Location).Format(DateTimeLayout),
-		ExTime.Seconds(),
-		t.newCount.totalLineParsed/ExTimeInSec)
-	fmt.Printf("The parsing started at %v, ended at %v, and lasted %.3v seconds at a rate of %v lines per second.\n",
-		t.newCount.startTime.In(cfg.Location).Format(DateTimeLayout),
-		t.newCount.endTime.In(cfg.Location).Format(DateTimeLayout),
-		ExTime.Seconds(),
-		t.newCount.totalLineParsed/ExTimeInSec)
 }
 
-func (t *Transport) delOldData(timestamp int64, Location *time.Location) {
+func (t *Transport) delOldData(timestamp int64) {
 	tn := time.Unix(timestamp, 0).In(Location)
 	year := tn.Year()
 	month := tn.Month()
@@ -89,8 +69,8 @@ func (t *Transport) delOldData(timestamp int64, Location *time.Location) {
 		return
 	}
 	delete(t.statofYears[year].monthsStat[month].daysStat, day)
-	t.newCount.LastDateNew = time.Date(year, month, day, 0, 0, 0, 1, t.Location).Unix()
-	t.newCount.LastDayStrNew = time.Date(year, month, day, 0, 0, 0, 1, t.Location).String()
+	t.newCount.LastDateNew = time.Date(year, month, day, 0, 0, 0, 1, Location).Unix()
+	t.newCount.LastDayStrNew = time.Date(year, month, day, 0, 0, 0, 1, Location).String()
 }
 
 func (t *Transport) parseDirToMapNew(cfg *Config) error {
@@ -156,23 +136,13 @@ func (t *Transport) parseFileToMapNew(info os.FileInfo, cfg *Config) error {
 	}
 	// Если ошибка gzip.ErrHeader, то обрабатываем как текстовый файл.
 	file.Close()
-	file, err = os.Open(FullFileName)
-	if err != nil {
-		file.Close()
-		return fmt.Errorf("Error opening squid log file(FullFileName):%v", err)
-	}
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	if err := t.parseLogToArrayByLineNew(scanner, cfg); err != nil {
+	if err := t.parseOneFilesAndCountingTraffic(FullFileName, cfg); err != nil {
 		return err
-	}
-	if scanner.Err() != nil {
-		return scanner.Err()
 	}
 	return nil
 }
 
-func (t *Transport) parseLogToArrayByLineNew(scanner *bufio.Scanner, cfg *Config) error {
+func (t *Transport) parseLogToArrayByLine(scanner *bufio.Scanner, cfg *Config) error {
 	for scanner.Scan() { // We go through the entire file to the end
 		t.newCount.LineRead++
 		line := scanner.Text() // get the text from the line, for simplicity
@@ -431,4 +401,41 @@ func (t *Transport) BlockDevices() {
 		}
 	}
 	t.Unlock()
+}
+
+func (t *Transport) parseOneFilesAndCountingTraffic(FullFileName string, cfg *Config) error {
+	file, err := os.Open(FullFileName)
+	if err != nil {
+		file.Close()
+		return fmt.Errorf("Error opening squid log file(FullFileName):%v", err)
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	if err := t.parseLogToArrayByLine(scanner, cfg); err != nil {
+		return err
+	}
+	if scanner.Err() != nil {
+		return scanner.Err()
+	}
+	return nil
+}
+
+func (t *Transport) timeCalculationAndPrinting() {
+	ExTime := time.Since(t.newCount.startTime)
+	ExTimeInSec := uint64(ExTime.Seconds())
+	if ExTimeInSec == 0 {
+		ExTimeInSec = 1
+	}
+	t.newCount.endTime = time.Now() // Saves the current time to be inserted into the log table
+	t.newCount.lastUpdated = time.Now()
+	log.Infof("The parsing started at %v, ended at %v, and lasted %.3v seconds at a rate of %v lines per second.",
+		t.newCount.startTime.In(Location).Format(DateTimeLayout),
+		t.newCount.endTime.In(Location).Format(DateTimeLayout),
+		ExTime.Seconds(),
+		t.newCount.totalLineParsed/ExTimeInSec)
+	fmt.Printf("The parsing started at %v, ended at %v, and lasted %.3v seconds at a rate of %v lines per second.\n",
+		t.newCount.startTime.In(Location).Format(DateTimeLayout),
+		t.newCount.endTime.In(Location).Format(DateTimeLayout),
+		ExTime.Seconds(),
+		t.newCount.totalLineParsed/ExTimeInSec)
 }

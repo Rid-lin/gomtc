@@ -6,10 +6,10 @@ import (
 	"github.com/jinzhu/now"
 )
 
-func findOutTheCurrentDay(timestamp int64, loc *time.Location) int64 {
+func findOutTheCurrentDay(timestamp int64) int64 {
 	myConfig := &now.Config{
 		WeekStartDay: time.Monday,
-		TimeLocation: loc,
+		TimeLocation: Location,
 	}
 	return myConfig.With(time.Unix(timestamp, 0)).BeginningOfDay().Unix()
 

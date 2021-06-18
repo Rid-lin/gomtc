@@ -31,7 +31,7 @@ func main() {
 	t := NewTransport(cfg)
 
 	go t.Exit(cfg)
-	go t.ReOpenLogAfterLogroatate()
+	go t.ReOpenLogAfterLogroatate(cfg)
 	t.getAliasesArr(cfg)
 
 	// Endless file parsing loop

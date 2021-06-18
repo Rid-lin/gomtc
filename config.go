@@ -20,28 +20,28 @@ type Config struct {
 	LastDayStr  string
 	LastDateStr string
 
+	Loc                    string   `default:"Asia/Yekaterinburg" usage:"Location for time"`
+	Timezone               float32  `default:"5" usage:"Timezone east of UTC"`
 	Pidfile                string   `default:"/run/gomtc.pid" usage:"PID-file"`
-	Friends                []string `default:"" usage:"List of aliases, IP addresses, friends' logins"`
 	ConfigPath             string   `default:"/etc/gomtc" usage:"folder path to all config files"`
 	LogPath                string   `default:"/var/log/gomtc" usage:"folder path to logs-file"`
-	ListenAddr             string   `default:":3031" usage:"Listen address for HTTP-server"`
 	AssetsPath             string   `default:"/etc/gomtc/assets"  usage:"The path to the assets folder where the template files are located"`
+	NameFileToLog          string   `default:"" usage:"The file where logs will be written in the format of squid logs"`
+	FnStartsWith           string   `default:"access.log" usage:"Specifies where the names of the files to be parsed begin"`
+	Friends                []string `default:"" usage:"List of aliases, IP addresses, friends' logins"`
 	SubNets                []string `default:"" usage:"List of subnets traffic between which will not be counted"`
 	IgnorList              []string `default:"" usage:"List of lines that will be excluded from the final log"`
-	DevicesRetryDelay      string   `default:"1m" usage:"Interval to getting info from Mikrotik"`
-	LogLevel               string   `default:"info" usage:"Log level: panic, fatal, error, warn, info, debug, trace"`
 	FlowAddr               string   `default:"0.0.0.0:2055" usage:"Address and port to listen NetFlow packets"`
-	NameFileToLog          string   `default:"" usage:"The file where logs will be written in the format of squid logs"`
+	ListenAddr             string   `default:":3031" usage:"Listen address for HTTP-server"`
+	LogLevel               string   `default:"info" usage:"Log level: panic, fatal, error, warn, info, debug, trace"`
 	MTAddr                 string   `default:"127.0.0.1" usage:"The address of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken"`
 	SSHPort                string   `default:"22" usage:"The port of the Mikrotik router for SSH connection"`
 	MTUser                 string   `default:"" usage:"User of the Mikrotik router, from which the data on the comparison of the MAC address and IP address is taken"`
 	MTPass                 string   `default:"" usage:"The password of the user of the Mikrotik router, from which the data on the comparison of the mac-address and IP-address is taken"`
-	Loc                    string   `default:"Asia/Yekaterinburg" usage:"Location for time"`
 	ParseDelay             string   `default:"10m" usage:"Delay parsing logs"`
 	BlockGroup             string   `default:"block" usage:"The name of the address list in MikrotiK with which access is blocked to users who have exceeded the quota."`
 	ManualGroup            string   `default:"manual" usage:"Name of the address list in MikrotiK, in the presence of which the device is manually controlled."`
-	FnStartsWith           string   `default:"access.log" usage:"Specifies where the names of the files to be parsed begin"`
-	Timezone               float32  `default:"5" usage:"Timezone east of UTC"`
+	DevicesRetryDelay      string   `default:"1m" usage:"Interval to getting info from Mikrotik"`
 	ReceiveBufferSizeBytes int      `default:"" usage:"Size of RxQueue, i.e. value for SO_RCVBUF in bytes"`
 	MaxSSHRetries          int      `default:"0" usage:"The number of attempts to connect to the microtik router"`
 	SSHRetryDelay          uint16   `default:"0" usage:"Interval of attempts to connect to MT"`
@@ -53,6 +53,7 @@ type Config struct {
 	CSV                    bool     `default:"false" usage:"Output to csv"`
 	NoFlow                 bool     `default:"true" usage:"When this parameter is specified, the netflow packet listener is not launched, therefore, log files are not created, but only parsed."`
 	NoControl              bool     `default:"true" usage:"No need to control the Mikrotik, just read."`
+	ParseAllFiles          bool     `default:"false" usage:"Scans all files in the folder where access.lоg is located once, deleting all data from the database"`
 	Location               *time.Location
 	startTime              time.Time
 	endTime                time.Time
@@ -60,9 +61,11 @@ type Config struct {
 }
 
 var (
-	cfg                 Config
+	// cfg                 Config
+
 	fileDestination     *os.File
 	csvFiletDestination *os.File
+	Location            *time.Location // Global variable
 )
 
 type newContType struct {
@@ -136,7 +139,7 @@ func newConfig() *Config {
 		log.Errorf("Error loading Location(%v):%v", cfg.Loc, err)
 		cfg.Location = time.UTC
 	}
-
+	Location = cfg.Location
 	log.Debugf("Config %#v:", cfg)
 
 	return &cfg

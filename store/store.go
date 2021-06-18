@@ -12,10 +12,19 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 const (
 	insertSQL = `
+INSERT INTO stat (
+	date_str, year, month, day, hour, size, login, ipaddress
+) VALUES (
+	?,?,?,?,?,?,?,?
+)
+`
+	deleteSQL = `
 INSERT INTO stat (
 	date_str, year, month, day, hour, size, login, ipaddress
 ) VALUES (
@@ -87,6 +96,9 @@ func NewDBStat(dbFile string, bufSize int) (*DB, error) {
 func OpenDB(dbFile string) (*sql.DB, error) {
 	sqlDB, err := sql.Open("sqlite3", dbFile)
 	if err != nil {
+		return nil, err
+	}
+	if err := sqlDB.Ping(); err != nil {
 		return nil, err
 	}
 

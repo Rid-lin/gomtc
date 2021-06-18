@@ -43,7 +43,6 @@ func (t *Transport) SaveStatisticswithBuffer(fileName string, bufSize int) {
 		log.Error(err)
 		return
 	}
-	defer db.CloseStat()
 	t.RLock()
 	for _, year := range t.statofYears {
 		for _, month := range year.monthsStat {
@@ -89,7 +88,7 @@ func (t *Transport) SaveStatisticswithBuffer(fileName string, bufSize int) {
 		}
 	}
 	t.RUnlock()
-	if err := db.FlushStat(); err != nil {
+	if err := db.CloseStat(); err != nil {
 		log.Errorf("unable to flush: %w", err)
 	}
 	deltaTime := time.Since(startTime)
@@ -104,16 +103,11 @@ func GetDayStat(from, to string, fileName string) map[KeyDevice]StatDeviceType {
 	if err != nil {
 		return devStats
 	}
-	defer db.Close()
-	if db.Ping() != nil {
-		return devStats
-	}
 	SQL := fmt.Sprintf(`SELECT ipaddress, login, sum(size), hour
 	FROM stat
 	WHERE date(date_str) BETWEEN date('%s') AND date('%s')
 	GROUP BY login, hour
 	ORDER BY sum(size) DESC;`, from, to)
-	fmt.Print(SQL)
 	rows, err := db.Query(SQL)
 	if err != nil {
 		return devStats
@@ -147,4 +141,20 @@ func GetDayStat(from, to string, fileName string) map[KeyDevice]StatDeviceType {
 		devStats[KeyDevice{mac: mac}] = stat
 	}
 	return devStats
+}
+
+func (t *Transport) DeletingDateData(date, fileName string) {
+	db, err := store.OpenDB(fileName)
+	if err != nil {
+		return
+	}
+	defer db.Close()
+	SQL := fmt.Sprintf("delete from stat where date_str = '%s'", date)
+	result, err := db.Exec(SQL)
+	if err != nil {
+		log.Error("error to delete from table stat:%v", err)
+		return
+	}
+	row, err := result.RowsAffected()
+	log.Trace("result to delete from table stat:%v,%v", row, err)
 }

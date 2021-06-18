@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"path"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -37,7 +38,6 @@ func NewTransport(cfg *Config) *Transport {
 		devices:             make(map[KeyDevice]DeviceType),
 		AliasesStrArr:       make(map[string][]string),
 		Aliases:             make(map[string]AliasType),
-		Location:            Location,
 		statofYears:         make(map[int]StatOfYearType),
 		change:              make(BlockDevices),
 		pidfile:             cfg.Pidfile,
@@ -93,22 +93,22 @@ func (t *Transport) runOnce(cfg *Config) {
 	p.SSHCredentials = t.sshCredentials
 	p.BlockAddressList = t.BlockAddressList
 	p.QuotaType = t.QuotaType
-	p.Location = t.Location
 	t.RUnlock()
 
 	// t.readLog(cfg)
 
 	t.getDevices()
-	// t.delOldData(t.newCount.LastDateNew, t.Location)
-	// t.parseAllFilesAndCountingTraffic(cfg)
+	t.parseLog(cfg)
 	t.updateAliases(p)
 	t.checkQuotas(cfg)
 	t.BlockDevices()
 	// t.SendGroupStatus(cfg.NoControl)
 	t.getDevices()
 
-	// t.SaveStatisticswithBuffer(path.Join(cfg.ConfigPath, "sqlite.db"), 1024*64)
-
+	t.SaveStatisticswithBuffer(path.Join(cfg.ConfigPath, "sqlite.db"), 1024*64)
+	t.Lock()
+	t.statofYears = map[int]StatOfYearType{}
+	t.Unlock()
 	// t.writeLog(cfg)
 	// t.newCount.Count = Count{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 

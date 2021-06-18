@@ -35,7 +35,6 @@ type Transport struct {
 	csvFiletDestination *os.File
 	conn                *net.UDPConn
 	timerParse          *time.Timer
-	Location            *time.Location
 	lastUpdated         time.Time
 	lastUpdatedMT       time.Time
 	renewOneMac         chan string
@@ -268,5 +267,4 @@ type parseType struct {
 	SSHCredentials
 	QuotaType
 	BlockAddressList string
-	Location         *time.Location
 }
