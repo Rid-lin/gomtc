@@ -102,7 +102,7 @@ func (t *Transport) runOnce(cfg *Config) {
 	t.updateAliases(p)
 	t.checkQuotas(cfg)
 	t.BlockDevices()
-	// t.SendGroupStatus(cfg.NoControl)
+	t.SendGroupStatus(cfg.NoControl)
 	t.getDevices()
 
 	t.SaveStatisticswithBuffer(path.Join(cfg.ConfigPath, "sqlite.db"), 1024*64)
