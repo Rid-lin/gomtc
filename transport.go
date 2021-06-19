@@ -100,15 +100,15 @@ func (t *Transport) runOnce(cfg *Config) {
 	t.getDevices()
 	t.parseLog(cfg)
 	t.updateAliases(p)
+	t.SaveStatisticswithBuffer(path.Join(cfg.ConfigPath, "sqlite.db"), 1024*64)
+	t.Lock()
+	t.statofYears = map[int]StatOfYearType{}
+	t.Unlock()
 	t.checkQuotas(cfg)
 	t.BlockDevices()
 	t.SendGroupStatus(cfg.NoControl)
 	t.getDevices()
 
-	t.SaveStatisticswithBuffer(path.Join(cfg.ConfigPath, "sqlite.db"), 1024*64)
-	t.Lock()
-	t.statofYears = map[int]StatOfYearType{}
-	t.Unlock()
 	// t.writeLog(cfg)
 	// t.Count = Count{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 

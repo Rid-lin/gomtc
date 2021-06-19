@@ -43,7 +43,7 @@ type StatDeviceType struct {
 }
 
 func (t *Transport) parseAllFilesAndCountingTraffic(cfg *Config) {
-	err := t.parseDirToMapNew(cfg)
+	err := t.parseDirToMap(cfg)
 	if err != nil {
 		log.Error(err)
 	}
@@ -73,7 +73,7 @@ func (t *Transport) parseAllFilesAndCountingTraffic(cfg *Config) {
 // 	t.LastDayStr = time.Date(year, month, day, 0, 0, 0, 1, Location).String()
 // }
 
-func (t *Transport) parseDirToMapNew(cfg *Config) error {
+func (t *Transport) parseDirToMap(cfg *Config) error {
 	// iteration over all files in a folder
 	files, err := ioutil.ReadDir(cfg.LogPath)
 	if err != nil {
@@ -81,7 +81,7 @@ func (t *Transport) parseDirToMapNew(cfg *Config) error {
 	}
 	SortFileByModTime(files)
 	for _, file := range files {
-		if err := t.parseFileToMapNew(file, cfg); err != nil {
+		if err := t.parseFileToMap(file, cfg); err != nil {
 			log.Error(err)
 			continue
 		}
@@ -104,7 +104,7 @@ func (t *Transport) parseDirToMapNew(cfg *Config) error {
 	return nil
 }
 
-func (t *Transport) parseFileToMapNew(info os.FileInfo, cfg *Config) error {
+func (t *Transport) parseFileToMap(info os.FileInfo, cfg *Config) error {
 	if !strings.HasPrefix(info.Name(), cfg.FnStartsWith) {
 		return fmt.Errorf("%s don't match to paramert fnStartsWith='%s'", info.Name(), cfg.FnStartsWith)
 	}
@@ -241,73 +241,49 @@ func (t *Transport) addLineOutToMapOfReportsSuperNew(l *lineOfLogType) {
 
 func (t *Transport) checkQuotas(cfg *Config) {
 	t.Lock()
-	// p := parseType{
-	// 	SSHCredentials:   t.sshCredentials,
-	// 	QuotaType:        t.QuotaType,
-	// 	BlockAddressList: t.BlockAddressList,
-	// 	Location:         t.Location,
-	// }
-	tn := time.Now().In(cfg.Location)
-	// t.RUnlock()
+	tn := time.Now().In(Location)
 	hour := tn.Hour()
 	tns := tn.Format(DateLayout)
 	devicesStat := GetDayStat(tns, tns, path.Join(cfg.ConfigPath, "sqlite.db"))
-	// devicesStat := t.GetDayStat(lNow())
-	for _, alias := range t.Aliases {
-		var VolumePerDay, VolumePerCheck uint64
-		var StatPerHour [24]VolumePerType
-		for _, key := range alias.KeyArr {
-			VolumePerDay += devicesStat[key].VolumePerDay
-			VolumePerCheck += devicesStat[key].VolumePerCheck
-			for index := range devicesStat[key].PerHour {
-				StatPerHour[index].PerHour += devicesStat[key].PerHour[index]
-			}
-		}
-		if VolumePerDay >= alias.DailyQuota || StatPerHour[hour].PerHour >= alias.HourlyQuota {
+	for key, d := range devicesStat {
+		alias := t.Aliases[key.mac]
+		if d.VolumePerDay >= alias.DailyQuota || d.PerHour[hour] >= alias.HourlyQuota {
 			alias.ShouldBeBlocked = true
-			// t.BlockAlias(alias, p.BlockAddressList)
 		} else {
 			alias.ShouldBeBlocked = false
-			// t.UnBlockAlias(alias, p.BlockAddressList)
 		}
-		// switch {
-		// case (VolumePerDay >= alias.DailyQuota || StatPerHour[hour].PerHour >= alias.HourlyQuota) && alias.Blocked && alias.ShouldBeBlocked:
-		// 	continue
-		// case VolumePerDay >= alias.DailyQuota && !alias.Blocked:
-		// 	alias.ShouldBeBlocked = true
-		// 	t.addBlockGroup(alias, p.BlockAddressList)
-		// 	alias.Blocked = true
-		// case StatPerHour[hour].PerHour >= alias.HourlyQuota && !alias.Blocked:
-		// 	alias.ShouldBeBlocked = true
-		// 	t.addBlockGroup(alias, p.BlockAddressList)
-		// 	alias.Blocked = true
-		// case alias.Blocked:
-		// 	alias.ShouldBeBlocked = false
-		// 	t.delBlockGroup(alias, p.BlockAddressList)
-		// 	alias.Blocked = false
-		// }
-		// t.Lock()
 		t.Aliases[alias.AliasName] = alias
-		// t.Unlock()
-
 	}
-	// t.Lock()
-	// for key, device := range t.devices {
-	// 	if _, ok := t.change[key]; !ok {
-	// 		if device.Blocked {
-	// 			device = device.UnBlock(p.BlockAddressList)
-	// 			t.change[key] = DeviceToBlock{
-	// 				Id:       device.Id,
-	// 				Groups:   device.AddressLists,
-	// 				Disabled: paramertToBool(device.disabledL),
-	// 			}
-	// 		}
-	// 	}
-	// }
 	t.Unlock()
 }
 
-// func (t *Transport) getDay(l *lineOfLogType) StatOfDayType {
+// func (t *Transport) checkQuotas(cfg *Config) {
+// 	t.Lock()
+// 	tn := time.Now().In(Location)
+// 	hour := tn.Hour()
+// 	tns := tn.Format(DateLayout)
+// 	devicesStat := GetDayStat(tns, tns, path.Join(cfg.ConfigPath, "sqlite.db"))
+// 	for _, alias := range t.Aliases {
+// 		var VolumePerDay, VolumePerCheck uint64
+// 		var StatPerHour [24]VolumePerType
+// 		for _, key := range alias.KeyArr {
+// 			VolumePerDay += devicesStat[key].VolumePerDay
+// 			VolumePerCheck += devicesStat[key].VolumePerCheck
+// 			for index := range devicesStat[key].PerHour {
+// 				StatPerHour[index].PerHour += devicesStat[key].PerHour[index]
+// 			}
+// 		}
+// 		if VolumePerDay >= alias.DailyQuota || StatPerHour[hour].PerHour >= alias.HourlyQuota {
+// 			alias.ShouldBeBlocked = true
+// 		} else {
+// 			alias.ShouldBeBlocked = false
+// 		}
+// 		t.Aliases[alias.AliasName] = alias
+// 	}
+// 	t.Unlock()
+// }
+
+// func (t *Transport) GetDayStat(l *lineOfLogType) map[KeyDevice]StatDeviceType {
 // 	t.Lock()
 // 	year, ok := t.statofYears[l.year]
 // 	if !ok {
@@ -332,36 +308,8 @@ func (t *Transport) checkQuotas(cfg *Config) {
 // 		month.daysStat[l.day] = day
 // 	}
 // 	t.Unlock()
-// 	return day
+// 	return day.devicesStat
 // }
-
-func (t *Transport) GetDayStat(l *lineOfLogType) map[KeyDevice]StatDeviceType {
-	t.Lock()
-	year, ok := t.statofYears[l.year]
-	if !ok {
-		year = StatOfYearType{
-			year:       l.year,
-			monthsStat: map[time.Month]StatOfMonthType{},
-		}
-		t.statofYears[l.year] = year
-	}
-	month, ok := year.monthsStat[l.month]
-	if !ok {
-		month = StatOfMonthType{
-			daysStat: map[int]StatOfDayType{},
-			month:    l.month}
-		year.monthsStat[l.month] = month
-	}
-	day, ok := month.daysStat[l.day]
-	if !ok {
-		day = StatOfDayType{
-			devicesStat: map[KeyDevice]StatDeviceType{},
-			day:         l.day}
-		month.daysStat[l.day] = day
-	}
-	t.Unlock()
-	return day.devicesStat
-}
 
 func (t *Transport) BlockDevices() {
 	t.Lock()
@@ -428,12 +376,12 @@ func (t *Transport) timeCalculationAndPrinting() {
 	}
 	t.endTime = time.Now() // Saves the current time to be inserted into the log table
 	t.LastUpdated = time.Now()
-	log.Infof("The parsing started at %v, ended at %v, and lasted %.3v seconds at a rate of %v lines per second.",
+	log.Infof("The parsing started at %v, ended at %v, lasted %.3v seconds at a rate of %v lines per second.",
 		t.startTime.In(Location).Format(DateTimeLayout),
 		t.endTime.In(Location).Format(DateTimeLayout),
 		ExTime.Seconds(),
 		t.totalLineParsed/ExTimeInSec)
-	fmt.Printf("The parsing started at %v, ended at %v, and lasted %.3v seconds at a rate of %v lines per second.\n",
+	fmt.Printf("The parsing started at %v, ended at %v, lasted %.3v seconds at a rate of %v lines per second.\n",
 		t.startTime.In(Location).Format(DateTimeLayout),
 		t.endTime.In(Location).Format(DateTimeLayout),
 		ExTime.Seconds(),
