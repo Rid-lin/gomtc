@@ -29,16 +29,17 @@ func (t *Transport) parseLog(cfg *Config) {
 		// Getting the current time to calculate the running time
 		t.startTime = time.Now()
 		fmt.Printf("Parsing has started.\r")
-		tn := time.Now().In(cfg.Location)
+		tn := time.Now().In(Location)
 		t.DeletingDateData(tn.Format(DateLayout), path.Join(cfg.ConfigPath, "sqlite.db"))
 		t.Lock()
-		td := time.Date(tn.Year(), tn.Month(), tn.Day(), 0, 0, 1, 0, cfg.Location)
+		td := time.Date(tn.Year(), tn.Month(), tn.Day(), 0, 0, 1, 0, Location)
 		t.LastDate = td.Unix()
 		t.startTime = time.Now()
 		t.Unlock()
 		if err := t.parseOneFilesAndCountingTraffic(path.Join(cfg.LogPath, cfg.FnStartsWith), cfg); err != nil {
 			log.Error(err)
 		}
+		t.SumAndReset()
 		t.timeCalculationAndPrinting()
 	}
 }

@@ -54,7 +54,6 @@ type Config struct {
 	NoFlow                 bool     `default:"true" usage:"When this parameter is specified, the netflow packet listener is not launched, therefore, log files are not created, but only parsed."`
 	NoControl              bool     `default:"true" usage:"No need to control the Mikrotik, just read."`
 	ParseAllFiles          bool     `default:"false" usage:"Scans all files in the folder where access.lоg is located once, deleting all data from the database"`
-	Location               *time.Location
 	Count
 }
 
@@ -132,12 +131,11 @@ func newConfig() *Config {
 	}
 	log.SetLevel(lvl)
 
-	cfg.Location, err = time.LoadLocation(cfg.Loc)
+	Location, err = time.LoadLocation(cfg.Loc)
 	if err != nil {
 		log.Errorf("Error loading Location(%v):%v", cfg.Loc, err)
-		cfg.Location = time.UTC
+		Location = time.UTC
 	}
-	Location = cfg.Location
 	log.Debugf("Config %#v:", cfg)
 
 	return &cfg

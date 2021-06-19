@@ -249,10 +249,10 @@ type StatType struct {
 	Count           uint32
 }
 
-type VolumePerType struct {
-	PerMinute [60]uint64
-	PerHour   uint64
-}
+// type VolumePerType struct {
+// 	PerMinute [60]uint64
+// 	PerHour   uint64
+// }
 
 type SSHCredentials struct {
 	SSHHost       string

@@ -66,7 +66,7 @@ func (t *Transport) SaveStatisticswithBuffer(fileName string, bufSize int) {
 		log.Errorf("unable to flush: %v", err)
 	}
 	deltaTime := time.Since(startTime)
-	log.Debugf("Statistics save Execution time:%v speed:%v\n", deltaTime.Seconds(), float64(lineAdded)/deltaTime.Seconds())
+	log.Debugf("Statistics save Execution time:%v rate:%.3f", deltaTime.Seconds(), float64(lineAdded)/deltaTime.Seconds())
 }
 
 func GetDayStat(from, to string, fileName string) map[KeyDevice]StatDeviceType {
