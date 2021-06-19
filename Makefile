@@ -55,7 +55,7 @@ test: dep ## Run tests
 
 build: dep ## Build program executable for linux platform.
 	mkdir -p ./bin
-	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build ${LDFLAGS} -o bin/${PROGRAM_NAME}_linux_amd64 .
+	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build ${LDFLAGS} -o bin/${PROGRAM_NAME}_$(VERSION)_linux_$(COMMIT)_amd64 .
 
 build_all: dep ## Build program executable for all platform.
 	mkdir -p ./bin

@@ -15,8 +15,6 @@ import (
 func (transport *Transport) handleRequest(cfg *Config) {
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(cfg.AssetsPath))))
 
-	// http.HandleFunc("/", logreq(transport.handleIndex))
-	// http.HandleFunc("/wf/", logreq(transport.handleWithFriends))
 	http.HandleFunc("/", logreq(transport.handleIndex))
 	http.HandleFunc("/wf/", logreq(transport.handleIndexWithFriends))
 	http.HandleFunc("/log/", logreq(transport.handleLog))

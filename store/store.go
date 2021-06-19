@@ -24,14 +24,6 @@ INSERT INTO stat (
 	?,?,?,?,?,?,?,?
 )
 `
-	deleteSQL = `
-INSERT INTO stat (
-	date_str, year, month, day, hour, size, login, ipaddress
-) VALUES (
-	?,?,?,?,?,?,?,?
-)
-`
-
 	schemaSQL = `
 CREATE TABLE IF NOT EXISTS "stat" (
 	"id"	INTEGER NOT NULL UNIQUE,

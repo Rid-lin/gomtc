@@ -8,33 +8,37 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func (t *Transport) parseLog(cfg *Config) {
 	if cfg.ParseAllFiles {
 		// Getting the current time to calculate the running time
-		t.newCount.startTime = time.Now()
+		t.startTime = time.Now()
 		fmt.Printf("Parsing has started.\r")
 		tn := time.Unix(0, 0)
 		t.DeletingDateData(tn.Format(DateLayout), path.Join(cfg.ConfigPath, "sqlite.db"))
 		t.Lock()
-		t.newCount.LastDateNew = tn.Unix()
+		t.LastDate = tn.Unix()
 		t.Unlock()
 		t.parseAllFilesAndCountingTraffic(cfg)
 		t.timeCalculationAndPrinting()
 		cfg.ParseAllFiles = false
 	} else {
 		// Getting the current time to calculate the running time
-		t.newCount.startTime = time.Now()
+		t.startTime = time.Now()
 		fmt.Printf("Parsing has started.\r")
 		tn := time.Now().In(cfg.Location)
 		t.DeletingDateData(tn.Format(DateLayout), path.Join(cfg.ConfigPath, "sqlite.db"))
 		t.Lock()
 		td := time.Date(tn.Year(), tn.Month(), tn.Day(), 0, 0, 1, 0, cfg.Location)
-		t.newCount.LastDateNew = td.Unix()
-		t.newCount.startTime = time.Now()
+		t.LastDate = td.Unix()
+		t.startTime = time.Now()
 		t.Unlock()
-		t.parseOneFilesAndCountingTraffic(path.Join(cfg.LogPath, cfg.FnStartsWith), cfg)
+		if err := t.parseOneFilesAndCountingTraffic(path.Join(cfg.LogPath, cfg.FnStartsWith), cfg); err != nil {
+			log.Error(err)
+		}
 		t.timeCalculationAndPrinting()
 	}
 }

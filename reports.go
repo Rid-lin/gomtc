@@ -161,10 +161,10 @@ func (rq *RequestForm) ToLine() *lineOfLogType {
 	return &l
 }
 
-func (rq *RequestForm) getDateFrom() (int, int, int, int, int) {
-	tn, err := time.Parse(DateLayout, rq.dateFrom)
-	if err != nil {
-		return 0, 0, 0, 0, 0
-	}
-	return tn.In(Location).Year(), int(tn.In(Location).Month()), tn.In(Location).Day(), tn.In(Location).Hour(), tn.In(Location).Minute()
-}
+// func (rq *RequestForm) getDateFrom() (int, int, int, int, int) {
+// 	tn, err := time.Parse(DateLayout, rq.dateFrom)
+// 	if err != nil {
+// 		return 0, 0, 0, 0, 0
+// 	}
+// 	return tn.In(Location).Year(), int(tn.In(Location).Month()), tn.In(Location).Day(), tn.In(Location).Hour(), tn.In(Location).Minute()
+// }

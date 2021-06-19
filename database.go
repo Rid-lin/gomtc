@@ -9,33 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
-	insertSQL = `
-INSERT INTO stat (
-	date_str, year, month, day, hour, size, login, ipaddress
-) VALUES (
-	?,?,?,?,?,?,?,?
-)
-`
-
-	schemaSQL = `
-	CREATE TABLE IF NOT EXISTS "stat" (
-		"id"	INTEGER NOT NULL UNIQUE,
-		"date"	TEXT NOT NULL DEFAULT '1970-01-01',
-		"year"	INTEGER NOT NULL,
-		"month"	INTEGER NOT NULL,
-		"day"	INTEGER NOT NULL,
-		"hour"	INTEGER NOT NULL,
-		"size"	INTEGER NOT NULL,
-		"login"	TEXT NOT NULL,
-		"ipaddress"	TEXT NOT NULL,
-		PRIMARY KEY("id" AUTOINCREMENT)
-		);
-`
-)
-
 func (t *Transport) SaveStatisticswithBuffer(fileName string, bufSize int) {
-	// fmt.Print("Start SaveStatisticswithBuffer ")
 	startTime := time.Now()
 	lineAdded := 0
 	db, err := store.NewDBStat(fileName, bufSize)
@@ -89,11 +63,9 @@ func (t *Transport) SaveStatisticswithBuffer(fileName string, bufSize int) {
 	}
 	t.RUnlock()
 	if err := db.CloseStat(); err != nil {
-		log.Errorf("unable to flush: %w", err)
+		log.Errorf("unable to flush: %v", err)
 	}
 	deltaTime := time.Since(startTime)
-	// fmt.Print("SaveStatisticswithBuffer ended ")
-	// fmt.Printf("Statistics save Execution time:%v speed:%v\n", deltaTime.Seconds(), float64(lineAdded)/deltaTime.Seconds())
 	log.Debugf("Statistics save Execution time:%v speed:%v\n", deltaTime.Seconds(), float64(lineAdded)/deltaTime.Seconds())
 }
 
@@ -152,9 +124,9 @@ func (t *Transport) DeletingDateData(date, fileName string) {
 	SQL := fmt.Sprintf("delete from stat where date_str = '%s'", date)
 	result, err := db.Exec(SQL)
 	if err != nil {
-		log.Error("error to delete from table stat:%v", err)
+		log.Errorf("error to delete from table stat:%v", err)
 		return
 	}
 	row, err := result.RowsAffected()
-	log.Trace("result to delete from table stat:%v,%v", row, err)
+	log.Tracef("result to delete from table stat:%v,%v", row, err)
 }

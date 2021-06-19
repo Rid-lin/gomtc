@@ -27,12 +27,12 @@ func NewTransport(cfg *Config) *Transport {
 		}
 	}
 
-	Location, err := time.LoadLocation(cfg.Loc)
-	if err != nil {
-		Location = time.FixedZone("Custom timezone", int(cfg.Timezone*60*60))
-		log.Warningf("Error loading timezone from location(%v):%v. Using a fixed time zone(%v:%v)", cfg.Loc, err, Location, cfg.Timezone*60*60)
-		// Location = time.UTC
-	}
+	// Location, err := time.LoadLocation(cfg.Loc)
+	// if err != nil {
+	// 	Location = time.FixedZone("Custom timezone", int(cfg.Timezone*60*60))
+	// 	log.Warningf("Error loading timezone from location(%v):%v. Using a fixed time zone(%v:%v)", cfg.Loc, err, Location, cfg.Timezone*60*60)
+	// 	// Location = time.UTC
+	// }
 
 	return &Transport{
 		devices:             make(map[KeyDevice]DeviceType),
@@ -110,7 +110,7 @@ func (t *Transport) runOnce(cfg *Config) {
 	t.statofYears = map[int]StatOfYearType{}
 	t.Unlock()
 	// t.writeLog(cfg)
-	// t.newCount.Count = Count{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	// t.Count = Count{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
 	t.setTimerParse(cfg.ParseDelay)
 }

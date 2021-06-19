@@ -43,7 +43,7 @@ type Transport struct {
 	parseChan           chan *time.Time
 	newLogChan          chan os.Signal
 	outputChannel       chan decodedRecord
-	newCount            newContType
+	newContType
 	Author
 	QuotaType
 	sync.RWMutex
@@ -217,13 +217,13 @@ type DisplayDataUserType struct {
 }
 
 type RequestForm struct {
-	dateFrom    string
-	dateTo      string
-	path        string
-	referURL    string
-	report      string
-	dateFromArr [3]int
-	dateToArr   [3]int
+	dateFrom string
+	dateTo   string
+	path     string
+	referURL string
+	report   string
+	// dateFromArr [3]int
+	// dateToArr   [3]int
 	// dateFromT time.Time
 	// dateToT   time.Time
 }

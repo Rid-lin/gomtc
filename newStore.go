@@ -49,29 +49,29 @@ func (t *Transport) parseAllFilesAndCountingTraffic(cfg *Config) {
 	}
 }
 
-func (t *Transport) delOldData(timestamp int64) {
-	tn := time.Unix(timestamp, 0).In(Location)
-	year := tn.Year()
-	month := tn.Month()
-	day := tn.Day()
-	t.Lock()
-	defer t.Unlock()
-	yearStat, ok := t.statofYears[year]
-	if !ok {
-		return
-	}
-	monthStat, ok := yearStat.monthsStat[month]
-	if !ok {
-		return
-	}
-	_, ok = monthStat.daysStat[day]
-	if !ok {
-		return
-	}
-	delete(t.statofYears[year].monthsStat[month].daysStat, day)
-	t.newCount.LastDateNew = time.Date(year, month, day, 0, 0, 0, 1, Location).Unix()
-	t.newCount.LastDayStrNew = time.Date(year, month, day, 0, 0, 0, 1, Location).String()
-}
+// func (t *Transport) delOldData(timestamp int64) {
+// 	tn := time.Unix(timestamp, 0).In(Location)
+// 	year := tn.Year()
+// 	month := tn.Month()
+// 	day := tn.Day()
+// 	t.Lock()
+// 	defer t.Unlock()
+// 	yearStat, ok := t.statofYears[year]
+// 	if !ok {
+// 		return
+// 	}
+// 	monthStat, ok := yearStat.monthsStat[month]
+// 	if !ok {
+// 		return
+// 	}
+// 	_, ok = monthStat.daysStat[day]
+// 	if !ok {
+// 		return
+// 	}
+// 	delete(t.statofYears[year].monthsStat[month].daysStat, day)
+// 	t.LastDate = time.Date(year, month, day, 0, 0, 0, 1, Location).Unix()
+// 	t.LastDayStr = time.Date(year, month, day, 0, 0, 0, 1, Location).String()
+// }
 
 func (t *Transport) parseDirToMapNew(cfg *Config) error {
 	// iteration over all files in a folder
@@ -87,20 +87,20 @@ func (t *Transport) parseDirToMapNew(cfg *Config) error {
 		}
 		fmt.Printf("From file %v lines Read:%v/Parsed:%v/Added:%v/Skiped:%v/Error:%v\n",
 			file.Name(),
-			t.newCount.LineRead,
-			t.newCount.LineParsed,
-			t.newCount.LineAdded,
-			t.newCount.LineSkiped,
-			t.newCount.LineError)
-		t.newCount.SumAndReset()
+			t.LineRead,
+			t.LineParsed,
+			t.LineAdded,
+			t.LineSkiped,
+			t.LineError)
+		t.SumAndReset()
 	}
 	fmt.Printf("From all files lines Read:%v/Parsed:%v/Added:%v/Skiped:%v/Error:%v\n",
 		// Lines read:%v, parsed:%v, lines added:%v lines skiped:%v lines error:%v",
-		t.newCount.totalLineRead,
-		t.newCount.totalLineParsed,
-		t.newCount.totalLineAdded,
-		t.newCount.totalLineSkiped,
-		t.newCount.totalLineError)
+		t.totalLineRead,
+		t.totalLineParsed,
+		t.totalLineAdded,
+		t.totalLineSkiped,
+		t.totalLineError)
 	return nil
 }
 
@@ -144,33 +144,33 @@ func (t *Transport) parseFileToMapNew(info os.FileInfo, cfg *Config) error {
 
 func (t *Transport) parseLogToArrayByLine(scanner *bufio.Scanner, cfg *Config) error {
 	for scanner.Scan() { // We go through the entire file to the end
-		t.newCount.LineRead++
+		t.LineRead++
 		line := scanner.Text() // get the text from the line, for simplicity
 		line = filtredMessage(line, cfg.IgnorList)
 		if line == "" {
-			t.newCount.LineSkiped++
+			t.LineSkiped++
 			continue
 		}
 		line = replaceQuotes(line)
 		l, err := parseLineToStruct(line, cfg)
 		if err != nil {
-			t.newCount.LineError++
+			t.LineError++
 			log.Warningf("%v", err)
 			continue
 		}
-		t.newCount.LineParsed++
-		if t.newCount.LastDateNew > l.timestamp {
+		t.LineParsed++
+		if t.LastDate > l.timestamp {
 			log.Tracef("line(%v) too old\r", line)
-			t.newCount.LineSkiped++
+			t.LineSkiped++
 			continue
-		} else if t.newCount.LastDateNew < l.timestamp {
-			t.newCount.LastDateNew = l.timestamp
+		} else if t.LastDate < l.timestamp {
+			t.LastDate = l.timestamp
 		}
 
 		// The main function of filling the database
 		// Adding a row to the database for counting traffic
 		t.addLineOutToMapOfReportsSuperNew(&l)
-		t.newCount.LineAdded++
+		t.LineAdded++
 	}
 	if err := scanner.Err(); err != nil && err != io.EOF {
 		log.Errorf("Error scanner :%v", err)
@@ -421,21 +421,21 @@ func (t *Transport) parseOneFilesAndCountingTraffic(FullFileName string, cfg *Co
 }
 
 func (t *Transport) timeCalculationAndPrinting() {
-	ExTime := time.Since(t.newCount.startTime)
+	ExTime := time.Since(t.startTime)
 	ExTimeInSec := uint64(ExTime.Seconds())
 	if ExTimeInSec == 0 {
 		ExTimeInSec = 1
 	}
-	t.newCount.endTime = time.Now() // Saves the current time to be inserted into the log table
-	t.newCount.lastUpdated = time.Now()
+	t.endTime = time.Now() // Saves the current time to be inserted into the log table
+	t.LastUpdated = time.Now()
 	log.Infof("The parsing started at %v, ended at %v, and lasted %.3v seconds at a rate of %v lines per second.",
-		t.newCount.startTime.In(Location).Format(DateTimeLayout),
-		t.newCount.endTime.In(Location).Format(DateTimeLayout),
+		t.startTime.In(Location).Format(DateTimeLayout),
+		t.endTime.In(Location).Format(DateTimeLayout),
 		ExTime.Seconds(),
-		t.newCount.totalLineParsed/ExTimeInSec)
+		t.totalLineParsed/ExTimeInSec)
 	fmt.Printf("The parsing started at %v, ended at %v, and lasted %.3v seconds at a rate of %v lines per second.\n",
-		t.newCount.startTime.In(Location).Format(DateTimeLayout),
-		t.newCount.endTime.In(Location).Format(DateTimeLayout),
+		t.startTime.In(Location).Format(DateTimeLayout),
+		t.endTime.In(Location).Format(DateTimeLayout),
 		ExTime.Seconds(),
-		t.newCount.totalLineParsed/ExTimeInSec)
+		t.totalLineParsed/ExTimeInSec)
 }

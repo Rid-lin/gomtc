@@ -55,8 +55,6 @@ type Config struct {
 	NoControl              bool     `default:"true" usage:"No need to control the Mikrotik, just read."`
 	ParseAllFiles          bool     `default:"false" usage:"Scans all files in the folder where access.lоg is located once, deleting all data from the database"`
 	Location               *time.Location
-	startTime              time.Time
-	endTime                time.Time
 	Count
 }
 
@@ -70,11 +68,11 @@ var (
 
 type newContType struct {
 	Count
-	startTime     time.Time
-	endTime       time.Time
-	lastUpdated   time.Time
-	LastDateNew   int64
-	LastDayStrNew string
+	startTime   time.Time
+	endTime     time.Time
+	LastUpdated time.Time
+	LastDate    int64
+	LastDayStr  string
 }
 
 func newConfig() *Config {
