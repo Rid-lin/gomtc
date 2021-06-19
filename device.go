@@ -138,7 +138,7 @@ func (d DeviceType) UnBlock(group string, key KeyDevice) DeviceType {
 }
 
 func (t *Transport) SendGroupStatus(NoControl bool) {
-	if !NoControl {
+	if NoControl {
 		return
 	}
 	t.RLock()
