@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	_ "embed"
+	// _ "embed"
 	"fmt"
 	"os"
 	"strings"

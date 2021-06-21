@@ -45,9 +45,9 @@ header {
     text-align: center;
 }
 
-.input_block{
+/* .input_block{
     display: block ruby;
-}
+} */
 
 .input_block form{
     padding: 0 0.1rem;

@@ -15,8 +15,6 @@ import (
 func (transport *Transport) handleRequest(cfg *Config) {
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(cfg.AssetsPath))))
 
-	// http.HandleFunc("/", logreq(transport.handleIndex))
-	// http.HandleFunc("/wf/", logreq(transport.handleWithFriends))
 	http.HandleFunc("/", logreq(transport.handleIndex))
 	http.HandleFunc("/wf/", logreq(transport.handleIndexWithFriends))
 	http.HandleFunc("/log/", logreq(transport.handleLog))
@@ -56,51 +54,60 @@ func parseDataFromURL(r *http.Request) RequestForm {
 	if len(m["date_from"]) > 0 {
 		request.dateFrom = m["date_from"][0]
 	} else {
-		request.dateFrom = time.Now().Format("2006-01-02")
+		request.dateFrom = time.Now().In(Location).Format(DateLayout)
 	}
 	if len(m["date_to"]) > 0 {
 		request.dateTo = m["date_to"][0]
 	} else {
-		request.dateTo = time.Now().Add(24 * time.Hour).Format("2006-01-02")
+		request.dateTo = time.Now().Add(24 * time.Hour).Format(DateLayout)
 	}
 	if request.dateFrom == "" {
-		request.dateFrom = time.Now().Format("2006-01-02")
+		request.dateFrom = time.Now().In(Location).Format(DateLayout)
 	}
 	if request.dateTo == "" {
-		request.dateTo = time.Now().Add(24 * time.Hour).Format("2006-01-02")
+		request.dateTo = time.Now().Add(24 * time.Hour).Format(DateLayout)
 	}
 	if len(m["report"]) > 0 {
 		request.report = m["report"][0]
 	}
 	var dateFrom, dateTo time.Time
 	if len(m["direct"]) > 0 {
-		dateFrom, err = time.Parse("2006-01-02", request.dateFrom)
+		dateFrom, err = time.ParseInLocation(DateLayout, request.dateFrom, Location)
 		if err != nil {
 			dateFrom = time.Now()
 		}
-		dateTo, err = time.Parse("2006-01-02", request.dateFrom)
+		dateTo, err = time.ParseInLocation(DateLayout, request.dateFrom, Location)
 		if err != nil {
 			dateTo = time.Now()
 		}
-		if m["direct"][0] == "next" {
+		if m["direct"][0] == ">" {
 			dateFrom = dateFrom.AddDate(0, 0, 1)
-		} else if m["direct"][0] == "prev" {
+		} else if m["direct"][0] == "<" {
 			dateFrom = dateFrom.AddDate(0, 0, -1)
 		}
-		if m["direct"][0] == "next" {
+		request.dateFrom = dateFrom.In(Location).Format(DateLayout)
+	}
+	if len(m["direct_to"]) > 0 {
+		dateFrom, err = time.Parse(DateLayout, request.dateFrom)
+		if err != nil {
+			dateFrom = time.Now()
+		}
+		dateTo, err = time.Parse(DateLayout, request.dateFrom)
+		if err != nil {
+			dateTo = time.Now()
+		}
+		if m["direct_to"][0] == ">" {
 			dateTo = dateTo.AddDate(0, 0, 1)
-		} else if m["direct"][0] == "prev" {
+		} else if m["direct_to"][0] == "<" {
 			dateTo = dateTo.AddDate(0, 0, -1)
 		}
-		request.dateFrom = dateFrom.Format("2006-01-02")
-		request.dateTo = dateTo.Format("2006-01-02")
+		request.dateTo = dateTo.In(Location).Format(DateLayout)
 	}
-
 	return request
 }
 
-func (data *Transport) handleIndex(w http.ResponseWriter, r *http.Request) {
-	data.handleNewReport(w, false, r)
+func (t *Transport) handleIndex(w http.ResponseWriter, r *http.Request) {
+	t.handleNewReport(w, false, r)
 }
 
 func (data *Transport) handleIndexWithFriends(w http.ResponseWriter, r *http.Request) {
@@ -108,13 +115,13 @@ func (data *Transport) handleIndexWithFriends(w http.ResponseWriter, r *http.Req
 }
 
 func (t *Transport) handleNewReport(w http.ResponseWriter, withfriends bool, r *http.Request) {
+	t.RLock()
+	assetsPath := t.AssetsPath
+	t.RUnlock()
 
 	request := parseDataFromURL(r)
 	request.referURL = r.Host + r.URL.Path
 	request.path = r.URL.Path
-	t.RLock()
-	assetsPath := t.AssetsPath
-	t.RUnlock()
 	DisplayData, err := t.reportDailyHourlyByMac(request, withfriends)
 	if err != nil {
 		fmt.Fprintf(w, "Проверьте налиие логов за запрашиваемый период<br> или подождите несколько минут.")

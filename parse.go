@@ -3,46 +3,44 @@ package main
 import (
 	"fmt"
 	"os"
+	"path"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
-func (t *Transport) runOnce(cfg *Config) {
-	p := parseType{}
-	t.RLock()
-	p.SSHCredentials = t.sshCredentials
-	p.BlockAddressList = t.BlockAddressList
-	p.QuotaType = t.QuotaType
-	p.Location = t.Location
-	t.RUnlock()
-
-	t.readLog(cfg)
-
-	t.getDevices()
-	t.delOldData(t.newCount.LastDateNew, t.Location)
-	t.parseAllFilesAndCountingTraffic(cfg)
-	t.updateAliases(p)
-	t.checkQuotas()
-	t.BlockDevices()
-	if !cfg.NoControl {
-		t.SendGroupStatus()
-	}
-	t.getDevices()
-
-	t.writeLog(cfg)
-	t.newCount.Count = Count{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-
-	t.setTimerParse(cfg.ParseDelay)
-}
-
-func (t *Transport) setTimerParse(IntervalStr string) {
-	interval, err := time.ParseDuration(IntervalStr)
-	if err != nil {
-		t.timerParse = time.NewTimer(15 * time.Minute)
+func (t *Transport) parseLog(cfg *Config) {
+	if cfg.ParseAllFiles {
+		// Getting the current time to calculate the running time
+		t.startTime = time.Now()
+		fmt.Printf("Parsing has started.\r")
+		tn := time.Unix(0, 0)
+		t.DeletingDateData(tn.Format(DateLayout), path.Join(cfg.ConfigPath, "sqlite.db"))
+		t.Lock()
+		t.LastDate = tn.Unix()
+		t.Unlock()
+		t.parseAllFilesAndCountingTraffic(cfg)
+		t.timeCalculationAndPrinting()
+		cfg.ParseAllFiles = false
 	} else {
-		t.timerParse = time.NewTimer(interval)
+		// Getting the current time to calculate the running time
+		t.startTime = time.Now()
+		fmt.Printf("Parsing has started.\r")
+		tn := time.Now().In(Location)
+		t.DeletingDateData(tn.Format(DateLayout), path.Join(cfg.ConfigPath, "sqlite.db"))
+		t.Lock()
+		td := time.Date(tn.Year(), tn.Month(), tn.Day(), 0, 0, 1, 0, Location)
+		t.LastDate = td.Unix()
+		t.startTime = time.Now()
+		t.Unlock()
+		if err := t.parseOneFilesAndCountingTraffic(path.Join(cfg.LogPath, cfg.FnStartsWith), cfg); err != nil {
+			log.Error(err)
+		}
+		t.SumAndReset()
+		t.timeCalculationAndPrinting()
 	}
 }
 

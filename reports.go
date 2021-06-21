@@ -2,6 +2,7 @@ package main
 
 import (
 	"math"
+	"path"
 	"sort"
 	"time"
 )
@@ -20,13 +21,16 @@ func (t *Transport) reportDailyHourlyByMac(rq RequestForm, showFriends bool) (Di
 	LastUpdated := t.lastUpdated.Format("2006-01-02 15:04:05.999")
 	LastUpdatedMT := t.lastUpdatedMT.Format("2006-01-02 15:04:05.999")
 	t.RUnlock()
-	day := t.getDay(rq.ToLine())
 	ReportData := ReportDataType{}
 	line := LineOfDisplay{}
 	var totalVolumePerDay uint64
-	var totalVolumePerHour [24]VolumePerType
+	var totalVolumePerHour [24]uint64
 	t.RLock()
-	for key, value := range day.devicesStat {
+	// devicesStat := t.GetDayStat(rq.ToLine())
+	// y, m, d, _, _ := rq.getDateFrom(t.Location)
+	// y1, m1, d1, _, _ := rq.getDateTo(t.Location)
+	devicesStat := GetDayStat(rq.dateFrom, rq.dateTo, path.Join(t.ConfigPath, "sqlite.db"))
+	for key, value := range devicesStat {
 
 		line.Alias = key.mac
 		line.VolumePerDay = value.VolumePerDay
@@ -35,9 +39,9 @@ func (t *Transport) reportDailyHourlyByMac(rq RequestForm, showFriends bool) (Di
 		line.InfoType.PersonType = t.Aliases[key.mac].PersonType
 		line.InfoType.QuotaType = t.Aliases[key.mac].QuotaType
 		line.InfoType.DeviceType = t.devices[key]
-		for i := range line.StatPerHour {
-			line.StatPerHour[i].PerHour = value.StatPerHour[i].PerHour
-			totalVolumePerHour[i].PerHour += value.StatPerHour[i].PerHour
+		for i := range line.PerHour {
+			line.PerHour[i] = value.PerHour[i]
+			totalVolumePerHour[i] += value.PerHour[i]
 		}
 		ReportData = add(ReportData, line)
 	}
@@ -45,7 +49,7 @@ func (t *Transport) reportDailyHourlyByMac(rq RequestForm, showFriends bool) (Di
 	line = LineOfDisplay{}
 	line.Alias = "Всего"
 	line.VolumePerDay = totalVolumePerDay
-	line.StatPerHour = totalVolumePerHour
+	line.PerHour = totalVolumePerHour
 	ReportData = add(ReportData, line)
 
 	sort.Sort(ReportData)
@@ -59,7 +63,7 @@ func (t *Transport) reportDailyHourlyByMac(rq RequestForm, showFriends bool) (Di
 		Logs:           []LogsOfJob{},
 		Header:         "Отчёт почасовой по трафику пользователей с логинами и IP-адресами",
 		DateFrom:       rq.dateFrom,
-		DateTo:         "",
+		DateTo:         rq.dateTo,
 		LastUpdated:    LastUpdated,
 		LastUpdatedMT:  LastUpdatedMT,
 		TimeToGenerate: time.Since(start),
@@ -75,7 +79,6 @@ func (t *Transport) reportDailyHourlyByMac(rq RequestForm, showFriends bool) (Di
 		},
 		QuotaType: Quota,
 	}, nil
-
 }
 
 func (a ReportDataType) Len() int           { return len(a) }
@@ -137,7 +140,7 @@ func (rData ReportDataType) FiltredFriendS(friends []string) ReportDataType {
 func add(slice []LineOfDisplay, line LineOfDisplay) []LineOfDisplay {
 	for index, item := range slice {
 		if line.Alias == item.Alias {
-			slice[index].StatPerHour = line.StatPerHour
+			slice[index].PerHour = line.PerHour
 			return slice
 		}
 	}
@@ -146,7 +149,7 @@ func add(slice []LineOfDisplay, line LineOfDisplay) []LineOfDisplay {
 
 func (rq *RequestForm) ToLine() *lineOfLogType {
 	l := lineOfLogType{}
-	tn, err := time.Parse("2006-01-02", rq.dateFrom)
+	tn, err := time.Parse(DateLayout, rq.dateFrom)
 	if err != nil {
 		tn = time.Now()
 	}
@@ -157,3 +160,11 @@ func (rq *RequestForm) ToLine() *lineOfLogType {
 	l.minute = tn.Minute()
 	return &l
 }
+
+// func (rq *RequestForm) getDateFrom() (int, int, int, int, int) {
+// 	tn, err := time.Parse(DateLayout, rq.dateFrom)
+// 	if err != nil {
+// 		return 0, 0, 0, 0, 0
+// 	}
+// 	return tn.In(Location).Year(), int(tn.In(Location).Month()), tn.In(Location).Day(), tn.In(Location).Hour(), tn.In(Location).Minute()
+// }

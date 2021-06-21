@@ -11,12 +11,6 @@ import (
 func main() {
 	cfg := newConfig()
 
-	if !cfg.Debug {
-		if err := CheckPIDFile(cfg.Pidfile); err != nil {
-			log.Error(err)
-			os.Exit(2)
-		}
-	}
 	if err := writePID(cfg.Pidfile); err != nil {
 		log.Error(err)
 		os.Exit(2)
@@ -36,8 +30,8 @@ func main() {
 
 	t := NewTransport(cfg)
 
-	go t.Exit()
-	go t.ReOpenLogAfterLogroatate()
+	go t.Exit(cfg)
+	go t.ReOpenLogAfterLogroatate(cfg)
 	t.getAliasesArr(cfg)
 
 	// Endless file parsing loop

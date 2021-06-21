@@ -15,7 +15,7 @@ PLATFORMS=linux windows
 # ARCHITECTURES=386 amd64 ppc64 arm arm64
 ARCHITECTURES=386 amd64 arm arm64
 
-LDFLAGS = -ldflags "-w -s -X=main.Version=${VERSION} -X=main.Build=${COMMIT} -X main.gitTag=${TAG} -X main.gitCommit=${COMMIT} -X main.gitBranch=${BRANCH} -X main.buildTime=${BUILD_TIME}"
+LDFLAGS = -ldflags "-s -w -X=main.Version=${VERSION} -X=main.Build=${COMMIT} -X main.gitTag=${TAG} -X main.gitCommit=${COMMIT} -X main.gitBranch=${BRANCH} -X main.buildTime=${BUILD_TIME}"
 
 # Check for required command tools to build or stop immediately
 EXECUTABLES = git go find pwd basename
@@ -55,7 +55,11 @@ test: dep ## Run tests
 
 build: dep ## Build program executable for linux platform.
 	mkdir -p ./bin
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build ${LDFLAGS} -o bin/${PROGRAM_NAME}_linux_amd64 .
+	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build ${LDFLAGS} -o bin/${PROGRAM_NAME}_$(VERSION)_linux_$(COMMIT)_amd64 .
+
+build_alpine: dep ## Build program executable for linux platform.
+	mkdir -p ./bin
+	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags "-linkmode external -extldflags '-static' -s -w" -o bin/${PROGRAM_NAME}_$(VERSION)_linux_$(COMMIT)_amd64 .
 
 build_all: dep ## Build program executable for all platform.
 	mkdir -p ./bin
@@ -87,7 +91,7 @@ uninstall: ## Uninstall program executable from /usr/bin directory.
 
 ci: 
 	$(foreach FILE, $(shell busybox find ./bin/ -type f -name "gomtc*"),\
-	$(shell 7z a -tzip -m0=lzma -mx=9 $(PWD)/release/$(shell basename $(FILE)).zip $(PWD)/bin/$(shell basename $(FILE)) $(PWD)/build/for_release/* ))
+	$(shell 7z a -tzip -m0=lzma -mx=9 $(PWD)/release/$(shell basename $(FILE)).zip $(PWD)/bin/$(shell basename $(FILE)) $(PWD)/build/* ))
 
 cbpci: clean dep build_all pack ci
 cbpсci: clean dep build_all pack cleanrelease ci

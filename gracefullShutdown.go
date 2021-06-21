@@ -9,15 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func CheckPIDFile(filename string) error {
-	if _, err := os.Stat(filename); err != nil {
-		if os.IsNotExist(err) {
-			return nil
-		}
-	}
-	return fmt.Errorf("already running")
-}
-
 func writePID(filename string) error {
 	file, err := os.Create(filename)
 	if err != nil {
@@ -46,15 +37,19 @@ func getExitSignalsChannel() chan os.Signal {
 
 }
 
-func (t *Transport) Exit() {
+func (t *Transport) Exit(cfg *Config) {
 	<-t.exitChan
 	t.stopReadFromUDP <- 1
-	if err := t.fileDestination.Sync(); err != nil {
-		log.Error(err)
+	if !cfg.NoFlow {
+		if err := t.fileDestination.Sync(); err != nil {
+			log.Errorf("File(%v) sync error:%v", t.fileDestination.Name(), err)
+		}
+		if err := t.fileDestination.Close(); err != nil {
+			log.Errorf("File(%v) close error:%v", t.fileDestination.Name(), err)
+		}
 	}
-	t.fileDestination.Close()
 	if err := os.Remove(t.pidfile); err != nil {
-		log.Error(err)
+		log.Errorf("File (%v) deletion error:%v", t.pidfile, err)
 	}
 	log.Println("Shutting down")
 	// time.Sleep(5 * time.Second)
@@ -62,15 +57,17 @@ func (t *Transport) Exit() {
 
 }
 
-func (t *Transport) ReOpenLogAfterLogroatate() {
+func (t *Transport) ReOpenLogAfterLogroatate(cfg *Config) {
 	<-t.newLogChan
 	var err error
 	t.Lock()
 	log.Println("Received a signal from logrotate, close the file.")
 	if err := t.fileDestination.Sync(); err != nil {
-		log.Error(err)
+		log.Errorf("File(%v) sync error:%v", t.fileDestination.Name(), err)
 	}
-	t.fileDestination.Close()
+	if err := t.fileDestination.Close(); err != nil {
+		log.Errorf("File(%v) close error:%v", t.fileDestination.Name(), err)
+	}
 	if !cfg.NoFlow {
 		t.fileDestination, err = os.OpenFile(cfg.NameFileToLog, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {

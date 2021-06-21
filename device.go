@@ -13,7 +13,6 @@ func (t *Transport) getDevices() {
 		SSHCredentials:   t.sshCredentials,
 		QuotaType:        t.QuotaType,
 		BlockAddressList: t.BlockAddressList,
-		Location:         t.Location,
 	})
 	for _, device := range devices {
 		device.Manual = inAddressList(device.AddressLists, t.ManualAddresList)
@@ -138,13 +137,15 @@ func (d DeviceType) UnBlock(group string, key KeyDevice) DeviceType {
 	return d
 }
 
-func (t *Transport) SendGroupStatus() {
+func (t *Transport) SendGroupStatus(NoControl bool) {
+	if NoControl {
+		return
+	}
 	t.RLock()
 	p := parseType{
 		SSHCredentials:   t.sshCredentials,
 		QuotaType:        t.QuotaType,
 		BlockAddressList: t.BlockAddressList,
-		Location:         t.Location,
 	}
 	t.RUnlock()
 	t.change.sendLeaseSet(p)

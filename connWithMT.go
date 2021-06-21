@@ -3,7 +3,6 @@ package main
 import (
 	"strconv"
 	"strings"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -338,13 +337,13 @@ func boolToParamert(trigger bool) string {
 	return "no"
 }
 
-func lNow() *lineOfLogType {
-	var l lineOfLogType
-	tn := time.Now()
-	l.year = tn.Year()
-	l.month = tn.Month()
-	l.day = tn.Day()
-	l.hour = tn.Hour()
-	l.minute = tn.Minute()
-	return &l
-}
+// func lNow() *lineOfLogType {
+// 	var l lineOfLogType
+// 	tn := time.Now()
+// 	l.year = tn.Year()
+// 	l.month = tn.Month()
+// 	l.day = tn.Day()
+// 	l.hour = tn.Hour()
+// 	l.minute = tn.Minute()
+// 	return &l
+// }

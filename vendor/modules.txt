@@ -4,13 +4,13 @@ github.com/cristalhq/aconfig
 # github.com/cristalhq/aconfig/aconfigyaml v0.16.1
 ## explicit
 github.com/cristalhq/aconfig/aconfigyaml
-# github.com/jinzhu/now v1.1.2
+# github.com/mattn/go-sqlite3 v1.14.7
 ## explicit
-github.com/jinzhu/now
+github.com/mattn/go-sqlite3
 # github.com/sirupsen/logrus v1.8.1
 ## explicit
 github.com/sirupsen/logrus
-# golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
+# golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
 ## explicit
 golang.org/x/crypto/blowfish
 golang.org/x/crypto/chacha20
@@ -22,7 +22,7 @@ golang.org/x/crypto/internal/subtle
 golang.org/x/crypto/poly1305
 golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
-# golang.org/x/sys v0.0.0-20210608053332-aa57babbf139
+# golang.org/x/sys v0.0.0-20210616094352-59db8d763f22
 ## explicit
 golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader

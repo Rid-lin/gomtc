@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -42,57 +43,37 @@ type StatDeviceType struct {
 }
 
 func (t *Transport) parseAllFilesAndCountingTraffic(cfg *Config) {
-	// Getting the current time to calculate the running time
-	t.newCount.startTime = time.Now()
-	fmt.Printf("Parsing has started.\r")
-	err := t.parseDirToMapNew(cfg)
+	err := t.parseDirToMap(cfg)
 	if err != nil {
 		log.Error(err)
 	}
-	ExTime := time.Since(t.newCount.startTime)
-	ExTimeInSec := uint64(ExTime.Seconds())
-	if ExTimeInSec == 0 {
-		ExTimeInSec = 1
-	}
-	t.newCount.endTime = time.Now() // Saves the current time to be inserted into the log table
-	t.newCount.lastUpdated = time.Now()
-	log.Infof("The parsing started at %v, ended at %v, and lasted %.3v seconds at a rate of %v lines per second.",
-		t.newCount.startTime.In(cfg.Location).Format(cfg.dateTimeLayout),
-		t.newCount.endTime.In(cfg.Location).Format(cfg.dateTimeLayout),
-		ExTime.Seconds(),
-		t.newCount.totalLineParsed/ExTimeInSec)
-	fmt.Printf("The parsing started at %v, ended at %v, and lasted %.3v seconds at a rate of %v lines per second.\n",
-		t.newCount.startTime.In(cfg.Location).Format(cfg.dateTimeLayout),
-		t.newCount.endTime.In(cfg.Location).Format(cfg.dateTimeLayout),
-		ExTime.Seconds(),
-		t.newCount.totalLineParsed/ExTimeInSec)
 }
 
-func (t *Transport) delOldData(timestamp int64, Location *time.Location) {
-	tn := time.Unix(timestamp, 0).In(Location)
-	year := tn.Year()
-	month := tn.Month()
-	day := tn.Day()
-	t.Lock()
-	defer t.Unlock()
-	yearStat, ok := t.statofYears[year]
-	if !ok {
-		return
-	}
-	monthStat, ok := yearStat.monthsStat[month]
-	if !ok {
-		return
-	}
-	_, ok = monthStat.daysStat[day]
-	if !ok {
-		return
-	}
-	delete(t.statofYears[year].monthsStat[month].daysStat, day)
-	t.newCount.LastDateNew = time.Date(year, month, day, 0, 0, 0, 1, t.Location).Unix()
-	t.newCount.LastDayStrNew = time.Date(year, month, day, 0, 0, 0, 1, t.Location).String()
-}
+// func (t *Transport) delOldData(timestamp int64) {
+// 	tn := time.Unix(timestamp, 0).In(Location)
+// 	year := tn.Year()
+// 	month := tn.Month()
+// 	day := tn.Day()
+// 	t.Lock()
+// 	defer t.Unlock()
+// 	yearStat, ok := t.statofYears[year]
+// 	if !ok {
+// 		return
+// 	}
+// 	monthStat, ok := yearStat.monthsStat[month]
+// 	if !ok {
+// 		return
+// 	}
+// 	_, ok = monthStat.daysStat[day]
+// 	if !ok {
+// 		return
+// 	}
+// 	delete(t.statofYears[year].monthsStat[month].daysStat, day)
+// 	t.LastDate = time.Date(year, month, day, 0, 0, 0, 1, Location).Unix()
+// 	t.LastDayStr = time.Date(year, month, day, 0, 0, 0, 1, Location).String()
+// }
 
-func (t *Transport) parseDirToMapNew(cfg *Config) error {
+func (t *Transport) parseDirToMap(cfg *Config) error {
 	// iteration over all files in a folder
 	files, err := ioutil.ReadDir(cfg.LogPath)
 	if err != nil {
@@ -100,30 +81,30 @@ func (t *Transport) parseDirToMapNew(cfg *Config) error {
 	}
 	SortFileByModTime(files)
 	for _, file := range files {
-		if err := t.parseFileToMapNew(file, cfg); err != nil {
+		if err := t.parseFileToMap(file, cfg); err != nil {
 			log.Error(err)
 			continue
 		}
 		fmt.Printf("From file %v lines Read:%v/Parsed:%v/Added:%v/Skiped:%v/Error:%v\n",
 			file.Name(),
-			t.newCount.LineRead,
-			t.newCount.LineParsed,
-			t.newCount.LineAdded,
-			t.newCount.LineSkiped,
-			t.newCount.LineError)
-		t.newCount.SumAndReset()
+			t.LineRead,
+			t.LineParsed,
+			t.LineAdded,
+			t.LineSkiped,
+			t.LineError)
+		t.SumAndReset()
 	}
 	fmt.Printf("From all files lines Read:%v/Parsed:%v/Added:%v/Skiped:%v/Error:%v\n",
 		// Lines read:%v, parsed:%v, lines added:%v lines skiped:%v lines error:%v",
-		t.newCount.totalLineRead,
-		t.newCount.totalLineParsed,
-		t.newCount.totalLineAdded,
-		t.newCount.totalLineSkiped,
-		t.newCount.totalLineError)
+		t.totalLineRead,
+		t.totalLineParsed,
+		t.totalLineAdded,
+		t.totalLineSkiped,
+		t.totalLineError)
 	return nil
 }
 
-func (t *Transport) parseFileToMapNew(info os.FileInfo, cfg *Config) error {
+func (t *Transport) parseFileToMap(info os.FileInfo, cfg *Config) error {
 	if !strings.HasPrefix(info.Name(), cfg.FnStartsWith) {
 		return fmt.Errorf("%s don't match to paramert fnStartsWith='%s'", info.Name(), cfg.FnStartsWith)
 	}
@@ -155,51 +136,41 @@ func (t *Transport) parseFileToMapNew(info os.FileInfo, cfg *Config) error {
 	}
 	// Если ошибка gzip.ErrHeader, то обрабатываем как текстовый файл.
 	file.Close()
-	file, err = os.Open(FullFileName)
-	if err != nil {
-		file.Close()
-		return fmt.Errorf("Error opening squid log file(FullFileName):%v", err)
-	}
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	if err := t.parseLogToArrayByLineNew(scanner, cfg); err != nil {
+	if err := t.parseOneFilesAndCountingTraffic(FullFileName, cfg); err != nil {
 		return err
-	}
-	if scanner.Err() != nil {
-		return scanner.Err()
 	}
 	return nil
 }
 
-func (t *Transport) parseLogToArrayByLineNew(scanner *bufio.Scanner, cfg *Config) error {
+func (t *Transport) parseLogToArrayByLine(scanner *bufio.Scanner, cfg *Config) error {
 	for scanner.Scan() { // We go through the entire file to the end
-		t.newCount.LineRead++
+		t.LineRead++
 		line := scanner.Text() // get the text from the line, for simplicity
 		line = filtredMessage(line, cfg.IgnorList)
 		if line == "" {
-			t.newCount.LineSkiped++
+			t.LineSkiped++
 			continue
 		}
 		line = replaceQuotes(line)
 		l, err := parseLineToStruct(line, cfg)
 		if err != nil {
-			t.newCount.LineError++
+			t.LineError++
 			log.Warningf("%v", err)
 			continue
 		}
-		t.newCount.LineParsed++
-		if t.newCount.LastDateNew > l.timestamp {
+		t.LineParsed++
+		if t.LastDate > l.timestamp {
 			log.Tracef("line(%v) too old\r", line)
-			t.newCount.LineSkiped++
+			t.LineSkiped++
 			continue
-		} else if t.newCount.LastDateNew < l.timestamp {
-			t.newCount.LastDateNew = l.timestamp
+		} else if t.LastDate < l.timestamp {
+			t.LastDate = l.timestamp
 		}
 
 		// The main function of filling the database
 		// Adding a row to the database for counting traffic
 		t.addLineOutToMapOfReportsSuperNew(&l)
-		t.newCount.LineAdded++
+		t.LineAdded++
 	}
 	if err := scanner.Err(); err != nil && err != io.EOF {
 		log.Errorf("Error scanner :%v", err)
@@ -251,13 +222,13 @@ func (t *Transport) addLineOutToMapOfReportsSuperNew(l *lineOfLogType) {
 	// Расчет суммы трафика для устройства для дальшейшего отображения
 	deviceStat.VolumePerDay = deviceStat.VolumePerDay + l.sizeInBytes
 	deviceStat.VolumePerCheck = deviceStat.VolumePerCheck + l.sizeInBytes
-	deviceStat.StatPerHour[l.hour].PerHour = deviceStat.StatPerHour[l.hour].PerHour + l.sizeInBytes
-	deviceStat.StatPerHour[l.hour].PerMinute[l.minute] = deviceStat.StatPerHour[l.hour].PerMinute[l.minute] + l.sizeInBytes
+	deviceStat.PerHour[l.hour] = deviceStat.PerHour[l.hour] + l.sizeInBytes
+	// deviceStat.PerMinute[l.hour][l.minute] = deviceStat.PerMinute[l.hour][l.minute] + l.sizeInBytes
 	// Расчет суммы трафика для дня для дальшейшего отображения
-	daysStat.VolumePerDay = daysStat.VolumePerDay + l.sizeInBytes
-	daysStat.VolumePerCheck = daysStat.VolumePerCheck + l.sizeInBytes
-	daysStat.StatPerHour[l.hour].PerHour = daysStat.StatPerHour[l.hour].PerHour + l.sizeInBytes
-	daysStat.StatPerHour[l.hour].PerMinute[l.minute] = daysStat.StatPerHour[l.hour].PerMinute[l.minute] + l.sizeInBytes
+	// daysStat.VolumePerDay = daysStat.VolumePerDay + l.sizeInBytes
+	// daysStat.VolumePerCheck = daysStat.VolumePerCheck + l.sizeInBytes
+	// daysStat.PerHour[l.hour] = daysStat.PerHour[l.hour] + l.sizeInBytes
+	// daysStat.PerMinute[l.hour][l.minute] = daysStat.PerMinute[l.hour][l.minute] + l.sizeInBytes
 	// Возвращаем данные обратно
 	daysStat.devicesStat[KeyDevice{
 		// ip: l.ipaddress,
@@ -268,98 +239,77 @@ func (t *Transport) addLineOutToMapOfReportsSuperNew(l *lineOfLogType) {
 	t.Unlock()
 }
 
-func (t *Transport) checkQuotas() {
-	// t.RLock()
-	// p := parseType{
-	// 	SSHCredentials:   t.sshCredentials,
-	// 	QuotaType:        t.QuotaType,
-	// 	BlockAddressList: t.BlockAddressList,
-	// 	Location:         t.Location,
-	// }
-	// t.RUnlock()
-	hour := time.Now().Hour()
-	day := t.getDay(lNow())
-	for _, alias := range t.Aliases {
-		var VolumePerDay, VolumePerCheck uint64
-		var StatPerHour [24]VolumePerType
-		for _, key := range alias.KeyArr {
-			VolumePerDay += day.devicesStat[key].VolumePerDay
-			VolumePerCheck += day.devicesStat[key].VolumePerCheck
-			for index := range day.devicesStat[key].StatPerHour {
-				StatPerHour[index].PerHour += day.devicesStat[key].StatPerHour[index].PerHour
-			}
-		}
-		if VolumePerDay >= alias.DailyQuota || StatPerHour[hour].PerHour >= alias.HourlyQuota {
+func (t *Transport) checkQuotas(cfg *Config) {
+	t.Lock()
+	tn := time.Now().In(Location)
+	hour := tn.Hour()
+	tns := tn.Format(DateLayout)
+	devicesStat := GetDayStat(tns, tns, path.Join(cfg.ConfigPath, "sqlite.db"))
+	for key, d := range devicesStat {
+		alias := t.Aliases[key.mac]
+		if d.VolumePerDay >= alias.DailyQuota || d.PerHour[hour] >= alias.HourlyQuota {
 			alias.ShouldBeBlocked = true
-			// t.BlockAlias(alias, p.BlockAddressList)
 		} else {
 			alias.ShouldBeBlocked = false
-			// t.UnBlockAlias(alias, p.BlockAddressList)
 		}
-		// switch {
-		// case (VolumePerDay >= alias.DailyQuota || StatPerHour[hour].PerHour >= alias.HourlyQuota) && alias.Blocked && alias.ShouldBeBlocked:
-		// 	continue
-		// case VolumePerDay >= alias.DailyQuota && !alias.Blocked:
-		// 	alias.ShouldBeBlocked = true
-		// 	t.addBlockGroup(alias, p.BlockAddressList)
-		// 	alias.Blocked = true
-		// case StatPerHour[hour].PerHour >= alias.HourlyQuota && !alias.Blocked:
-		// 	alias.ShouldBeBlocked = true
-		// 	t.addBlockGroup(alias, p.BlockAddressList)
-		// 	alias.Blocked = true
-		// case alias.Blocked:
-		// 	alias.ShouldBeBlocked = false
-		// 	t.delBlockGroup(alias, p.BlockAddressList)
-		// 	alias.Blocked = false
-		// }
-		t.Lock()
 		t.Aliases[alias.AliasName] = alias
-		t.Unlock()
-
-	}
-	// t.Lock()
-	// for key, device := range t.devices {
-	// 	if _, ok := t.change[key]; !ok {
-	// 		if device.Blocked {
-	// 			device = device.UnBlock(p.BlockAddressList)
-	// 			t.change[key] = DeviceToBlock{
-	// 				Id:       device.Id,
-	// 				Groups:   device.AddressLists,
-	// 				Disabled: paramertToBool(device.disabledL),
-	// 			}
-	// 		}
-	// 	}
-	// }
-	// t.Unlock()
-}
-
-func (t *Transport) getDay(l *lineOfLogType) StatOfDayType {
-	t.Lock()
-	year, ok := t.statofYears[l.year]
-	if !ok {
-		year = StatOfYearType{
-			year:       l.year,
-			monthsStat: map[time.Month]StatOfMonthType{},
-		}
-		t.statofYears[l.year] = year
-	}
-	month, ok := year.monthsStat[l.month]
-	if !ok {
-		month = StatOfMonthType{
-			daysStat: map[int]StatOfDayType{},
-			month:    l.month}
-		year.monthsStat[l.month] = month
-	}
-	day, ok := month.daysStat[l.day]
-	if !ok {
-		day = StatOfDayType{
-			devicesStat: map[KeyDevice]StatDeviceType{},
-			day:         l.day}
-		month.daysStat[l.day] = day
 	}
 	t.Unlock()
-	return day
 }
+
+// func (t *Transport) checkQuotas(cfg *Config) {
+// 	t.Lock()
+// 	tn := time.Now().In(Location)
+// 	hour := tn.Hour()
+// 	tns := tn.Format(DateLayout)
+// 	devicesStat := GetDayStat(tns, tns, path.Join(cfg.ConfigPath, "sqlite.db"))
+// 	for _, alias := range t.Aliases {
+// 		var VolumePerDay, VolumePerCheck uint64
+// 		var StatPerHour [24]VolumePerType
+// 		for _, key := range alias.KeyArr {
+// 			VolumePerDay += devicesStat[key].VolumePerDay
+// 			VolumePerCheck += devicesStat[key].VolumePerCheck
+// 			for index := range devicesStat[key].PerHour {
+// 				StatPerHour[index].PerHour += devicesStat[key].PerHour[index]
+// 			}
+// 		}
+// 		if VolumePerDay >= alias.DailyQuota || StatPerHour[hour].PerHour >= alias.HourlyQuota {
+// 			alias.ShouldBeBlocked = true
+// 		} else {
+// 			alias.ShouldBeBlocked = false
+// 		}
+// 		t.Aliases[alias.AliasName] = alias
+// 	}
+// 	t.Unlock()
+// }
+
+// func (t *Transport) GetDayStat(l *lineOfLogType) map[KeyDevice]StatDeviceType {
+// 	t.Lock()
+// 	year, ok := t.statofYears[l.year]
+// 	if !ok {
+// 		year = StatOfYearType{
+// 			year:       l.year,
+// 			monthsStat: map[time.Month]StatOfMonthType{},
+// 		}
+// 		t.statofYears[l.year] = year
+// 	}
+// 	month, ok := year.monthsStat[l.month]
+// 	if !ok {
+// 		month = StatOfMonthType{
+// 			daysStat: map[int]StatOfDayType{},
+// 			month:    l.month}
+// 		year.monthsStat[l.month] = month
+// 	}
+// 	day, ok := month.daysStat[l.day]
+// 	if !ok {
+// 		day = StatOfDayType{
+// 			devicesStat: map[KeyDevice]StatDeviceType{},
+// 			day:         l.day}
+// 		month.daysStat[l.day] = day
+// 	}
+// 	t.Unlock()
+// 	return day.devicesStat
+// }
 
 func (t *Transport) BlockDevices() {
 	t.Lock()
@@ -399,4 +349,41 @@ func (t *Transport) BlockDevices() {
 		}
 	}
 	t.Unlock()
+}
+
+func (t *Transport) parseOneFilesAndCountingTraffic(FullFileName string, cfg *Config) error {
+	file, err := os.Open(FullFileName)
+	if err != nil {
+		file.Close()
+		return fmt.Errorf("Error opening squid log file(FullFileName):%v", err)
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	if err := t.parseLogToArrayByLine(scanner, cfg); err != nil {
+		return err
+	}
+	if scanner.Err() != nil {
+		return scanner.Err()
+	}
+	return nil
+}
+
+func (t *Transport) timeCalculationAndPrinting() {
+	ExTime := time.Since(t.startTime)
+	ExTimeInSec := uint64(ExTime.Seconds())
+	if ExTimeInSec == 0 {
+		ExTimeInSec = 1
+	}
+	t.endTime = time.Now() // Saves the current time to be inserted into the log table
+	t.LastUpdated = time.Now()
+	log.Infof("The parsing started at %v, ended at %v, lasted %.3v seconds at a rate of %v lines per second.",
+		t.startTime.In(Location).Format(DateTimeLayout),
+		t.endTime.In(Location).Format(DateTimeLayout),
+		ExTime.Seconds(),
+		t.totalLineParsed/ExTimeInSec)
+	fmt.Printf("The parsing started at %v, ended at %v, lasted %.3v seconds at a rate of %v lines per second.\n",
+		t.startTime.In(Location).Format(DateTimeLayout),
+		t.endTime.In(Location).Format(DateTimeLayout),
+		ExTime.Seconds(),
+		t.totalLineParsed/ExTimeInSec)
 }

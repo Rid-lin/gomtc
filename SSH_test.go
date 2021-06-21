@@ -148,7 +148,6 @@ func Test_parseInfoFromMTAsValueToSlice(t *testing.T) {
 					QuotaType:        qDef,
 					BlockAddressList: "Block",
 					SSHCredentials:   sshCred,
-					Location:         cfg.Location,
 				}},
 			want: []DeviceType{},
 		}}
