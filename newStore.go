@@ -324,7 +324,7 @@ func (t *Transport) BlockDevices() {
 		case d.macAddress != "":
 			key = KeyDevice{mac: d.macAddress}
 		}
-		// TODO подумать над преобразованием ClientID в мак адрес
+		d.ShouldBeBlocked = t.Aliases[key.mac].ShouldBeBlocked
 		switch {
 		case (d.Blocked && t.Aliases[key.mac].ShouldBeBlocked) || (!d.Blocked && !t.Aliases[key.mac].ShouldBeBlocked):
 			continue
@@ -347,6 +347,7 @@ func (t *Transport) BlockDevices() {
 				Disabled: paramertToBool(d.disabledL),
 			}
 		}
+		t.devices[key] = d
 	}
 	t.Unlock()
 }

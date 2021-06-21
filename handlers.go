@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -12,21 +13,26 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (transport *Transport) handleRequest(cfg *Config) {
+func (t *Transport) handleRequest(cfg *Config) {
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(cfg.AssetsPath))))
 
-	http.HandleFunc("/", logreq(transport.handleIndex))
-	http.HandleFunc("/wf/", logreq(transport.handleIndexWithFriends))
-	http.HandleFunc("/log/", logreq(transport.handleLog))
-	http.HandleFunc("/runparse", logreq(transport.handleRunParse))
-	http.HandleFunc("/editalias/", logreq(transport.handleEditAlias))
+	http.HandleFunc("/", logreq(t.handleIndex))
+	http.HandleFunc("/wf/", logreq(t.handleIndexWithFriends))
+	http.HandleFunc("/log/", logreq(t.handleLog))
+	http.HandleFunc("/runparse", logreq(t.handleRunParse))
+	http.HandleFunc("/editalias/", logreq(t.handleEditAlias))
+
+	http.HandleFunc("/api/v1/blocked/", logreq(t.handleBlocked))
+	http.HandleFunc("/api/v1/devices/", logreq(t.handleShowDevices))
+	http.HandleFunc("/api/v1/aliases/", logreq(t.handleShowAliases))
+	http.HandleFunc("/api/v1/getmac/", logreq(t.handleGetMac))
 
 	log.Infof("gomtc listens HTTP on:'%v'", cfg.ListenAddr)
 
 	err := http.ListenAndServe(cfg.ListenAddr, nil)
 	if err != nil {
 		log.Fatal("http-server returned error:", err)
-		transport.exitChan <- os.Kill
+		t.exitChan <- os.Kill
 	}
 
 }
@@ -251,4 +257,70 @@ func FormatSize(size, SizeOneKilobyte uint64) string {
 		Suffix = "b"
 	}
 	return fmt.Sprintf("%3.2f.%s", Size, Suffix)
+}
+
+func (t *Transport) handleBlocked(w http.ResponseWriter, r *http.Request) {
+	var arr []string
+	t.Lock()
+	for key, d := range t.Aliases {
+		if d.ShouldBeBlocked {
+			arr = append(arr, key)
+		}
+	}
+	t.Unlock()
+	// Just send out the JSON version of 'arr'
+	j, _ := json.Marshal(arr)
+	w.Write(j)
+}
+
+func (t *Transport) handleShowDevices(w http.ResponseWriter, r *http.Request) {
+	var arr []DeviceType
+	t.Lock()
+	for _, d := range t.devices {
+		arr = append(arr, d)
+	}
+	t.Unlock()
+	// Just send out the JSON version of 'arr'
+	j, _ := json.MarshalIndent(arr, "\t", "")
+	w.Write(j)
+}
+
+func (t *Transport) handleGetMac(w http.ResponseWriter, r *http.Request) {
+	params := r.FormValue("ip")
+	var arr []ResponseType
+	t.Lock()
+	for _, d := range t.devices {
+		rt := ResponseType{
+			IP:       d.ActiveAddress,
+			Mac:      d.ActiveMacAddress,
+			Comments: d.Comment,
+			HostName: d.HostName,
+		}
+		if d.ActiveAddress == params && params != "" {
+			j, _ := json.MarshalIndent(rt, "\t", "")
+			w.Write(j)
+			return
+		}
+		arr = append(arr, rt)
+	}
+	t.Unlock()
+	if params != "" {
+		w.Write([]byte{})
+		return
+	}
+	// Just send out the JSON version of 'arr'
+	j, _ := json.MarshalIndent(arr, "\t", "")
+	w.Write(j)
+}
+
+func (t *Transport) handleShowAliases(w http.ResponseWriter, r *http.Request) {
+	var arr []AliasType
+	t.Lock()
+	for _, d := range t.Aliases {
+		arr = append(arr, d)
+	}
+	t.Unlock()
+	// Just send out the JSON version of 'arr'
+	j, _ := json.MarshalIndent(arr, "\t", "")
+	w.Write(j)
 }
