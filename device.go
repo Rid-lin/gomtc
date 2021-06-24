@@ -1,33 +1,17 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
-	"time"
 
 	. "git.vegner.org/vsvegner/gomtc/internal/ssh"
 
 	log "github.com/sirupsen/logrus"
 )
-
-func (t *Transport) getDevices() {
-	t.Lock()
-	devices := parseInfoFromMTAsValueToSlice(parseType{
-		SSHCredentials:   t.sshCredentials,
-		QuotaType:        t.QuotaType,
-		BlockAddressList: t.BlockAddressList,
-	})
-	for _, device := range devices {
-		device.Manual = inAddressList(device.AddressLists, t.ManualAddresList)
-		device.Blocked = inAddressList(device.AddressLists, t.BlockAddressList)
-		t.devices[KeyDevice{
-			// ip: device.ActiveAddress,
-			mac: device.ActiveMacAddress}] = device
-	}
-	t.lastUpdatedMT = time.Now()
-	t.Unlock()
-}
 
 func (d *DeviceType) ToQuota() QuotaType {
 	var q QuotaType
@@ -141,31 +125,14 @@ func (d DeviceType) UnBlock(group string, key KeyDevice) DeviceType {
 	return d
 }
 
-func (t *Transport) SendGroupStatus(NoControl bool) {
-	if NoControl {
-		return
-	}
-	t.RLock()
-	p := parseType{
-		SSHCredentials:   t.sshCredentials,
-		QuotaType:        t.QuotaType,
-		BlockAddressList: t.BlockAddressList,
-	}
-	t.RUnlock()
-	t.change.sendLeaseSet(p)
-	t.Lock()
-	t.change = BlockDevices{}
-	t.Unlock()
-}
-
 func (ds *DevicesType) parseLeasePrintAsValue(b bytes.Buffer) {
 	var d DeviceType
 	var addedTo string
 	inputStr := b.String()
 	arr := strings.Split(inputStr, ";")
 	// For Debug
-	_ = saveStrToFile("./str.temp", inputStr)
-	_ = saveArrToFile("./arr.temp", arr)
+	_ = saveStrToFile(".config/str.temp", inputStr)
+	_ = saveArrToFile(".config/arr.temp", arr)
 	for _, lineItem := range arr {
 		switch {
 		case isParametr(lineItem, ".id"):
@@ -237,7 +204,6 @@ func (ds *DevicesType) parseLeasePrintAsValue(b bytes.Buffer) {
 		case addedTo == "address-lists":
 			d.AddressLists = d.AddressLists + "," + lineItem
 		}
-
 	}
 }
 
@@ -253,87 +219,6 @@ func parseInfoFromMTAsValueToSlice(p parseType) []DeviceType {
 	return devices
 }
 
-// func (info InfoType) sendByAll(p parseType, qDefault QuotaType) error {
-// 	var err error
-// 	var idStr string
-// 	comments := info.convertToComment(qDefault)
-
-// 	switch {
-// 	case info.Id != "":
-// 		idStr = info.Id
-// 	case info.activeMacAddress != "":
-// 		idStr, err = reciveIDByMac(p, info.activeMacAddress)
-// 		if err != nil {
-// 			return err
-// 		}
-// 	case info.macAddress != "":
-// 		idStr, err = reciveIDByMac(p, info.macAddress)
-// 		if err != nil {
-// 			return err
-// 		}
-// 	case info.activeAddress != "":
-// 		idStr, err = reciveIDByIP(p, info.activeAddress)
-// 		if err != nil {
-// 			return err
-// 		}
-// 	case info.InfoName != "" && isMac(info.InfoName):
-// 		idStr, err = reciveIDByMac(p, info.InfoName)
-// 		if err != nil {
-// 			return err
-// 		}
-// 	case info.InfoName != "" && isIP(info.InfoName):
-// 		idStr, err = reciveIDByIP(p, info.InfoName)
-// 		if err != nil {
-// 			return err
-// 		}
-// 	default:
-// 		return fmt.Errorf("Mac and IP addres canot be empty")
-// 	}
-// 	if idStr == "" {
-// 		return fmt.Errorf("Device not found")
-// 	}
-// 	idArr := strings.Split(idStr, ";")
-// 	for _, id := range idArr {
-// 		command := fmt.Sprintf(`/ip dhcp-server lease set number="%s" address-lists="%s" disabled="%s" comment="%s"`,
-// 			id,
-// 			info.addressLists,
-// 			boolToParamert(info.Disabled),
-// 			comments)
-// 		b := getResponseOverSSHfMT(p.SSHCredentials, command)
-// 		result := b.String()
-// 		fmt.Printf("command:'%s',result:'%s'\n", command, result)
-// 		if b.Len() > 0 {
-// 			return fmt.Errorf(b.String())
-// 		}
-// 	}
-// 	return nil
-// }
-
-// func reciveIDByMac(p parseType, mac string) (string, error) {
-// 	if mac == "" {
-// 		return "", fmt.Errorf("MAC address cannot be empty")
-// 	}
-// 	return reciveIDBy(p, "mac-address", mac)
-// }
-
-// func reciveIDBy(p parseType, entity, value string) (string, error) {
-// 	command := fmt.Sprintf(`:put [/ip dhcp-server lease find %s="%s"]`,
-// 		entity, value)
-// 	b := getResponseOverSSHfMT(p.SSHCredentials, command)
-// 	id := b.String()
-// 	id = strings.ReplaceAll(id, `"`, "")
-// 	id = strings.ReplaceAll(id, "\n", "")
-// 	id = strings.ReplaceAll(id, "\r", "")
-// 	return id, nil
-// }
-
-// func reciveIDByIP(p parseType, ip string) (string, error) {
-// 	if ip == "" {
-// 		return "", fmt.Errorf("IP address cannot be empty")
-// 	}
-// 	return reciveIDBy(p, "active-address", ip)
-// }
-
 func (a *BlockDevices) sendLeaseSet(p parseType) {
 	var command string
 	firstCommand := "/ip dhcp-server lease set "
@@ -346,9 +231,170 @@ func (a *BlockDevices) sendLeaseSet(p parseType) {
 		command = command + firstCommand + itemCommand
 	}
 	// For Debug
-	_ = saveStrToFile("./command.temp", command)
+	_ = saveStrToFile("./config/command.temp", command)
 	b := GetResponseOverSSHfMT(p.SSHHost, p.SSHPort, p.SSHUser, p.SSHPass, command)
 	if b.Len() > 0 {
 		log.Errorf("Error save device to Mikrotik(%v) with command:\n%v", b.String(), command)
 	}
+}
+
+func parseParamertToStr(inpuStr string) string {
+	inpuStr = strings.Trim(inpuStr, "=")
+	inpuStr = strings.ReplaceAll(inpuStr, "==", "=")
+	arr := strings.Split(inpuStr, "=")
+	if len(arr) > 1 {
+		return arr[1]
+	}
+	return ""
+}
+
+func parseParamertToComment(inpuStr string) string {
+	inpuStr = strings.Trim(inpuStr, "=")
+	inpuStr = strings.ReplaceAll(inpuStr, "==", "=")
+	arr := strings.Split(inpuStr, "=")
+	if len(arr) > 1 {
+		return strings.Join(arr[1:], "=")
+	}
+	return ""
+}
+
+func parseParamertToUint(inputValue string) uint64 {
+	var q uint64
+	inputValue = strings.Trim(inputValue, "=")
+	inputValue = strings.ReplaceAll(inputValue, "==", "=")
+	Arr := strings.Split(inputValue, "=")
+	if len(Arr) > 1 {
+		quotaStr := Arr[1]
+		q = paramertToUint(quotaStr)
+		return q
+	}
+	return q
+}
+
+func paramertToUint(inputValue string) uint64 {
+	inputValue = strings.Trim(inputValue, "\r")
+	quota, err := strconv.ParseUint(inputValue, 10, 64)
+	if err != nil {
+		quotaF, err2 := strconv.ParseFloat(inputValue, 64)
+		if err != nil {
+			log.Errorf("Error parse quota from input string(%v):(%v)(%v)", inputValue, err, err2)
+			return 0
+		}
+		quota = uint64(quotaF)
+	}
+	return quota
+}
+
+func paramertToBool(inputValue string) bool {
+	if inputValue == "true" || inputValue == "yes" {
+		return true
+	}
+	return false
+}
+
+func boolToParamert(trigger bool) string {
+	if trigger {
+		return "yes"
+	}
+	return "no"
+}
+
+func saveArrToFile(nameFile string, arr []string) error {
+	f, _ := os.Create(nameFile)
+	defer f.Close()
+	w := bufio.NewWriter(f)
+	for index := 0; index < len(arr)-1; index++ {
+		fmt.Fprintln(w, arr[index])
+	}
+	w.Flush()
+	return nil
+}
+
+func saveStrToFile(nameFile, str string) error {
+	f, _ := os.Create(nameFile)
+	defer f.Close()
+	_, _ = f.WriteString(str)
+	return nil
+}
+
+func (d *DeviceType) IsNULL() bool {
+	switch {
+	case d.activeClientId != "":
+		return false
+	case d.activeServer != "":
+		return false
+	case d.address != "":
+		return false
+	case d.agentCircuitId != "":
+		return false
+	case d.agentRemoteId != "":
+		return false
+	case d.allowDualStackQueue != "":
+		return false
+	case d.alwaysBroadcast != "":
+		return false
+	case d.blockAccess != "":
+		return false
+	case d.clientId != "":
+		return false
+	case d.dhcpOption != "":
+		return false
+	case d.dhcpOptionSet != "":
+		return false
+	case d.disabledL != "":
+		return false
+	case d.dynamic != "":
+		return false
+	case d.expiresAfter != "":
+		return false
+	case d.insertQueueBefore != "":
+		return false
+	case d.lastSeen != "":
+		return false
+	case d.leaseTime != "":
+		return false
+	case d.macAddress != "":
+		return false
+	case d.radius != "":
+		return false
+	case d.rateLimit != "":
+		return false
+	case d.server != "":
+		return false
+	case d.srcMacAddress != "":
+		return false
+	case d.status != "":
+		return false
+	case d.useSrcMac != "":
+		return false
+	case d.ActiveAddress != "":
+		return false
+	case d.ActiveMacAddress != "":
+		return false
+	case d.AddressLists != "":
+		return false
+	case d.Comment != "":
+		return false
+	case d.HostName != "":
+		return false
+	case d.Id != "":
+		return false
+	case d.TypeD != "":
+		return false
+	}
+	return true
+}
+
+func checkNULLQuotas(setValue, deafultValue QuotaType) QuotaType {
+	quotaReturned := setValue
+	if setValue.DailyQuota == 0 {
+		quotaReturned.DailyQuota = deafultValue.DailyQuota
+	}
+	if setValue.HourlyQuota == 0 {
+		quotaReturned.HourlyQuota = deafultValue.HourlyQuota
+	}
+	if setValue.MonthlyQuota == 0 {
+		quotaReturned.MonthlyQuota = deafultValue.MonthlyQuota
+	}
+	return quotaReturned
 }
