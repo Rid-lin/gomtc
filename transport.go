@@ -6,7 +6,7 @@ import (
 	"time"
 
 	. "git.vegner.org/vsvegner/gomtc/internal/config"
-
+	. "git.vegner.org/vsvegner/gomtc/pkg/gsshutdown"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -19,7 +19,7 @@ type newContType struct {
 	LastDayStr  string
 }
 
-func NewTransport(cfg *Config) *Transport {
+func NewTransport(cfg *Config, gss *GSS) *Transport {
 	var err error
 
 	if !cfg.NoFlow {
@@ -67,8 +67,8 @@ func NewTransport(cfg *Config) *Transport {
 		parseChan:       make(chan *time.Time),
 		outputChannel:   make(chan decodedRecord, 100),
 		renewOneMac:     make(chan string, 100),
-		newLogChan:      getNewLogSignalsChannel(),
-		exitChan:        getExitSignalsChannel(),
+		newLogChan:      gss.LogChan,
+		exitChan:        gss.ExitChan,
 		sshCredentials: SSHCredentials{
 			SSHHost:       cfg.MTAddr,
 			SSHPort:       "22",

@@ -14,12 +14,14 @@ type GSS struct {
 	StopReadFromUDP chan uint8
 }
 
-func (gss *GSS) NewGSS(fnExit, fnRotate func()) *GSS {
-	gss.ExitChan = getExitSignalsChannel()
-	gss.LogChan = getNewLogSignalsChannel()
-	gss.StopReadFromUDP = make(chan uint8, 2)
-	go gss.Exit(fnExit)
-	go gss.GetSIGHUP(fnRotate)
+func NewGSS(fnExitfunc func(ve interface{}), ve interface{}, fnRotate func(vr interface{}), vr interface{}) *GSS {
+	var gss *GSS
+	ExitChan := getExitSignalsChannel()
+	gss.ExitChan = ExitChan
+	LogChan := getNewLogSignalsChannel()
+	gss.LogChan = LogChan
+	go gss.Exit(fnExitfunc, ve)
+	go gss.GetSIGHUP(fnRotate, vr)
 	return gss
 }
 
@@ -38,19 +40,19 @@ func getExitSignalsChannel() chan os.Signal {
 
 }
 
-func (gss *GSS) Exit(fnExit func()) {
+func (gss *GSS) Exit(fnExit func(ve interface{}), ve interface{}) {
 	<-gss.ExitChan
 	gss.StopReadFromUDP <- 1
-	fnExit()
+	fnExit(ve)
 	log.Println("Shutting down")
 	// time.Sleep(5 * time.Second)
 	os.Exit(0)
 
 }
 
-func (gss *GSS) GetSIGHUP(fnRotate func()) {
+func (gss *GSS) GetSIGHUP(fnRotate func(vr interface{}), vr interface{}) {
 	<-gss.LogChan
-	fnRotate()
+	fnRotate(vr)
 }
 
 func getNewLogSignalsChannel() chan os.Signal {
