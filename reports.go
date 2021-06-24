@@ -11,72 +11,34 @@ type ReportDataType []LineOfDisplay
 
 func (t *Transport) reportDailyHourlyByMac(rq RequestForm, showFriends bool) (DisplayDataType, error) {
 	start := time.Now()
-	t.RLock()
-	// data := t.statofYears
-	SizeOneKilobyte := t.SizeOneKilobyte
-	Quota := t.QuotaType
-	Copyright := t.Copyright
-	Mail := t.Mail
-	// BlockAddressList := t.BlockAddressList
-	LastUpdated := t.lastUpdated.Format("2006-01-02 15:04:05.999")
-	LastUpdatedMT := t.lastUpdatedMT.Format("2006-01-02 15:04:05.999")
-	t.RUnlock()
-	ReportData := ReportDataType{}
-	line := LineOfDisplay{}
-	var totalVolumePerDay uint64
-	var totalVolumePerHour [24]uint64
-	t.RLock()
-	// devicesStat := t.GetDayStat(rq.ToLine())
-	// y, m, d, _, _ := rq.getDateFrom(t.Location)
-	// y1, m1, d1, _, _ := rq.getDateTo(t.Location)
 	devicesStat := GetDayStat(rq.dateFrom, rq.dateTo, path.Join(t.ConfigPath, "sqlite.db"))
-	for key, value := range devicesStat {
-
-		line.Alias = key.mac
-		line.VolumePerDay = value.VolumePerDay
-		totalVolumePerDay += value.VolumePerDay
-		// TODO подумать над ключом
-		line.InfoType.PersonType = t.Aliases[key.mac].PersonType
-		line.InfoType.QuotaType = t.Aliases[key.mac].QuotaType
-		line.InfoType.DeviceType = t.devices[key]
-		for i := range line.PerHour {
-			line.PerHour[i] = value.PerHour[i]
-			totalVolumePerHour[i] += value.PerHour[i]
-		}
-		ReportData = add(ReportData, line)
-	}
-	t.RUnlock()
-	line = LineOfDisplay{}
-	line.Alias = "Всего"
-	line.VolumePerDay = totalVolumePerDay
-	line.PerHour = totalVolumePerHour
-	ReportData = add(ReportData, line)
-
+	ReportData := ToReportData(t.Aliases, devicesStat, t.devices)
 	sort.Sort(ReportData)
 	ReportData = ReportData.percentileCalculation(1)
 	if !showFriends {
 		ReportData = ReportData.FiltredFriendS(t.friends)
 	}
-
+	t.RLock()
+	defer t.RUnlock()
 	return DisplayDataType{
 		ArrayDisplay:   ReportData,
-		Header:         "Отчёт почасовой по трафику пользователей с логинами и IP-адресами",
+		Header:         "Отчёт почасовой по трафику пользователей с логинами",
 		DateFrom:       rq.dateFrom,
 		DateTo:         rq.dateTo,
-		LastUpdated:    LastUpdated,
-		LastUpdatedMT:  LastUpdatedMT,
+		LastUpdated:    t.lastUpdated.Format("2006-01-02 15:04:05.999"),
+		LastUpdatedMT:  t.lastUpdatedMT.Format("2006-01-02 15:04:05.999"),
 		TimeToGenerate: time.Since(start),
 		ReferURL:       rq.referURL,
 		Path:           rq.path,
 		SizeOneType: SizeOneType{
-			SizeOneKilobyte: SizeOneKilobyte,
-			SizeOneMegabyte: SizeOneKilobyte * SizeOneKilobyte,
-			SizeOneGigabyte: SizeOneKilobyte * SizeOneKilobyte * SizeOneKilobyte,
+			SizeOneKilobyte: t.SizeOneKilobyte,
+			SizeOneMegabyte: t.SizeOneKilobyte * t.SizeOneKilobyte,
+			SizeOneGigabyte: t.SizeOneKilobyte * t.SizeOneKilobyte * t.SizeOneKilobyte,
 		},
-		Author: Author{Copyright: Copyright,
-			Mail: Mail,
+		Author: Author{Copyright: t.Copyright,
+			Mail: t.Mail,
 		},
-		QuotaType: Quota,
+		QuotaType: t.QuotaType,
 	}, nil
 }
 
@@ -159,11 +121,3 @@ func (rq *RequestForm) ToLine() *lineOfLogType {
 	l.minute = tn.Minute()
 	return &l
 }
-
-// func (rq *RequestForm) getDateFrom() (int, int, int, int, int) {
-// 	tn, err := time.Parse(DateLayout, rq.dateFrom)
-// 	if err != nil {
-// 		return 0, 0, 0, 0, 0
-// 	}
-// 	return tn.In(Location).Year(), int(tn.In(Location).Month()), tn.In(Location).Day(), tn.In(Location).Hour(), tn.In(Location).Minute()
-// }

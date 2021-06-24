@@ -207,6 +207,34 @@ func (ds *DevicesType) parseLeasePrintAsValue(b bytes.Buffer) {
 	}
 }
 
+func ToReportData(as map[string]AliasType, sd map[KeyDevice]StatDeviceType, ds DevicesMapType) ReportDataType {
+	var totalVolumePerDay uint64
+	var totalVolumePerHour [24]uint64
+
+	ReportData := ReportDataType{}
+	for key, value := range sd {
+		line := LineOfDisplay{}
+		line.Alias = key.mac
+		line.VolumePerDay = value.VolumePerDay
+		totalVolumePerDay += value.VolumePerDay
+		// TODO подумать над ключом
+		line.InfoType.PersonType = as[key.mac].PersonType
+		line.InfoType.QuotaType = as[key.mac].QuotaType
+		line.InfoType.DeviceType = ds[key]
+		for i := range line.PerHour {
+			line.PerHour[i] = value.PerHour[i]
+			totalVolumePerHour[i] += value.PerHour[i]
+		}
+		ReportData = add(ReportData, line)
+	}
+	line := LineOfDisplay{}
+	line.Alias = "Всего"
+	line.VolumePerDay = totalVolumePerDay
+	line.PerHour = totalVolumePerHour
+	ReportData = add(ReportData, line)
+	return ReportData
+}
+
 func parseInfoFromMTAsValueToSlice(p parseType) []DeviceType {
 	devices := DevicesType{}
 	b, err := GetResponseOverSSHfMTWithBuffer(p.SSHHost, p.SSHPort, p.SSHUser, p.SSHPass,
