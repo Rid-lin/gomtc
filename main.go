@@ -2,14 +2,28 @@ package main
 
 import (
 	"os"
+	"time"
 
 	_ "net/http/pprof"
 
+	. "git.vegner.org/vsvegner/gomtc/internal/config"
 	log "github.com/sirupsen/logrus"
 )
 
+var (
+	// cfg                 Config
+
+	fileDestination     *os.File
+	csvFiletDestination *os.File
+	Location            *time.Location // Global variable
+)
+
+const DateLayout = "2006-01-02"
+const DateTimeLayout = "2006-01-02 15:04:05"
+
 func main() {
-	cfg := newConfig()
+	cfg := NewConfig()
+	Location = cfg.Location
 
 	if err := writePID(cfg.Pidfile); err != nil {
 		log.Error(err)
@@ -32,7 +46,6 @@ func main() {
 
 	go t.Exit(cfg)
 	go t.ReOpenLogAfterLogroatate(cfg)
-	t.getAliasesArr(cfg)
 
 	// Endless file parsing loop
 	go func(cfg *Config) {

@@ -5,8 +5,19 @@ import (
 	"path"
 	"time"
 
+	. "git.vegner.org/vsvegner/gomtc/internal/config"
+
 	log "github.com/sirupsen/logrus"
 )
+
+type newContType struct {
+	Count
+	startTime   time.Time
+	endTime     time.Time
+	LastUpdated time.Time
+	LastDate    int64
+	LastDayStr  string
+}
 
 func NewTransport(cfg *Config) *Transport {
 	var err error

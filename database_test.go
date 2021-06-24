@@ -5,11 +5,13 @@ import (
 	"reflect"
 	"testing"
 
+	. "git.vegner.org/vsvegner/gomtc/internal/config"
+
 	_ "github.com/mattn/go-sqlite3"
 )
 
 func TestGetDayStat(t *testing.T) {
-	cfg := newConfig()
+	cfg := NewConfig()
 	type args struct {
 		from     string
 		to       string

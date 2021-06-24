@@ -6,6 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	. "git.vegner.org/vsvegner/gomtc/internal/config"
+
 	log "github.com/sirupsen/logrus"
 )
 

@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"reflect"
 	"testing"
+
+	. "git.vegner.org/vsvegner/gomtc/internal/config"
 )
 
 var (
-	cfgTest *Config        = newConfig()
+	cfgTest *Config        = NewConfig()
 	sshCred SSHCredentials = SSHCredentials{
 		SSHHost:       cfgTest.MTAddr,
 		SSHPort:       cfgTest.SSHPort,

@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	. "git.vegner.org/vsvegner/gomtc/internal/config"
+
 	log "github.com/sirupsen/logrus"
 )
 

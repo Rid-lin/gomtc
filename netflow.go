@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	. "git.vegner.org/vsvegner/gomtc/internal/config"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -119,8 +121,8 @@ func (t *Transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) (str
 		protocol = "OTHER_PACKET"
 	}
 
-	ok := cfg.checkIPsEntry(intToIPv4Addr(binRecord.Ipv4DstAddrInt))
-	ok2 := cfg.checkIPsEntry(intToIPv4Addr(binRecord.Ipv4SrcAddrInt))
+	ok := checkIPsEntry(cfg.SubNets, intToIPv4Addr(binRecord.Ipv4DstAddrInt))
+	ok2 := checkIPsEntry(cfg.SubNets, intToIPv4Addr(binRecord.Ipv4SrcAddrInt))
 
 	if ok && !ok2 {
 		response := t.GetInfo(&request{
@@ -194,8 +196,8 @@ func (t *Transport) decodeRecordToSquid(record *decodedRecord, cfg *Config) (str
 	return message, message2
 }
 
-func (cfg *Config) checkIPsEntry(ipv4addr net.IP) bool {
-	for _, subNet := range cfg.SubNets {
+func checkIPsEntry(SubNets []string, ipv4addr net.IP) bool {
+	for _, subNet := range SubNets {
 		ok, err := checkIPEntry(subNet, ipv4addr)
 		if err != nil { // если ошибка, то следующая строка
 			log.Error("Error while determining the IP subnet address:", err)

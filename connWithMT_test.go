@@ -2,6 +2,8 @@ package main
 
 import (
 	"testing"
+
+	. "git.vegner.org/vsvegner/gomtc/internal/config"
 )
 
 // var (
