@@ -1,7 +1,6 @@
 package main
 
 import (
-	"net"
 	"os"
 	"sync"
 	"time"
@@ -20,7 +19,6 @@ type Transport struct {
 	AliasesStrArr     map[string][]string
 	change            BlockDevices
 	devices           DevicesMapType
-	logs              []LogsOfJob
 	friends           []string
 	AssetsPath        string
 	BlockAddressList  string
@@ -33,7 +31,6 @@ type Transport struct {
 	sshCredentials      SSHCredentials
 	fileDestination     *os.File
 	csvFiletDestination *os.File
-	conn                *net.UDPConn
 	timerParse          *time.Timer
 	lastUpdated         time.Time
 	lastUpdatedMT       time.Time
@@ -42,7 +39,6 @@ type Transport struct {
 	exitChan            chan os.Signal
 	parseChan           chan *time.Time
 	newLogChan          chan os.Signal
-	outputChannel       chan decodedRecord
 	newContType
 	Author
 	QuotaType
@@ -52,10 +48,6 @@ type Transport struct {
 type Author struct {
 	Copyright string
 	Mail      string
-}
-type request struct {
-	Time,
-	IP string
 }
 
 type ResponseType struct {
@@ -189,7 +181,6 @@ type LineOfDisplay struct {
 
 type DisplayDataType struct {
 	ArrayDisplay   []LineOfDisplay
-	Logs           []LogsOfJob
 	Header         string
 	DateFrom       string
 	DateTo         string
@@ -254,18 +245,3 @@ type StatType struct {
 // 	PerMinute [60]uint64
 // 	PerHour   uint64
 // }
-
-type SSHCredentials struct {
-	SSHHost       string
-	SSHPort       string
-	SSHUser       string
-	SSHPass       string
-	MaxSSHRetries int
-	SSHRetryDelay uint16
-}
-
-type parseType struct {
-	SSHCredentials
-	QuotaType
-	BlockAddressList string
-}

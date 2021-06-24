@@ -143,3 +143,13 @@ func (count *Count) SumAndReset() {
 	count.LineRead = 0
 	count.LineError = 0
 }
+
+func filtredMessage(message string, IgnorList []string) string {
+	for _, ignorStr := range IgnorList {
+		if strings.Contains(message, ignorStr) {
+			log.Tracef("Line of log :%v contains ignorstr:%v, skipping...", message, ignorStr)
+			return ""
+		}
+	}
+	return message
+}

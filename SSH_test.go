@@ -136,7 +136,7 @@ func Test_getResponseOverSSHfMT(t *testing.T) {
 
 func Test_parseInfoFromMTAsValueToSlice(t *testing.T) {
 	type args struct {
-		p parseType
+		p ParseType
 	}
 	tests := []struct {
 		name string
@@ -146,7 +146,7 @@ func Test_parseInfoFromMTAsValueToSlice(t *testing.T) {
 		{
 			name: "1",
 			args: args{
-				p: parseType{
+				p: ParseType{
 					QuotaType:        qDef,
 					BlockAddressList: "Block",
 					SSHCredentials:   sshCred,

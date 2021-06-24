@@ -60,7 +60,6 @@ func (t *Transport) reportDailyHourlyByMac(rq RequestForm, showFriends bool) (Di
 
 	return DisplayDataType{
 		ArrayDisplay:   ReportData,
-		Logs:           []LogsOfJob{},
 		Header:         "Отчёт почасовой по трафику пользователей с логинами и IP-адресами",
 		DateFrom:       rq.dateFrom,
 		DateTo:         rq.dateTo,

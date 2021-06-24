@@ -15,14 +15,14 @@ type GSS struct {
 }
 
 func NewGSS(fnExitfunc func(ve interface{}), ve interface{}, fnRotate func(vr interface{}), vr interface{}) *GSS {
-	var gss *GSS
+	var gss GSS
 	ExitChan := getExitSignalsChannel()
 	gss.ExitChan = ExitChan
 	LogChan := getNewLogSignalsChannel()
 	gss.LogChan = LogChan
 	go gss.Exit(fnExitfunc, ve)
 	go gss.GetSIGHUP(fnRotate, vr)
-	return gss
+	return &gss
 }
 
 func getExitSignalsChannel() chan os.Signal {

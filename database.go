@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"git.vegner.org/vsvegner/gomtc/store"
+	"git.vegner.org/vsvegner/gomtc/internal/store"
 	_ "github.com/mattn/go-sqlite3"
 	log "github.com/sirupsen/logrus"
 )

@@ -224,7 +224,9 @@ func (t *Transport) handleLog(w http.ResponseWriter, r *http.Request) {
 
 	DisplayData := &DisplayDataType{
 		Header: "Лог работы",
-		Logs:   t.logs,
+		// TODO Поменть на выгрузку из SQL
+		// TODO Дописать метод записи в SQL
+		// Logs:   t.logs,
 	}
 
 	err = indextmpl.ExecuteTemplate(w, "log", DisplayData)
@@ -272,7 +274,7 @@ func (t *Transport) handleBlocked(w http.ResponseWriter, r *http.Request) {
 	t.Unlock()
 	// Just send out the JSON version of 'arr'
 	j, _ := json.Marshal(arr)
-	w.Write(j)
+	_, _ = w.Write(j)
 }
 
 func (t *Transport) handleShowDevices(w http.ResponseWriter, r *http.Request) {
@@ -284,7 +286,7 @@ func (t *Transport) handleShowDevices(w http.ResponseWriter, r *http.Request) {
 	t.Unlock()
 	// Just send out the JSON version of 'arr'
 	j, _ := json.MarshalIndent(arr, "\t", "")
-	w.Write(j)
+	_, _ = w.Write(j)
 }
 
 func (t *Transport) handleGetMac(w http.ResponseWriter, r *http.Request) {
@@ -300,19 +302,19 @@ func (t *Transport) handleGetMac(w http.ResponseWriter, r *http.Request) {
 		}
 		if d.ActiveAddress == params && params != "" {
 			j, _ := json.MarshalIndent(rt, "\t", "")
-			w.Write(j)
+			_, _ = w.Write(j)
 			return
 		}
 		arr = append(arr, rt)
 	}
 	t.Unlock()
 	if params != "" {
-		w.Write([]byte{})
+		_, _ = w.Write([]byte{})
 		return
 	}
 	// Just send out the JSON version of 'arr'
 	j, _ := json.MarshalIndent(arr, "\t", "")
-	w.Write(j)
+	_, _ = w.Write(j)
 }
 
 func (t *Transport) handleShowAliases(w http.ResponseWriter, r *http.Request) {
@@ -324,5 +326,5 @@ func (t *Transport) handleShowAliases(w http.ResponseWriter, r *http.Request) {
 	t.Unlock()
 	// Just send out the JSON version of 'arr'
 	j, _ := json.MarshalIndent(arr, "\t", "")
-	w.Write(j)
+	_, _ = w.Write(j)
 }

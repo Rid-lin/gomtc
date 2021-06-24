@@ -11,6 +11,21 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+type SSHCredentials struct {
+	SSHHost       string
+	SSHPort       string
+	SSHUser       string
+	SSHPass       string
+	MaxSSHRetries int
+	SSHRetryDelay uint16
+}
+
+type parseType struct {
+	SSHCredentials
+	QuotaType
+	BlockAddressList string
+}
+
 func getResponseOverSSHfMT(sshCred SSHCredentials, command string) bytes.Buffer {
 	sshConfig := &ssh.ClientConfig{
 		User: sshCred.SSHUser,
