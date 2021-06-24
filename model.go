@@ -6,6 +6,21 @@ import (
 	"time"
 )
 
+type SSHCredentials struct {
+	SSHHost       string
+	SSHPort       string
+	SSHUser       string
+	SSHPass       string
+	MaxSSHRetries int
+	SSHRetryDelay uint16
+}
+
+type parseType struct {
+	SSHCredentials
+	QuotaType
+	BlockAddressList string
+}
+
 type AliasType struct {
 	AliasName string
 	KeyArr    []KeyDevice
@@ -14,20 +29,19 @@ type AliasType struct {
 }
 
 type Transport struct {
-	Aliases           map[string]AliasType
-	statofYears       map[int]StatOfYearType
-	AliasesStrArr     map[string][]string
-	change            BlockDevices
-	devices           DevicesMapType
-	friends           []string
-	AssetsPath        string
-	BlockAddressList  string
-	ManualAddresList  string
-	SizeOneKilobyte   uint64
-	DevicesRetryDelay string
-	pidfile           string
-	ConfigPath        string
-	// debug               bool
+	Aliases             map[string]AliasType
+	statofYears         map[int]StatOfYearType
+	AliasesStrArr       map[string][]string
+	change              BlockDevices
+	devices             DevicesMapType
+	friends             []string
+	AssetsPath          string
+	BlockAddressList    string
+	ManualAddresList    string
+	SizeOneKilobyte     uint64
+	DevicesRetryDelay   string
+	pidfile             string
+	ConfigPath          string
 	sshCredentials      SSHCredentials
 	fileDestination     *os.File
 	csvFiletDestination *os.File
@@ -107,7 +121,6 @@ type DeviceType struct {
 	Blocked         bool
 	ShouldBeBlocked bool
 	TypeD           string
-	// StatOldType
 }
 
 type DevicesType []DeviceType
@@ -214,21 +227,7 @@ type RequestForm struct {
 	path     string
 	referURL string
 	report   string
-	// dateFromArr [3]int
-	// dateToArr   [3]int
-	// dateFromT time.Time
-	// dateToT   time.Time
 }
-
-// type StatOldType struct {
-// 	VolumePerHour     [24]uint64
-// 	Site              string
-// 	Precent           float64
-// 	VolumeOfPrecentil uint64
-// 	Average           uint64
-// 	VolumePerDay      uint64
-// 	Count             uint32
-// }
 
 type StatType struct {
 	// PerMinute       [24][60]uint64
@@ -240,8 +239,3 @@ type StatType struct {
 	VolumePerCheck  uint64
 	Count           uint32
 }
-
-// type VolumePerType struct {
-// 	PerMinute [60]uint64
-// 	PerHour   uint64
-// }
