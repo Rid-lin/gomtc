@@ -42,7 +42,7 @@ func getExitSignalsChannel() chan os.Signal {
 
 func (gss *GSS) Exit(fnExit func(ve interface{}), ve interface{}) {
 	<-gss.ExitChan
-	gss.StopReadFromUDP <- 1
+	//gss.StopReadFromUDP <- 1
 	fnExit(ve)
 	log.Println("Shutting down")
 	// time.Sleep(5 * time.Second)
