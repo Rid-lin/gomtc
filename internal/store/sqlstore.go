@@ -1,13 +1,5 @@
 package store
 
-// https://github.com/ardanlabs/python-go/blob/master/sqlite/trades/trades.go
-// Package trades provides an SQLite based trades database.
-// package trades
-
-// Your main or test packages require this import so
-// the sql package is properly initialized.
-// _ "github.com/mattn/go-sqlite3"
-
 import (
 	"database/sql"
 	"errors"
@@ -40,7 +32,6 @@ CREATE TABLE IF NOT EXISTS "stat" (
 `
 )
 
-// Stat is a buy/sell trade for symbol.
 type Stat struct {
 	Date                   string
 	Year, Month, Day, Hour int
@@ -48,14 +39,14 @@ type Stat struct {
 	Login, Ipaddress       string
 }
 
-// DB is a database of stock trades.
+// DB is a database of stock stats.
 type DB struct {
 	sql    *sql.DB
 	stmt   *sql.Stmt
 	buffer []Stat
 }
 
-// NewDBStat constructs a Trades value for managing stock trades in a
+// NewDBStat constructs a Stats value for managing stock stats in a
 // SQLite database. This API is not thread safe.
 func NewDBStat(dbFile string, bufSize int) (*DB, error) {
 	sqlDB, err := sql.Open("sqlite3", dbFile)
@@ -83,7 +74,7 @@ func NewDBStat(dbFile string, bufSize int) (*DB, error) {
 	return &db, nil
 }
 
-// NewDB constructs a Trades value for managing stock trades in a
+// NewDB constructs a Stats value for managing stock stats in a
 // SQLite database. This API is not thread safe.
 func OpenDB(dbFile string) (*sql.DB, error) {
 	sqlDB, err := sql.Open("sqlite3", dbFile)
@@ -114,7 +105,7 @@ func (db *DB) AddStat(stat Stat) error {
 	return nil
 }
 
-// FlushStat inserts pending trades into the database.
+// FlushStat inserts pending stats into the database.
 func (db *DB) FlushStat() error {
 	tx, err := db.sql.Begin()
 	if err != nil {
