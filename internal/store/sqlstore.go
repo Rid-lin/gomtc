@@ -115,8 +115,9 @@ func (db *DB) FlushStat() error {
 	for _, stat := range db.buffer {
 		_, err := tx.Stmt(db.stmt).Exec(stat.Date, stat.Year, stat.Month, stat.Day, stat.Hour, stat.Size, stat.Login, stat.Ipaddress)
 		if err != nil {
-			// TODO доделать проброс ошибки наверх
-			tx.Rollback()
+			if err2 := tx.Rollback(); err2 != nil {
+				return fmt.Errorf("Error writing in the database:%v. Transaction rollback error:%v.", err, err2)
+			}
 			return err
 		}
 	}
