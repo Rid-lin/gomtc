@@ -59,6 +59,7 @@ type request struct {
 }
 
 type ResponseType struct {
+	IP       string
 	Comments string
 	Mac      string
 	HostName string
