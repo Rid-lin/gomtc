@@ -53,15 +53,15 @@ test: dep ## Run tests
     	go tool cover -func=.test_coverage.txt | tail -n1 | awk '{print "Total test coverage: " $$3}'
 	@rm .test_coverage.txt
 
-build: dep ## Build program executable for linux platform.
+build: ## Build program executable for linux platform.
 	mkdir -p ./bin
 	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build ${LDFLAGS} -o bin/${PROGRAM_NAME}_$(VERSION)_linux_$(COMMIT)_amd64 .
 
-build_alpine: dep ## Build program executable for linux platform.
+build_alpine: ## Build program executable for linux platform.
 	mkdir -p ./bin
 	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags "-linkmode external -extldflags '-static' -s -w" -o bin/${PROGRAM_NAME}_$(VERSION)_linux_$(COMMIT)_amd64 .
 
-build_all: dep ## Build program executable for all platform.
+build_all: ## Build program executable for all platform.
 	mkdir -p ./bin
 	$(foreach GOOS, $(PLATFORMS),\
 	$(foreach GOARCH, $(ARCHITECTURES), $(shell export GOOS=$(GOOS); export GOARCH=$(GOARCH); go build -v $(LDFLAGS) -o ./bin/$(PROJECTNAME)_$(VERSION)_$(GOOS)_$(COMMIT)_$(GOARCH))))
