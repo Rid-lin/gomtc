@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	. "git.vegner.org/vsvegner/gomtc/internal/config"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -222,7 +224,9 @@ func (t *Transport) handleLog(w http.ResponseWriter, r *http.Request) {
 
 	DisplayData := &DisplayDataType{
 		Header: "Лог работы",
-		Logs:   t.logs,
+		// TODO Поменть на выгрузку из SQL
+		// TODO Дописать метод записи в SQL
+		// Logs:   t.logs,
 	}
 
 	err = indextmpl.ExecuteTemplate(w, "log", DisplayData)
@@ -269,8 +273,9 @@ func (t *Transport) handleBlocked(w http.ResponseWriter, r *http.Request) {
 	}
 	t.Unlock()
 	// Just send out the JSON version of 'arr'
-	j, _ := json.Marshal(arr)
-	w.Write(j)
+	// j, _ := json.Marshal(arr)
+	// _, _ = w.Write(j)
+	renderJSON(w, arr)
 }
 
 func (t *Transport) handleShowDevices(w http.ResponseWriter, r *http.Request) {
@@ -281,8 +286,9 @@ func (t *Transport) handleShowDevices(w http.ResponseWriter, r *http.Request) {
 	}
 	t.Unlock()
 	// Just send out the JSON version of 'arr'
-	j, _ := json.MarshalIndent(arr, "\t", "")
-	w.Write(j)
+	// j, _ := json.MarshalIndent(arr, "\t", "")
+	// _, _ = w.Write(j)
+	renderJSON(w, arr)
 }
 
 func (t *Transport) handleGetMac(w http.ResponseWriter, r *http.Request) {
@@ -298,19 +304,20 @@ func (t *Transport) handleGetMac(w http.ResponseWriter, r *http.Request) {
 		}
 		if d.ActiveAddress == params && params != "" {
 			j, _ := json.MarshalIndent(rt, "\t", "")
-			w.Write(j)
+			_, _ = w.Write(j)
 			return
 		}
 		arr = append(arr, rt)
 	}
 	t.Unlock()
 	if params != "" {
-		w.Write([]byte{})
+		_, _ = w.Write([]byte{})
 		return
 	}
 	// Just send out the JSON version of 'arr'
-	j, _ := json.MarshalIndent(arr, "\t", "")
-	w.Write(j)
+	// j, _ := json.MarshalIndent(arr, "\t", "")
+	// _, _ = w.Write(j)
+	renderJSON(w, arr)
 }
 
 func (t *Transport) handleShowAliases(w http.ResponseWriter, r *http.Request) {
@@ -321,6 +328,18 @@ func (t *Transport) handleShowAliases(w http.ResponseWriter, r *http.Request) {
 	}
 	t.Unlock()
 	// Just send out the JSON version of 'arr'
-	j, _ := json.MarshalIndent(arr, "\t", "")
-	w.Write(j)
+	// j, _ := json.MarshalIndent(arr, "\t", "")
+	// _, _ = w.Write(j)
+	renderJSON(w, arr)
+}
+
+// renderJSON преобразует 'v' в формат JSON и записывает результат, в виде ответа, в w.
+func renderJSON(w http.ResponseWriter, v interface{}) {
+	js, err := json.Marshal(v)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write(js)
 }
