@@ -20,7 +20,6 @@ type Config struct {
 
 	Loc                    string   `default:"Asia/Yekaterinburg" usage:"Location for time"`
 	Timezone               float32  `default:"5" usage:"Timezone east of UTC"`
-	Pidfile                string   `default:"/run/gomtc.pid" usage:"PID-file"`
 	ConfigPath             string   `default:"/etc/gomtc" usage:"folder path to all config files"`
 	LogPath                string   `default:"/var/log/gomtc" usage:"folder path to logs-file"`
 	AssetsPath             string   `default:"/etc/gomtc/assets"  usage:"The path to the assets folder where the template files are located"`

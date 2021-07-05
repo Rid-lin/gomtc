@@ -76,7 +76,6 @@ func NewTransport(cfg *Config) *Transport {
 		Aliases:             make(map[string]AliasType),
 		statofYears:         make(map[int]StatOfYearType),
 		change:              make(BlockDevices),
-		pidfile:             cfg.Pidfile,
 		ConfigPath:          cfg.ConfigPath,
 		DevicesRetryDelay:   cfg.DevicesRetryDelay,
 		BlockAddressList:    cfg.BlockGroup,
@@ -375,7 +374,7 @@ func (t *Transport) parseLogToArrayByLine(scanner *bufio.Scanner, cfg *Config) e
 
 		// The main function of filling the database
 		// Adding a row to the database for counting traffic
-		t.addLineOutToMapOfReportsSuperNew(&l)
+		t.addLineOutToMapOfReports(&l)
 		t.LineAdded++
 	}
 	if err := scanner.Err(); err != nil && err != io.EOF {
@@ -385,14 +384,8 @@ func (t *Transport) parseLogToArrayByLine(scanner *bufio.Scanner, cfg *Config) e
 	return nil
 }
 
-func (t *Transport) addLineOutToMapOfReportsSuperNew(l *lineOfLogType) {
+func (t *Transport) addLineOutToMapOfReports(l *lineOfLogType) {
 	l.alias = determiningAlias(*l)
-	// Идея такая.
-	// посчитать статистику для каждого отдельного случая, когда:
-	// есть и мак и айпи, есть только айпи, есть только мак
-	// записать это в слайс и привязать к отдельному оборудованию.
-	// при чём по привязка только айпи адресу идёт только в течении сегодняшнего дня, потом не учитывается
-	// привязка по маку и мак+айпи идёт всегда, т.к. устройство опознано.
 	t.Lock()
 	year, ok := t.statofYears[l.year]
 	if !ok {
@@ -554,12 +547,6 @@ func (t *Transport) timeCalculationAndPrinting() {
 
 func Exit(ve interface{}) func(ve interface{}) {
 	return func(ve interface{}) {
-		cfg, ok := ve.(*Config)
-		if ok {
-			if err := os.Remove(cfg.Pidfile); err != nil {
-				log.Errorf("File (%v) deletion error:%v", cfg.Pidfile, err)
-			}
-		}
 	}
 }
 

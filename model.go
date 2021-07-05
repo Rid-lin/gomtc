@@ -40,7 +40,6 @@ type Transport struct {
 	ManualAddresList    string
 	SizeOneKilobyte     uint64
 	DevicesRetryDelay   string
-	pidfile             string
 	ConfigPath          string
 	sshCredentials      SSHCredentials
 	fileDestination     *os.File
