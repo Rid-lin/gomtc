@@ -54,16 +54,8 @@ type StatDeviceType struct {
 	StatType
 }
 
-func NewTransport(cfg *Config, gss *GSS) *Transport {
+func NewTransport(cfg *Config) *Transport {
 	var err error
-
-	if !cfg.NoFlow {
-		fileDestination, err = os.OpenFile(cfg.NameFileToLog, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			fileDestination.Close()
-			log.Fatalf("Error, the '%v' file could not be created (there are not enough premissions or it is busy with another program): %v", cfg.NameFileToLog, err)
-		}
-	}
 
 	if cfg.CSV {
 		csvFiletDestination, err = os.OpenFile(cfg.NameFileToLog+".csv", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -73,12 +65,10 @@ func NewTransport(cfg *Config, gss *GSS) *Transport {
 		}
 	}
 
-	// Location, err := time.LoadLocation(cfg.Loc)
-	// if err != nil {
-	// 	Location = time.FixedZone("Custom timezone", int(cfg.Timezone*60*60))
-	// 	log.Warningf("Error loading timezone from location(%v):%v. Using a fixed time zone(%v:%v)", cfg.Loc, err, Location, cfg.Timezone*60*60)
-	// 	// Location = time.UTC
-	// }
+	gss := NewGSS(
+		Exit(cfg), cfg,
+		GetSIGHUP(cfg), cfg,
+	)
 
 	return &Transport{
 		devices:             make(map[KeyDevice]DeviceType),
@@ -120,6 +110,18 @@ func NewTransport(cfg *Config, gss *GSS) *Transport {
 			Mail:      "mailto:vegner.vs@uttist.ru",
 		},
 	}
+}
+
+func (t *Transport) Start(cfg *Config) {
+	// Endless file parsing loop
+	go func(cfg *Config) {
+		t.runOnce(cfg)
+		for {
+			<-t.timerParse.C
+			t.runOnce(cfg)
+		}
+	}(cfg)
+	t.handleRequest(cfg)
 }
 
 func (t *Transport) setTimerParse(IntervalStr string) {
@@ -449,15 +451,26 @@ func (t *Transport) checkQuotas(cfg *Config) {
 	hour := tn.Hour()
 	tns := tn.Format(DateLayout)
 	devicesStat := GetDayStat(tns, tns, path.Join(cfg.ConfigPath, "sqlite.db"))
-	for key, d := range devicesStat {
+	for key := range t.devices {
 		alias := t.Aliases[key.mac]
-		if d.VolumePerDay >= alias.DailyQuota || d.PerHour[hour] >= alias.HourlyQuota {
+		ds := devicesStat[key]
+		if ds.VolumePerDay >= alias.DailyQuota || ds.PerHour[hour] >= alias.HourlyQuota {
 			alias.ShouldBeBlocked = true
 		} else {
 			alias.ShouldBeBlocked = false
 		}
 		t.Aliases[alias.AliasName] = alias
 	}
+	// for key, d := range devicesStat {
+	// 	alias := t.Aliases[key.mac]
+	// 	if d.VolumePerDay >= alias.DailyQuota || d.PerHour[hour] >= alias.HourlyQuota {
+	// 		alias.ShouldBeBlocked = true
+	// 	} else {
+	// 		alias.ShouldBeBlocked = false
+	// 	}
+	// 	t.Aliases[alias.AliasName] = alias
+	// }
+
 	t.Unlock()
 }
 
@@ -537,4 +550,30 @@ func (t *Transport) timeCalculationAndPrinting() {
 		t.endTime.In(Location).Format(DateTimeLayout),
 		ExTime.Seconds(),
 		t.totalLineParsed/ExTimeInSec)
+}
+
+func Exit(ve interface{}) func(ve interface{}) {
+	return func(ve interface{}) {
+		cfg, ok := ve.(*Config)
+		if ok {
+			if err := os.Remove(cfg.Pidfile); err != nil {
+				log.Errorf("File (%v) deletion error:%v", cfg.Pidfile, err)
+			}
+		}
+	}
+}
+
+func GetSIGHUP(vr interface{}) func(vr interface{}) {
+	return func(ve interface{}) {
+		_, ok := ve.(*Config)
+		if ok {
+			log.Println("Received a signal from logrotate, close the file.")
+			if err := fileDestination.Sync(); err != nil {
+				log.Errorf("File(%v) sync error:%v", fileDestination.Name(), err)
+			}
+			if err := fileDestination.Close(); err != nil {
+				log.Errorf("File(%v) close error:%v", fileDestination.Name(), err)
+			}
+		}
+	}
 }

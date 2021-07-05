@@ -49,9 +49,9 @@ type Config struct {
 	SizeOneKilobyte        uint64   `default:"1024" usage:"The number of bytes in one megabyte"`
 	UseTLS                 bool     `default:"false" usage:"Using TLS to connect to a router"`
 	CSV                    bool     `default:"false" usage:"Output to csv"`
-	NoFlow                 bool     `default:"true" usage:"When this parameter is specified, the netflow packet listener is not launched, therefore, log files are not created, but only parsed."`
-	NoControl              bool     `default:"true" usage:"No need to control the Mikrotik, just read."`
-	ParseAllFiles          bool     `default:"false" usage:"Scans all files in the folder where access.lоg is located once, deleting all data from the database"`
+	// NoFlow                 bool     `default:"true" usage:"When this parameter is specified, the netflow packet listener is not launched, therefore, log files are not created, but only parsed."`
+	NoControl     bool `default:"true" usage:"No need to control the Mikrotik, just read."`
+	ParseAllFiles bool `default:"false" usage:"Scans all files in the folder where access.lоg is located once, deleting all data from the database"`
 	// Count
 }
 
