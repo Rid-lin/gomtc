@@ -1,4 +1,4 @@
-package main
+package gziping
 
 import (
 	"compress/gzip"
@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-func unGzip(source, target string) (string, error) {
+func UnGzip(source, target string) (string, error) {
 	reader, err := os.Open(source)
 	if err != nil {
 		return "", err

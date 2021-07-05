@@ -1,11 +1,25 @@
 package main
 
 import (
-	"net"
 	"os"
 	"sync"
 	"time"
 )
+
+type SSHCredentials struct {
+	SSHHost       string
+	SSHPort       string
+	SSHUser       string
+	SSHPass       string
+	MaxSSHRetries int
+	SSHRetryDelay uint16
+}
+
+type parseType struct {
+	SSHCredentials
+	QuotaType
+	BlockAddressList string
+}
 
 type AliasType struct {
 	AliasName string
@@ -15,25 +29,22 @@ type AliasType struct {
 }
 
 type Transport struct {
-	Aliases           map[string]AliasType
-	statofYears       map[int]StatOfYearType
-	AliasesStrArr     map[string][]string
-	change            BlockDevices
-	devices           DevicesMapType
-	logs              []LogsOfJob
-	friends           []string
-	AssetsPath        string
-	BlockAddressList  string
-	ManualAddresList  string
-	SizeOneKilobyte   uint64
-	DevicesRetryDelay string
-	pidfile           string
-	ConfigPath        string
-	// debug               bool
+	Aliases             map[string]AliasType
+	statofYears         map[int]StatOfYearType
+	AliasesStrArr       map[string][]string
+	change              BlockDevices
+	devices             DevicesMapType
+	friends             []string
+	AssetsPath          string
+	BlockAddressList    string
+	ManualAddresList    string
+	SizeOneKilobyte     uint64
+	DevicesRetryDelay   string
+	pidfile             string
+	ConfigPath          string
 	sshCredentials      SSHCredentials
 	fileDestination     *os.File
 	csvFiletDestination *os.File
-	conn                *net.UDPConn
 	timerParse          *time.Timer
 	lastUpdated         time.Time
 	lastUpdatedMT       time.Time
@@ -42,7 +53,6 @@ type Transport struct {
 	exitChan            chan os.Signal
 	parseChan           chan *time.Time
 	newLogChan          chan os.Signal
-	outputChannel       chan decodedRecord
 	newContType
 	Author
 	QuotaType
@@ -52,10 +62,6 @@ type Transport struct {
 type Author struct {
 	Copyright string
 	Mail      string
-}
-type request struct {
-	Time,
-	IP string
 }
 
 type ResponseType struct {
@@ -115,7 +121,6 @@ type DeviceType struct {
 	Blocked         bool
 	ShouldBeBlocked bool
 	TypeD           string
-	// StatOldType
 }
 
 type DevicesType []DeviceType
@@ -189,7 +194,6 @@ type LineOfDisplay struct {
 
 type DisplayDataType struct {
 	ArrayDisplay   []LineOfDisplay
-	Logs           []LogsOfJob
 	Header         string
 	DateFrom       string
 	DateTo         string
@@ -223,21 +227,7 @@ type RequestForm struct {
 	path     string
 	referURL string
 	report   string
-	// dateFromArr [3]int
-	// dateToArr   [3]int
-	// dateFromT time.Time
-	// dateToT   time.Time
 }
-
-// type StatOldType struct {
-// 	VolumePerHour     [24]uint64
-// 	Site              string
-// 	Precent           float64
-// 	VolumeOfPrecentil uint64
-// 	Average           uint64
-// 	VolumePerDay      uint64
-// 	Count             uint32
-// }
 
 type StatType struct {
 	// PerMinute       [24][60]uint64
@@ -248,24 +238,4 @@ type StatType struct {
 	VolumePerDay    uint64
 	VolumePerCheck  uint64
 	Count           uint32
-}
-
-// type VolumePerType struct {
-// 	PerMinute [60]uint64
-// 	PerHour   uint64
-// }
-
-type SSHCredentials struct {
-	SSHHost       string
-	SSHPort       string
-	SSHUser       string
-	SSHPass       string
-	MaxSSHRetries int
-	SSHRetryDelay uint16
-}
-
-type parseType struct {
-	SSHCredentials
-	QuotaType
-	BlockAddressList string
 }

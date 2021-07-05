@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"git.vegner.org/vsvegner/gomtc/store"
+	"git.vegner.org/vsvegner/gomtc/internal/store"
 	_ "github.com/mattn/go-sqlite3"
 	log "github.com/sirupsen/logrus"
 )
@@ -75,6 +75,7 @@ func GetDayStat(from, to string, fileName string) map[KeyDevice]StatDeviceType {
 	if err != nil {
 		return devStats
 	}
+	defer db.Close()
 	SQL := fmt.Sprintf(`SELECT ipaddress, login, sum(size), hour
 	FROM stat
 	WHERE date(date_str) BETWEEN date('%s') AND date('%s')

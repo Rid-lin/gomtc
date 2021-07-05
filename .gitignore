@@ -37,6 +37,7 @@ logs/*
 SQL/*
 scripts/*
 access.log
-create.sql
+*.sql
 *.bak
 *_old
+third_party/*

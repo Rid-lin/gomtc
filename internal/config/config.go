@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"os"
@@ -11,14 +11,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const DateLayout = "2006-01-02"
-const DateTimeLayout = "2006-01-02 15:04:05"
-
 type Config struct {
 	LastDate    int64
 	LastDay     int64
 	LastDayStr  string
 	LastDateStr string
+	Location    *time.Location
 
 	Loc                    string   `default:"Asia/Yekaterinburg" usage:"Location for time"`
 	Timezone               float32  `default:"5" usage:"Timezone east of UTC"`
@@ -51,30 +49,13 @@ type Config struct {
 	SizeOneKilobyte        uint64   `default:"1024" usage:"The number of bytes in one megabyte"`
 	UseTLS                 bool     `default:"false" usage:"Using TLS to connect to a router"`
 	CSV                    bool     `default:"false" usage:"Output to csv"`
-	NoFlow                 bool     `default:"true" usage:"When this parameter is specified, the netflow packet listener is not launched, therefore, log files are not created, but only parsed."`
-	NoControl              bool     `default:"true" usage:"No need to control the Mikrotik, just read."`
-	ParseAllFiles          bool     `default:"false" usage:"Scans all files in the folder where access.lоg is located once, deleting all data from the database"`
-	Count
+	// NoFlow                 bool     `default:"true" usage:"When this parameter is specified, the netflow packet listener is not launched, therefore, log files are not created, but only parsed."`
+	NoControl     bool `default:"true" usage:"No need to control the Mikrotik, just read."`
+	ParseAllFiles bool `default:"false" usage:"Scans all files in the folder where access.lоg is located once, deleting all data from the database"`
+	// Count
 }
 
-var (
-	// cfg                 Config
-
-	fileDestination     *os.File
-	csvFiletDestination *os.File
-	Location            *time.Location // Global variable
-)
-
-type newContType struct {
-	Count
-	startTime   time.Time
-	endTime     time.Time
-	LastUpdated time.Time
-	LastDate    int64
-	LastDayStr  string
-}
-
-func newConfig() *Config {
+func NewConfig() *Config {
 	// fix for https://github.com/cristalhq/aconfig/issues/82
 	args := []string{}
 	for _, a := range os.Args {
@@ -131,10 +112,10 @@ func newConfig() *Config {
 	}
 	log.SetLevel(lvl)
 
-	Location, err = time.LoadLocation(cfg.Loc)
+	cfg.Location, err = time.LoadLocation(cfg.Loc)
 	if err != nil {
 		log.Errorf("Error loading Location(%v):%v", cfg.Loc, err)
-		Location = time.UTC
+		cfg.Location = time.UTC
 	}
 	log.Debugf("Config %#v:", cfg)
 

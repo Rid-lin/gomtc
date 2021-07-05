@@ -1,10 +1,11 @@
-# Netflow collector with saving logs in squid format, and short hourly statistics by day and by logins (users) written in Go
-
 [![Go Report Card](https://goreportcard.com/report/git.vegner.org/vsvegner/gomtc)](https://goreportcard.com/report/git.vegner.org/vsvegner/gomtc)
 
-The broker listens on UDP port (default 2055), accepts Netflow traffic, and by default collects records with selected metadata formatted into squid log. Login information replaces the Mac address of the device that receives from the router mikrotik.
+# gomtc
 
-## Usage
+[gomtc](https://git.vegner.org/vsvegner/gomtc) is a Squid log analyzer with a web interface and the ability to control the device via ssh Mikrotik is written in Go
+Reads logs from the access.log file and saves them as a sqlite database.
+
+## Install
 
 Clone repository
 
@@ -52,7 +53,7 @@ Configuring sistemd to automatically start the program
 
 `systemctl enable gomtc`
 
-## Supported command line parameters
+## Usage
 
 ```usage
 Usage:

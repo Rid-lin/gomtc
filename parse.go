@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	. "git.vegner.org/vsvegner/gomtc/internal/config"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -140,4 +142,14 @@ func (count *Count) SumAndReset() {
 	count.LineAdded = 0
 	count.LineRead = 0
 	count.LineError = 0
+}
+
+func filtredMessage(message string, IgnorList []string) string {
+	for _, ignorStr := range IgnorList {
+		if strings.Contains(message, ignorStr) {
+			log.Tracef("Line of log :%v contains ignorstr:%v, skipping...", message, ignorStr)
+			return ""
+		}
+	}
+	return message
 }
