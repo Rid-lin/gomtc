@@ -109,3 +109,31 @@ func add(slice []model.LineOfDisplay, line model.LineOfDisplay) []model.LineOfDi
 	}
 	return append(slice, line)
 }
+
+func ToReportData(as map[string]model.AliasType, sd map[model.KeyDevice]model.StatDeviceType, ds DevicesMapType) ReportDataType {
+	var totalVolumePerDay uint64
+	var totalVolumePerHour [24]uint64
+
+	ReportData := ReportDataType{}
+	for key, value := range sd {
+		line := model.LineOfDisplay{}
+		line.Alias = key.Mac
+		line.VolumePerDay = value.VolumePerDay
+		totalVolumePerDay += value.VolumePerDay
+		// TODO подумать над ключом
+		line.InfoType.PersonType = as[key.Mac].PersonType
+		line.InfoType.QuotaType = as[key.Mac].QuotaType
+		line.InfoType.DeviceType = ds[key]
+		for i := range line.PerHour {
+			line.PerHour[i] = value.PerHour[i]
+			totalVolumePerHour[i] += value.PerHour[i]
+		}
+		ReportData = add(ReportData, line)
+	}
+	line := model.LineOfDisplay{}
+	line.Alias = "Всего"
+	line.VolumePerDay = totalVolumePerDay
+	line.PerHour = totalVolumePerHour
+	ReportData = add(ReportData, line)
+	return ReportData
+}
