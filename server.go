@@ -12,99 +12,56 @@ import (
 	"strings"
 	"time"
 
+	"git.vegner.org/vsvegner/gomtc/internal/app/model"
+	v "git.vegner.org/vsvegner/gomtc/internal/app/validation"
 	. "git.vegner.org/vsvegner/gomtc/internal/config"
 	. "git.vegner.org/vsvegner/gomtc/internal/gzip"
+	"git.vegner.org/vsvegner/gomtc/internal/store/memorystore"
 	. "git.vegner.org/vsvegner/gomtc/pkg/gsshutdown"
 	log "github.com/sirupsen/logrus"
 )
 
-type newContType struct {
-	Count
-	startTime   time.Time
-	endTime     time.Time
-	LastUpdated time.Time
-	LastDate    int64
-	LastDayStr  string
-}
-
-type StatOfYearType struct {
-	monthsStat map[time.Month]StatOfMonthType // Statistics of all devices that were seen that year
-	year       int
-}
-
-type StatOfMonthType struct {
-	daysStat map[int]StatOfDayType // Statistics of all devices that were seen that month
-	month    time.Month
-}
-
-type StatOfDayType struct {
-	devicesStat map[KeyDevice]StatDeviceType // Statistics of all devices that were seen that day
-	day         int
-	StatType    // General statistics of the day, to speed up access
-}
-
-type KeyDevice struct {
-	// ip  string
-	mac string
-}
-
-type StatDeviceType struct {
-	mac string
-	ip  string
-	StatType
-}
-
 func NewTransport(cfg *Config) *Transport {
-	var err error
-
-	if cfg.CSV {
-		csvFiletDestination, err = os.OpenFile(cfg.NameFileToLog+".csv", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			fileDestination.Close()
-			log.Fatalf("Error, the '%v' file could not be created (there are not enough premissions or it is busy with another program): %v", cfg.NameFileToLog, err)
-		}
-	}
-
 	gss := NewGSS(
 		Exit(cfg), cfg,
 		GetSIGHUP(cfg), cfg,
 	)
 
 	return &Transport{
-		devices:             make(map[KeyDevice]DeviceType),
-		AliasesStrArr:       make(map[string][]string),
-		Aliases:             make(map[string]AliasType),
-		statofYears:         make(map[int]StatOfYearType),
-		change:              make(BlockDevices),
-		ConfigPath:          cfg.ConfigPath,
-		DevicesRetryDelay:   cfg.DevicesRetryDelay,
-		BlockAddressList:    cfg.BlockGroup,
-		ManualAddresList:    cfg.ManualGroup,
-		fileDestination:     fileDestination,
-		csvFiletDestination: csvFiletDestination,
-		friends:             cfg.Friends,
-		AssetsPath:          cfg.AssetsPath,
-		SizeOneKilobyte:     cfg.SizeOneKilobyte,
+		store:         memorystore.New(),
+		devices:       make(map[model.KeyDevice]model.DeviceType),
+		AliasesStrArr: make(map[string][]string),
+		Aliases:       make(map[string]model.AliasType),
+		statofYears:   make(map[int]model.StatOfYearType),
+		change:        make(BlockDevices),
+		ConfigPath:    cfg.ConfigPath,
+		// DevicesRetryDelay: cfg.DevicesRetryDelay,
+		gomtcSshHost:     cfg.GomtcSshHost,
+		BlockAddressList: cfg.BlockGroup,
+		ManualAddresList: cfg.ManualGroup,
+		friends:          cfg.Friends,
+		AssetsPath:       cfg.AssetsPath,
+		SizeOneKilobyte:  cfg.SizeOneKilobyte,
 		// debug:               cfg.Debug,
 		stopReadFromUDP: make(chan uint8, 2),
 		parseChan:       make(chan *time.Time),
 		renewOneMac:     make(chan string, 100),
 		newLogChan:      gss.LogChan,
 		exitChan:        gss.ExitChan,
-		sshCredentials: SSHCredentials{
-			SSHHost:       cfg.MTAddr,
-			SSHPort:       "22",
-			SSHUser:       cfg.MTUser,
-			SSHPass:       cfg.MTPass,
-			MaxSSHRetries: cfg.MaxSSHRetries,
-			SSHRetryDelay: cfg.SSHRetryDelay,
-		},
-		QuotaType: QuotaType{
+		// sshCredentials: SSHCredentials{
+		// 	SSHHost:       cfg.MTAddr,
+		// 	SSHPort:       cfg.SSHPort,
+		// 	SSHUser:       cfg.MTUser,
+		// 	SSHPass:       cfg.MTPass,
+		// 	MaxSSHRetries: cfg.MaxSSHRetries,
+		// 	SSHRetryDelay: cfg.SSHRetryDelay,
+		// },
+		QuotaType: model.QuotaType{
 			HourlyQuota:  cfg.DefaultQuotaHourly * cfg.SizeOneKilobyte * cfg.SizeOneKilobyte,
 			DailyQuota:   cfg.DefaultQuotaDaily * cfg.SizeOneKilobyte * cfg.SizeOneKilobyte,
 			MonthlyQuota: cfg.DefaultQuotaMonthly * cfg.SizeOneKilobyte * cfg.SizeOneKilobyte,
 		},
-		Author: Author{
+		Author: model.Author{
 			Copyright: "GoSquidLogAnalyzer © 2020-2021 by Vladislav Vegner",
 			Mail:      "mailto:vegner.vs@uttist.ru",
 		},
@@ -133,9 +90,9 @@ func (t *Transport) setTimerParse(IntervalStr string) {
 }
 
 func (t *Transport) runOnce(cfg *Config) {
-	p := parseType{}
+	p := model.ParseType{}
 	t.RLock()
-	p.SSHCredentials = t.sshCredentials
+	// p.SSHCredentials = t.sshCredentials
 	p.BlockAddressList = t.BlockAddressList
 	p.QuotaType = t.QuotaType
 	t.RUnlock()
@@ -147,7 +104,7 @@ func (t *Transport) runOnce(cfg *Config) {
 	t.updateAliases(p)
 	t.SaveStatisticswithBuffer(path.Join(cfg.ConfigPath, "sqlite.db"), 1024*64)
 	t.Lock()
-	t.statofYears = map[int]StatOfYearType{}
+	t.statofYears = map[int]model.StatOfYearType{}
 	t.Unlock()
 	t.checkQuotas(cfg)
 	t.BlockDevices()
@@ -162,17 +119,17 @@ func (t *Transport) runOnce(cfg *Config) {
 
 func (t *Transport) getDevices() {
 	t.Lock()
-	devices := parseInfoFromMTAsValueToSlice(parseType{
-		SSHCredentials:   t.sshCredentials,
+	devices := GetDevicesFromRemote(model.ParseType{
+		// SSHCredentials:   t.sshCredentials,
 		QuotaType:        t.QuotaType,
 		BlockAddressList: t.BlockAddressList,
 	})
 	for _, device := range devices {
-		device.Manual = inAddressList(device.AddressLists, t.ManualAddresList)
-		device.Blocked = inAddressList(device.AddressLists, t.BlockAddressList)
-		t.devices[KeyDevice{
+		device.Manual = v.InAddressList(device.AddressLists, t.ManualAddresList)
+		device.Blocked = v.InAddressList(device.AddressLists, t.BlockAddressList)
+		t.devices[model.KeyDevice{
 			// ip: device.ActiveAddress,
-			mac: device.ActiveMacAddress}] = device
+			Mac: device.ActiveMacAddress}] = device
 	}
 	t.lastUpdatedMT = time.Now()
 	t.Unlock()
@@ -183,25 +140,25 @@ func (t *Transport) SendGroupStatus(NoControl bool) {
 		return
 	}
 	t.RLock()
-	p := parseType{
-		SSHCredentials:   t.sshCredentials,
+	p := model.ParseType{
+		// SSHCredentials:   t.sshCredentials,
 		QuotaType:        t.QuotaType,
 		BlockAddressList: t.BlockAddressList,
 	}
 	t.RUnlock()
-	t.change.sendLeaseSet(p)
+	t.change.BlockDevice(p)
 	t.Lock()
 	t.change = BlockDevices{}
 	t.Unlock()
 }
 
-func (t *Transport) updateAliases(p parseType) {
+func (t *Transport) updateAliases(p model.ParseType) {
 	t.Lock()
 	var contains bool
 	for _, year := range t.statofYears {
-		for _, month := range year.monthsStat {
-			for _, day := range month.daysStat {
-				for key, deviceStat := range day.devicesStat {
+		for _, month := range year.MonthsStat {
+			for _, day := range month.DaysStat {
+				for key, deviceStat := range day.DevicesStat {
 					device := t.devices[key]
 					for _, alias := range t.Aliases {
 						switch {
@@ -221,12 +178,12 @@ func (t *Transport) updateAliases(p parseType) {
 					}
 					if !contains {
 						device := t.devices[key]
-						t.Aliases[deviceStat.mac] = AliasType{
-							AliasName: deviceStat.mac,
-							KeyArr: []KeyDevice{{
+						t.Aliases[deviceStat.Mac] = model.AliasType{
+							AliasName: deviceStat.Mac,
+							KeyArr: []model.KeyDevice{{
 								// ip: deviceStat.ip,
-								mac: deviceStat.mac}},
-							QuotaType:  checkNULLQuotas(device.ToQuota(), p.QuotaType),
+								Mac: deviceStat.Mac}},
+							QuotaType:  model.CheckNULLQuotas(device.ToQuota(), p.QuotaType),
 							PersonType: device.ToPerson(),
 						}
 					}
@@ -238,7 +195,7 @@ func (t *Transport) updateAliases(p parseType) {
 	t.Unlock()
 }
 
-func (t *Transport) BlockAlias(a AliasType, group string) {
+func (t *Transport) BlockAlias(a model.AliasType, group string) {
 	t.Lock()
 	for _, key := range a.KeyArr {
 		device := t.devices[key]
@@ -253,13 +210,13 @@ func (t *Transport) BlockAlias(a AliasType, group string) {
 		t.change[key] = DeviceToBlock{
 			Id:       device.Id,
 			Groups:   device.AddressLists,
-			Disabled: paramertToBool(device.disabledL),
+			Disabled: v.ParameterToBool(device.DisabledL),
 		}
 	}
 	t.Unlock()
 }
 
-func (t *Transport) UnBlockAlias(a AliasType, group string) {
+func (t *Transport) UnBlockAlias(a model.AliasType, group string) {
 	t.Lock()
 	for _, key := range a.KeyArr {
 		device := t.devices[key]
@@ -301,11 +258,11 @@ func (t *Transport) parseDirToMap(cfg *Config) error {
 	}
 	fmt.Printf("From all files lines Read:%v/Parsed:%v/Added:%v/Skiped:%v/Error:%v\n",
 		// Lines read:%v, parsed:%v, lines added:%v lines skiped:%v lines error:%v",
-		t.totalLineRead,
-		t.totalLineParsed,
-		t.totalLineAdded,
-		t.totalLineSkiped,
-		t.totalLineError)
+		t.TotalLineRead,
+		t.TotalLineParsed,
+		t.TotalLineAdded,
+		t.TotalLineSkiped,
+		t.TotalLineError)
 	return nil
 }
 
@@ -316,7 +273,7 @@ func (t *Transport) parseFileToMap(info os.FileInfo, cfg *Config) error {
 	FullFileName := filepath.Join(cfg.LogPath, info.Name())
 	file, err := os.Open(FullFileName)
 	if err != nil {
-		file.Close()
+		//file.Close()
 		return fmt.Errorf("Error opening squid log file(FullFileName):%v", err)
 	}
 	defer file.Close()
@@ -357,23 +314,24 @@ func (t *Transport) parseLogToArrayByLine(scanner *bufio.Scanner, cfg *Config) e
 			continue
 		}
 		line = replaceQuotes(line)
-		l, err := parseLineToStruct(line, cfg)
+		l, err := model.ParseLineToStruct(line)
 		if err != nil {
 			t.LineError++
 			log.Warningf("%v", err)
 			continue
 		}
 		t.LineParsed++
-		if t.LastDate > l.timestamp {
+		if t.LastDate > l.Timestamp {
 			log.Tracef("line(%v) too old\r", line)
 			t.LineSkiped++
 			continue
-		} else if t.LastDate < l.timestamp {
-			t.LastDate = l.timestamp
+		} else if t.LastDate < l.Timestamp {
+			t.LastDate = l.Timestamp
 		}
 
 		// The main function of filling the database
 		// Adding a row to the database for counting traffic
+		t.store.DeviceStat().AddLine(l.ToStatDevice())
 		t.addLineOutToMapOfReports(&l)
 		t.LineAdded++
 	}
@@ -384,44 +342,44 @@ func (t *Transport) parseLogToArrayByLine(scanner *bufio.Scanner, cfg *Config) e
 	return nil
 }
 
-func (t *Transport) addLineOutToMapOfReports(l *lineOfLogType) {
-	l.alias = determiningAlias(*l)
+func (t *Transport) addLineOutToMapOfReports(l *model.LineOfLogType) {
+	l.Alias = model.DeterminingAlias(*l)
 	t.Lock()
-	year, ok := t.statofYears[l.year]
+	year, ok := t.statofYears[l.Year]
 	if !ok {
-		year = StatOfYearType{
-			year:       l.year,
-			monthsStat: map[time.Month]StatOfMonthType{},
+		year = model.StatOfYearType{
+			Year:       l.Year,
+			MonthsStat: map[time.Month]model.StatOfMonthType{},
 		}
-		t.statofYears[l.year] = year
+		t.statofYears[l.Year] = year
 	}
-	month, ok := year.monthsStat[l.month]
+	month, ok := year.MonthsStat[l.Month]
 	if !ok {
-		month = StatOfMonthType{
-			daysStat: map[int]StatOfDayType{},
-			month:    l.month}
-		year.monthsStat[l.month] = month
+		month = model.StatOfMonthType{
+			DaysStat: map[int]model.StatOfDayType{},
+			Month:    l.Month}
+		year.MonthsStat[l.Month] = month
 	}
-	daysStat, ok := month.daysStat[l.day]
+	daysStat, ok := month.DaysStat[l.Day]
 	if !ok {
-		daysStat = StatOfDayType{
-			devicesStat: map[KeyDevice]StatDeviceType{},
-			day:         l.day}
-		month.daysStat[l.day] = daysStat
+		daysStat = model.StatOfDayType{
+			DevicesStat: map[model.KeyDevice]model.StatDeviceType{},
+			Day:         l.Day}
+		month.DaysStat[l.Day] = daysStat
 	}
-	deviceStat, ok := daysStat.devicesStat[KeyDevice{
+	deviceStat, ok := daysStat.DevicesStat[model.KeyDevice{
 		// ip: l.ipaddress,
-		mac: l.login}]
+		Mac: l.Login}]
 	if !ok {
-		deviceStat = StatDeviceType{mac: l.login, ip: l.ipaddress}
-		daysStat.devicesStat[KeyDevice{
+		deviceStat = model.StatDeviceType{Mac: l.Login, Ip: l.Ipaddress}
+		daysStat.DevicesStat[model.KeyDevice{
 			// ip: l.ipaddress,
-			mac: l.login}] = deviceStat
+			Mac: l.Login}] = deviceStat
 	}
 	// Расчет суммы трафика для устройства для дальшейшего отображения
-	deviceStat.VolumePerDay = deviceStat.VolumePerDay + l.sizeInBytes
-	deviceStat.VolumePerCheck = deviceStat.VolumePerCheck + l.sizeInBytes
-	deviceStat.PerHour[l.hour] = deviceStat.PerHour[l.hour] + l.sizeInBytes
+	deviceStat.VolumePerDay = deviceStat.VolumePerDay + l.SizeInBytes
+	deviceStat.VolumePerCheck = deviceStat.VolumePerCheck + l.SizeInBytes
+	deviceStat.PerHour[l.Hour] = deviceStat.PerHour[l.Hour] + l.SizeInBytes
 	// deviceStat.PerMinute[l.hour][l.minute] = deviceStat.PerMinute[l.hour][l.minute] + l.sizeInBytes
 	// Расчет суммы трафика для дня для дальшейшего отображения
 	// daysStat.VolumePerDay = daysStat.VolumePerDay + l.sizeInBytes
@@ -429,12 +387,12 @@ func (t *Transport) addLineOutToMapOfReports(l *lineOfLogType) {
 	// daysStat.PerHour[l.hour] = daysStat.PerHour[l.hour] + l.sizeInBytes
 	// daysStat.PerMinute[l.hour][l.minute] = daysStat.PerMinute[l.hour][l.minute] + l.sizeInBytes
 	// Возвращаем данные обратно
-	daysStat.devicesStat[KeyDevice{
+	daysStat.DevicesStat[model.KeyDevice{
 		// ip: l.ipaddress,
-		mac: l.login}] = deviceStat
-	month.daysStat[l.day] = daysStat
-	year.monthsStat[l.month] = month
-	t.statofYears[l.year] = year
+		Mac: l.Login}] = deviceStat
+	month.DaysStat[l.Day] = daysStat
+	year.MonthsStat[l.Month] = month
+	t.statofYears[l.Year] = year
 	t.Unlock()
 }
 
@@ -445,7 +403,7 @@ func (t *Transport) checkQuotas(cfg *Config) {
 	tns := tn.Format(DateLayout)
 	devicesStat := GetDayStat(tns, tns, path.Join(cfg.ConfigPath, "sqlite.db"))
 	for key := range t.devices {
-		alias := t.Aliases[key.mac]
+		alias := t.Aliases[key.Mac]
 		ds := devicesStat[key]
 		if ds.VolumePerDay >= alias.DailyQuota || ds.PerHour[hour] >= alias.HourlyQuota {
 			alias.ShouldBeBlocked = true
@@ -473,34 +431,34 @@ func (t *Transport) BlockDevices() {
 		if d.Manual {
 			continue
 		}
-		key := KeyDevice{}
+		key := model.KeyDevice{}
 		switch {
 		case d.ActiveMacAddress != "":
-			key = KeyDevice{mac: d.ActiveMacAddress}
-		case d.macAddress != "":
-			key = KeyDevice{mac: d.macAddress}
+			key = model.KeyDevice{Mac: d.ActiveMacAddress}
+		case d.MacAddress != "":
+			key = model.KeyDevice{Mac: d.MacAddress}
 		}
-		d.ShouldBeBlocked = t.Aliases[key.mac].ShouldBeBlocked
+		d.ShouldBeBlocked = t.Aliases[key.Mac].ShouldBeBlocked
 		switch {
-		case (d.Blocked && t.Aliases[key.mac].ShouldBeBlocked) || (!d.Blocked && !t.Aliases[key.mac].ShouldBeBlocked):
+		case (d.Blocked && t.Aliases[key.Mac].ShouldBeBlocked) || (!d.Blocked && !t.Aliases[key.Mac].ShouldBeBlocked):
 			continue
-		case d.Blocked && !t.Aliases[key.mac].ShouldBeBlocked:
+		case d.Blocked && !t.Aliases[key.Mac].ShouldBeBlocked:
 			d = d.UnBlock(t.BlockAddressList, key)
 			t.change[key] = DeviceToBlock{
 				Id:       d.Id,
-				Mac:      key.mac,
+				Mac:      key.Mac,
 				IP:       d.ActiveAddress,
 				Groups:   d.AddressLists,
-				Disabled: paramertToBool(d.disabledL),
+				Disabled: v.ParameterToBool(d.DisabledL),
 			}
-		case !d.Blocked && t.Aliases[key.mac].ShouldBeBlocked:
+		case !d.Blocked && t.Aliases[key.Mac].ShouldBeBlocked:
 			d = d.Block(t.BlockAddressList, key)
 			t.change[key] = DeviceToBlock{
 				Id:       d.Id,
-				Mac:      key.mac,
+				Mac:      key.Mac,
 				IP:       d.ActiveAddress,
 				Groups:   d.AddressLists,
-				Disabled: paramertToBool(d.disabledL),
+				Disabled: v.ParameterToBool(d.DisabledL),
 			}
 		}
 		t.devices[key] = d
@@ -511,7 +469,7 @@ func (t *Transport) BlockDevices() {
 func (t *Transport) parseOneFilesAndCountingTraffic(FullFileName string, cfg *Config) error {
 	file, err := os.Open(FullFileName)
 	if err != nil {
-		file.Close()
+		//file.Close()
 		return fmt.Errorf("Error opening squid log file(FullFileName):%v", err)
 	}
 	defer file.Close()
@@ -526,23 +484,23 @@ func (t *Transport) parseOneFilesAndCountingTraffic(FullFileName string, cfg *Co
 }
 
 func (t *Transport) timeCalculationAndPrinting() {
-	ExTime := time.Since(t.startTime)
+	ExTime := time.Since(t.StartTime)
 	ExTimeInSec := uint64(ExTime.Seconds())
 	if ExTimeInSec == 0 {
 		ExTimeInSec = 1
 	}
-	t.endTime = time.Now() // Saves the current time to be inserted into the log table
+	t.EndTime = time.Now() // Saves the current time to be inserted into the log table
 	t.LastUpdated = time.Now()
 	log.Infof("The parsing started at %v, ended at %v, lasted %.3v seconds at a rate of %v lines per second.",
-		t.startTime.In(Location).Format(DateTimeLayout),
-		t.endTime.In(Location).Format(DateTimeLayout),
+		t.StartTime.In(Location).Format(DateTimeLayout),
+		t.EndTime.In(Location).Format(DateTimeLayout),
 		ExTime.Seconds(),
-		t.totalLineParsed/ExTimeInSec)
+		t.TotalLineParsed/ExTimeInSec)
 	fmt.Printf("The parsing started at %v, ended at %v, lasted %.3v seconds at a rate of %v lines per second.\n",
-		t.startTime.In(Location).Format(DateTimeLayout),
-		t.endTime.In(Location).Format(DateTimeLayout),
+		t.StartTime.In(Location).Format(DateTimeLayout),
+		t.EndTime.In(Location).Format(DateTimeLayout),
 		ExTime.Seconds(),
-		t.totalLineParsed/ExTimeInSec)
+		t.TotalLineParsed/ExTimeInSec)
 }
 
 func Exit(ve interface{}) func(ve interface{}) {
@@ -552,15 +510,5 @@ func Exit(ve interface{}) func(ve interface{}) {
 
 func GetSIGHUP(vr interface{}) func(vr interface{}) {
 	return func(ve interface{}) {
-		_, ok := ve.(*Config)
-		if ok {
-			log.Println("Received a signal from logrotate, close the file.")
-			if err := fileDestination.Sync(); err != nil {
-				log.Errorf("File(%v) sync error:%v", fileDestination.Name(), err)
-			}
-			if err := fileDestination.Close(); err != nil {
-				log.Errorf("File(%v) close error:%v", fileDestination.Name(), err)
-			}
-		}
 	}
 }

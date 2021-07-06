@@ -2,11 +2,13 @@ package main
 
 import (
 	"testing"
+
+	v "git.vegner.org/vsvegner/gomtc/internal/app/validation"
 )
 
 func BenchmarkNetParse(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		if !isIP("192.168.65.254") {
+		if !v.IsIP("192.168.65.254") {
 			b.Fatalf("Unexpected string: 192.168.65.254")
 		}
 	}
@@ -35,7 +37,7 @@ func BenchmarkNetParse(b *testing.B) {
 // }
 func BenchmarkValidateMac(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		if !isMac("00:00:00:FF:FF:FF") {
+		if !v.IsMac("00:00:00:FF:FF:FF") {
 			b.Fatalf("Unexpected string: 00:00:00:FF:FF:FF")
 		}
 	}

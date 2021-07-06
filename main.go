@@ -1,26 +1,25 @@
 package main
 
 import (
-	"os"
 	"time"
 
 	_ "net/http/pprof"
 
-	. "git.vegner.org/vsvegner/gomtc/internal/config"
+	"git.vegner.org/vsvegner/gomtc/internal/config"
 )
 
 var (
-	fileDestination     *os.File
-	csvFiletDestination *os.File
-	Location            *time.Location // Global variable
+	// fileDestination     *os.File
+	// csvFiletDestination *os.File
+	Location *time.Location // Global variable
 )
 
 const DateLayout = "2006-01-02"
 const DateTimeLayout = "2006-01-02 15:04:05"
 
 func main() {
-	cfg := NewConfig()
-	Location = cfg.Location
+	cfg := config.NewConfig()
+	Location = config.Location
 
 	t := NewTransport(cfg)
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"git.vegner.org/vsvegner/gomtc/internal/app/model"
 	"git.vegner.org/vsvegner/gomtc/internal/store"
 	_ "github.com/mattn/go-sqlite3"
 	log "github.com/sirupsen/logrus"
@@ -19,31 +20,31 @@ func (t *Transport) SaveStatisticswithBuffer(fileName string, bufSize int) {
 	}
 	t.RLock()
 	for _, year := range t.statofYears {
-		for _, month := range year.monthsStat {
-			for _, day := range month.daysStat {
-				for _, d := range day.devicesStat {
+		for _, month := range year.MonthsStat {
+			for _, day := range month.DaysStat {
+				for _, d := range day.DevicesStat {
 					for i := range d.StatType.PerHour {
 						var m, dayStr string
 						if d.PerHour[i] == 0 {
 							continue
 						}
-						if int(month.month) < 10 {
+						if int(month.Month) < 10 {
 							m = "0"
 						}
-						if day.day < 10 {
+						if day.Day < 10 {
 							dayStr = "0"
 						}
-						m += fmt.Sprint(int(month.month))
-						dayStr += fmt.Sprint(day.day)
+						m += fmt.Sprint(int(month.Month))
+						dayStr += fmt.Sprint(day.Day)
 						err := db.AddStat(store.Stat{
-							Date:      fmt.Sprintf("%v-%v-%v", year.year, m, dayStr),
-							Year:      year.year,
-							Month:     int(month.month),
-							Day:       day.day,
+							Date:      fmt.Sprintf("%v-%v-%v", year.Year, m, dayStr),
+							Year:      year.Year,
+							Month:     int(month.Month),
+							Day:       day.Day,
 							Hour:      i,
 							Size:      d.PerHour[i],
-							Login:     d.mac,
-							Ipaddress: d.ip,
+							Login:     d.Mac,
+							Ipaddress: d.Ip,
 						})
 						if err != nil {
 							if err.Error() == "buffer is full" {
@@ -69,8 +70,8 @@ func (t *Transport) SaveStatisticswithBuffer(fileName string, bufSize int) {
 	log.Debugf("Statistics save Execution time:%v rate:%.3f", deltaTime.Seconds(), float64(lineAdded)/deltaTime.Seconds())
 }
 
-func GetDayStat(from, to string, fileName string) map[KeyDevice]StatDeviceType {
-	devStats := map[KeyDevice]StatDeviceType{}
+func GetDayStat(from, to string, fileName string) map[model.KeyDevice]model.StatDeviceType {
+	devStats := map[model.KeyDevice]model.StatDeviceType{}
 	db, err := store.OpenDB(fileName)
 	if err != nil {
 		return devStats
@@ -95,13 +96,13 @@ func GetDayStat(from, to string, fileName string) map[KeyDevice]StatDeviceType {
 			log.Error(err)
 			continue
 		}
-		stat, ok := devStats[KeyDevice{mac: mac}]
+		stat, ok := devStats[model.KeyDevice{Mac: mac}]
 		if !ok {
 			pHour[hour] = size
-			stat = StatDeviceType{
-				ip:  ip,
-				mac: mac,
-				StatType: StatType{
+			stat = model.StatDeviceType{
+				Ip:  ip,
+				Mac: mac,
+				StatType: model.StatType{
 					PerHour:      pHour,
 					VolumePerDay: size,
 				},
@@ -111,7 +112,7 @@ func GetDayStat(from, to string, fileName string) map[KeyDevice]StatDeviceType {
 			stat.VolumePerDay += size
 		}
 
-		devStats[KeyDevice{mac: mac}] = stat
+		devStats[model.KeyDevice{Mac: mac}] = stat
 	}
 	return devStats
 }

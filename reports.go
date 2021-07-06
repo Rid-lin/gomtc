@@ -5,13 +5,15 @@ import (
 	"path"
 	"sort"
 	"time"
+
+	"git.vegner.org/vsvegner/gomtc/internal/app/model"
 )
 
-type ReportDataType []LineOfDisplay
+type ReportDataType []model.LineOfDisplay
 
-func (t *Transport) reportDailyHourlyByMac(rq RequestForm, showFriends bool) (DisplayDataType, error) {
+func (t *Transport) reportDailyHourlyByMac(rq model.RequestForm, showFriends bool) (model.DisplayDataType, error) {
 	start := time.Now()
-	devicesStat := GetDayStat(rq.dateFrom, rq.dateTo, path.Join(t.ConfigPath, "sqlite.db"))
+	devicesStat := GetDayStat(rq.DateFrom, rq.DateTo, path.Join(t.ConfigPath, "sqlite.db"))
 	ReportData := ToReportData(t.Aliases, devicesStat, t.devices)
 	sort.Sort(ReportData)
 	ReportData = ReportData.percentileCalculation(1)
@@ -20,22 +22,22 @@ func (t *Transport) reportDailyHourlyByMac(rq RequestForm, showFriends bool) (Di
 	}
 	t.RLock()
 	defer t.RUnlock()
-	return DisplayDataType{
+	return model.DisplayDataType{
 		ArrayDisplay:   ReportData,
 		Header:         "Отчёт почасовой по трафику пользователей с логинами",
-		DateFrom:       rq.dateFrom,
-		DateTo:         rq.dateTo,
+		DateFrom:       rq.DateFrom,
+		DateTo:         rq.DateTo,
 		LastUpdated:    t.lastUpdated.Format("2006-01-02 15:04:05.999"),
 		LastUpdatedMT:  t.lastUpdatedMT.Format("2006-01-02 15:04:05.999"),
 		TimeToGenerate: time.Since(start),
-		ReferURL:       rq.referURL,
-		Path:           rq.path,
-		SizeOneType: SizeOneType{
+		ReferURL:       rq.ReferURL,
+		Path:           rq.Path,
+		SizeOneType: model.SizeOneType{
 			SizeOneKilobyte: t.SizeOneKilobyte,
 			SizeOneMegabyte: t.SizeOneKilobyte * t.SizeOneKilobyte,
 			SizeOneGigabyte: t.SizeOneKilobyte * t.SizeOneKilobyte * t.SizeOneKilobyte,
 		},
-		Author: Author{Copyright: t.Copyright,
+		Author: model.Author{Copyright: t.Copyright,
 			Mail: t.Mail,
 		},
 		QuotaType: t.QuotaType,
@@ -98,7 +100,7 @@ func (rData ReportDataType) FiltredFriendS(friends []string) ReportDataType {
 	return rData
 }
 
-func add(slice []LineOfDisplay, line LineOfDisplay) []LineOfDisplay {
+func add(slice []model.LineOfDisplay, line model.LineOfDisplay) []model.LineOfDisplay {
 	for index, item := range slice {
 		if line.Alias == item.Alias {
 			slice[index].PerHour = line.PerHour
@@ -106,18 +108,4 @@ func add(slice []LineOfDisplay, line LineOfDisplay) []LineOfDisplay {
 		}
 	}
 	return append(slice, line)
-}
-
-func (rq *RequestForm) ToLine() *lineOfLogType {
-	l := lineOfLogType{}
-	tn, err := time.Parse(DateLayout, rq.dateFrom)
-	if err != nil {
-		tn = time.Now()
-	}
-	l.year = tn.Year()
-	l.month = tn.Month()
-	l.day = tn.Day()
-	l.hour = tn.Hour()
-	l.minute = tn.Minute()
-	return &l
 }
