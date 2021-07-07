@@ -64,5 +64,6 @@ type DeviceToBlock struct {
 	Mac      string
 	IP       string
 	Groups   string
+	Delay    string
 	Disabled bool
 }

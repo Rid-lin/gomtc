@@ -13,14 +13,16 @@ import (
 
 func BlockOverAPI(a *BlockDevices, p model.ParseType) {
 	type Req struct {
-		Ip  string
-		Mac string
+		Ip    string
+		Mac   string
+		Delay string
 	}
 	arr := []Req{}
 	for _, item := range *a {
 		arr = append(arr, Req{
-			Ip:  item.IP,
-			Mac: item.Mac,
+			Ip:    item.IP,
+			Mac:   item.Mac,
+			Delay: item.Delay,
 		})
 	}
 

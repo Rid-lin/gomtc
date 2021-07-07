@@ -405,8 +405,12 @@ func (t *Transport) checkQuotas(cfg *Config) {
 	for key := range t.devices {
 		alias := t.Aliases[key.Mac]
 		ds := devicesStat[key]
-		if ds.VolumePerDay >= alias.DailyQuota || ds.PerHour[hour] >= alias.HourlyQuota {
+		if ds.PerHour[hour] >= alias.HourlyQuota {
 			alias.ShouldBeBlocked = true
+			alias.TimeoutBlock = "hour"
+		} else if ds.VolumePerDay >= alias.DailyQuota {
+			alias.ShouldBeBlocked = true
+			alias.TimeoutBlock = "day"
 		} else {
 			alias.ShouldBeBlocked = false
 		}
@@ -459,6 +463,7 @@ func (t *Transport) BlockDevices() {
 				IP:       d.ActiveAddress,
 				Groups:   d.AddressLists,
 				Disabled: v.ParameterToBool(d.DisabledL),
+				Delay:    t.Aliases[key.Mac].TimeoutBlock,
 			}
 		}
 		t.devices[key] = d
