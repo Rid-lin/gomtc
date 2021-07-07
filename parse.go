@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	. "git.vegner.org/vsvegner/gomtc/internal/config"
+	"git.vegner.org/vsvegner/gomtc/internal/config"
 
 	log "github.com/sirupsen/logrus"
 )
 
-func (t *Transport) parseLog(cfg *Config) {
+func (t *Transport) parseLog(cfg *config.Config) {
 	if cfg.ParseAllFiles {
 		// Getting the current time to calculate the running time
 		t.StartTime = time.Now()

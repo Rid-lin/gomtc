@@ -14,14 +14,15 @@ import (
 
 	"git.vegner.org/vsvegner/gomtc/internal/app/model"
 	v "git.vegner.org/vsvegner/gomtc/internal/app/validation"
-	. "git.vegner.org/vsvegner/gomtc/internal/config"
+
+	"git.vegner.org/vsvegner/gomtc/internal/config"
 	. "git.vegner.org/vsvegner/gomtc/internal/gzip"
 	"git.vegner.org/vsvegner/gomtc/internal/store/memorystore"
 	. "git.vegner.org/vsvegner/gomtc/pkg/gsshutdown"
 	log "github.com/sirupsen/logrus"
 )
 
-func NewTransport(cfg *Config) *Transport {
+func NewTransport(cfg *config.Config) *Transport {
 	gss := NewGSS(
 		Exit(cfg), cfg,
 		GetSIGHUP(cfg), cfg,
@@ -68,9 +69,9 @@ func NewTransport(cfg *Config) *Transport {
 	}
 }
 
-func (t *Transport) Start(cfg *Config) {
+func (t *Transport) Start(cfg *config.Config) {
 	// Endless file parsing loop
-	go func(cfg *Config) {
+	go func(cfg *config.Config) {
 		t.runOnce(cfg)
 		for {
 			<-t.timerParse.C
@@ -89,7 +90,7 @@ func (t *Transport) setTimerParse(IntervalStr string) {
 	}
 }
 
-func (t *Transport) runOnce(cfg *Config) {
+func (t *Transport) runOnce(cfg *config.Config) {
 	p := model.ParseType{}
 	t.RLock()
 	// p.SSHCredentials = t.sshCredentials
@@ -228,14 +229,14 @@ func (t *Transport) UnBlockAlias(a model.AliasType, group string) {
 	t.Unlock()
 }
 
-func (t *Transport) parseAllFilesAndCountingTraffic(cfg *Config) {
+func (t *Transport) parseAllFilesAndCountingTraffic(cfg *config.Config) {
 	err := t.parseDirToMap(cfg)
 	if err != nil {
 		log.Error(err)
 	}
 }
 
-func (t *Transport) parseDirToMap(cfg *Config) error {
+func (t *Transport) parseDirToMap(cfg *config.Config) error {
 	// iteration over all files in a folder
 	files, err := ioutil.ReadDir(cfg.LogPath)
 	if err != nil {
@@ -266,7 +267,7 @@ func (t *Transport) parseDirToMap(cfg *Config) error {
 	return nil
 }
 
-func (t *Transport) parseFileToMap(info os.FileInfo, cfg *Config) error {
+func (t *Transport) parseFileToMap(info os.FileInfo, cfg *config.Config) error {
 	if !strings.HasPrefix(info.Name(), cfg.FnStartsWith) {
 		return fmt.Errorf("%s don't match to paramert fnStartsWith='%s'", info.Name(), cfg.FnStartsWith)
 	}
@@ -304,7 +305,7 @@ func (t *Transport) parseFileToMap(info os.FileInfo, cfg *Config) error {
 	return nil
 }
 
-func (t *Transport) parseLogToArrayByLine(scanner *bufio.Scanner, cfg *Config) error {
+func (t *Transport) parseLogToArrayByLine(scanner *bufio.Scanner, cfg *config.Config) error {
 	for scanner.Scan() { // We go through the entire file to the end
 		t.LineRead++
 		line := scanner.Text() // get the text from the line, for simplicity
@@ -396,7 +397,7 @@ func (t *Transport) addLineOutToMapOfReports(l *model.LineOfLogType) {
 	t.Unlock()
 }
 
-func (t *Transport) checkQuotas(cfg *Config) {
+func (t *Transport) checkQuotas(cfg *config.Config) {
 	t.Lock()
 	tn := time.Now().In(Location)
 	hour := tn.Hour()
@@ -471,7 +472,7 @@ func (t *Transport) BlockDevices() {
 	t.Unlock()
 }
 
-func (t *Transport) parseOneFilesAndCountingTraffic(FullFileName string, cfg *Config) error {
+func (t *Transport) parseOneFilesAndCountingTraffic(FullFileName string, cfg *config.Config) error {
 	file, err := os.Open(FullFileName)
 	if err != nil {
 		//file.Close()
