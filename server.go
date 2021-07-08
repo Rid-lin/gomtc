@@ -542,11 +542,12 @@ func (t *Transport) timeCalculationAndPrinting() {
 		t.EndTime.In(Location).Format(DateTimeLayout),
 		ExTime.Seconds(),
 		t.TotalLineParsed/ExTimeInSec)
-	fmt.Printf("The parsing started at %v, ended at %v, lasted %.3v seconds at a rate of %v lines per second.\n",
-		t.StartTime.In(Location).Format(DateTimeLayout),
-		t.EndTime.In(Location).Format(DateTimeLayout),
-		ExTime.Seconds(),
-		t.TotalLineParsed/ExTimeInSec)
+
+	// fmt.Printf("The parsing started at %v, ended at %v, lasted %.3v seconds at a rate of %v lines per second.\n",
+	// 	t.StartTime.In(Location).Format(DateTimeLayout),
+	// 	t.EndTime.In(Location).Format(DateTimeLayout),
+	// 	ExTime.Seconds(),
+	// 	t.TotalLineParsed/ExTimeInSec)
 }
 
 func Exit(ve interface{}) func(ve interface{}) {
