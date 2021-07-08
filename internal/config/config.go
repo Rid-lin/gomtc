@@ -35,6 +35,7 @@ type Config struct {
 	DefaultQuotaMonthly uint64   `default:"0" usage:"Default monthly traffic consumption quota"`
 	SizeOneKilobyte     uint64   `default:"1024" usage:"The number of bytes in one megabyte"`
 	NoControl           bool     `default:"true" usage:"No need to control the Mikrotik, just read."`
+	NoMT                bool     `default:"true" usage:"Disables all communication with Mikrotik"`
 	ParseAllFiles       bool     `default:"false" usage:"Scans all files in the folder where access.lоg is located once, deleting all data from the database"`
 }
 

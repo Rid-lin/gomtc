@@ -89,7 +89,7 @@ func (t *Transport) runOnce(cfg *config.Config) {
 
 	// t.readLog(cfg)
 
-	t.getDevices()
+	t.getDevices(cfg.NoMT)
 	t.parseLog(cfg)
 	t.updateAliases(p)
 	t.SaveStatisticswithBuffer(cfg.DSN, 1024*64)
@@ -99,8 +99,8 @@ func (t *Transport) runOnce(cfg *config.Config) {
 	t.checkQuotas(cfg)
 	t.BlockAliases()
 	t.BlockDevices()
-	t.SendGroupStatus(cfg.NoControl)
-	t.getDevices()
+	t.SendGroupStatus(cfg.NoMT, cfg.NoControl)
+	t.getDevices(cfg.NoMT)
 
 	// t.writeLog(cfg)
 	// t.Count = Count{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
@@ -108,7 +108,10 @@ func (t *Transport) runOnce(cfg *config.Config) {
 	t.setTimerParse(cfg.ParseDelay)
 }
 
-func (t *Transport) getDevices() {
+func (t *Transport) getDevices(NoMT bool) {
+	if NoMT {
+		return
+	}
 	t.Lock()
 	devices := GetDevicesFromRemote(model.ParseType{
 		// SSHCredentials:   t.sshCredentials,
@@ -127,8 +130,8 @@ func (t *Transport) getDevices() {
 	t.Unlock()
 }
 
-func (t *Transport) SendGroupStatus(NoControl bool) {
-	if NoControl {
+func (t *Transport) SendGroupStatus(NoMT, NoControl bool) {
+	if NoControl || NoMT {
 		return
 	}
 	t.RLock()
