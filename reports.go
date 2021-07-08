@@ -2,7 +2,6 @@ package main
 
 import (
 	"math"
-	"path"
 	"sort"
 	"time"
 
@@ -13,7 +12,7 @@ type ReportDataType []model.LineOfDisplay
 
 func (t *Transport) reportDailyHourlyByMac(rq model.RequestForm, showFriends bool) (model.DisplayDataType, error) {
 	start := time.Now()
-	devicesStat := GetDayStat(rq.DateFrom, rq.DateTo, path.Join(t.ConfigPath, "sqlite.db"))
+	devicesStat := GetDayStat(rq.DateFrom, rq.DateTo, t.DSN)
 	ReportData := ToReportData(t.Aliases, devicesStat, t.devices)
 	sort.Sort(ReportData)
 	ReportData = ReportData.percentileCalculation(1)

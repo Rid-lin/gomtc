@@ -1,7 +1,6 @@
 package main
 
 import (
-	"path"
 	"reflect"
 	"testing"
 
@@ -25,7 +24,7 @@ func TestGetDayStat(t *testing.T) {
 	}{
 		{
 			name: "1",
-			args: args{"2021-06-16", "2021-06-16", path.Join(cfg.ConfigPath, "sqlite.db")},
+			args: args{"2021-06-16", "2021-06-16", cfg.DSN},
 			want: map[model.KeyDevice]model.StatDeviceType{},
 		},
 	}
