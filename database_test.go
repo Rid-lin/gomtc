@@ -1,10 +1,10 @@
 package main
 
 import (
-	"path"
 	"reflect"
 	"testing"
 
+	"git.vegner.org/vsvegner/gomtc/internal/app/model"
 	. "git.vegner.org/vsvegner/gomtc/internal/config"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -20,12 +20,12 @@ func TestGetDayStat(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want map[KeyDevice]StatDeviceType
+		want map[model.KeyDevice]model.StatDeviceType
 	}{
 		{
 			name: "1",
-			args: args{"2021-06-16", "2021-06-16", path.Join(cfg.ConfigPath, "sqlite.db")},
-			want: map[KeyDevice]StatDeviceType{},
+			args: args{"2021-06-16", "2021-06-16", cfg.DSN},
+			want: map[model.KeyDevice]model.StatDeviceType{},
 		},
 	}
 	for _, tt := range tests {

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"git.vegner.org/vsvegner/gomtc/internal/app/model"
 	. "git.vegner.org/vsvegner/gomtc/internal/config"
 
 	log "github.com/sirupsen/logrus"
@@ -47,11 +48,11 @@ func logreq(f func(w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
 	})
 }
 
-func parseDataFromURL(r *http.Request) RequestForm {
+func parseDataFromURL(r *http.Request) model.RequestForm {
 
-	var request RequestForm
+	var request model.RequestForm
 
-	request.path = r.URL.Path
+	request.Path = r.URL.Path
 
 	u, err := url.Parse(r.URL.String())
 	if err != nil {
@@ -60,31 +61,31 @@ func parseDataFromURL(r *http.Request) RequestForm {
 	m, _ := url.ParseQuery(u.RawQuery)
 	// Checking the availability of data from the URL. To show today if there is no data.
 	if len(m["date_from"]) > 0 {
-		request.dateFrom = m["date_from"][0]
+		request.DateFrom = m["date_from"][0]
 	} else {
-		request.dateFrom = time.Now().In(Location).Format(DateLayout)
+		request.DateFrom = time.Now().In(Location).Format(DateLayout)
 	}
 	if len(m["date_to"]) > 0 {
-		request.dateTo = m["date_to"][0]
+		request.DateTo = m["date_to"][0]
 	} else {
-		request.dateTo = time.Now().Add(24 * time.Hour).Format(DateLayout)
+		request.DateTo = time.Now().Add(24 * time.Hour).Format(DateLayout)
 	}
-	if request.dateFrom == "" {
-		request.dateFrom = time.Now().In(Location).Format(DateLayout)
+	if request.DateFrom == "" {
+		request.DateFrom = time.Now().In(Location).Format(DateLayout)
 	}
-	if request.dateTo == "" {
-		request.dateTo = time.Now().Add(24 * time.Hour).Format(DateLayout)
+	if request.DateTo == "" {
+		request.DateTo = time.Now().Add(24 * time.Hour).Format(DateLayout)
 	}
 	if len(m["report"]) > 0 {
-		request.report = m["report"][0]
+		request.Report = m["report"][0]
 	}
 	var dateFrom, dateTo time.Time
 	if len(m["direct"]) > 0 {
-		dateFrom, err = time.ParseInLocation(DateLayout, request.dateFrom, Location)
+		dateFrom, err = time.ParseInLocation(DateLayout, request.DateFrom, Location)
 		if err != nil {
 			dateFrom = time.Now()
 		}
-		dateTo, err = time.ParseInLocation(DateLayout, request.dateFrom, Location)
+		dateTo, err = time.ParseInLocation(DateLayout, request.DateFrom, Location)
 		if err != nil {
 			dateTo = time.Now()
 		}
@@ -93,14 +94,14 @@ func parseDataFromURL(r *http.Request) RequestForm {
 		} else if m["direct"][0] == "<" {
 			dateFrom = dateFrom.AddDate(0, 0, -1)
 		}
-		request.dateFrom = dateFrom.In(Location).Format(DateLayout)
+		request.DateFrom = dateFrom.In(Location).Format(DateLayout)
 	}
 	if len(m["direct_to"]) > 0 {
-		dateFrom, err = time.Parse(DateLayout, request.dateFrom)
+		dateFrom, err = time.Parse(DateLayout, request.DateFrom)
 		if err != nil {
 			dateFrom = time.Now()
 		}
-		dateTo, err = time.Parse(DateLayout, request.dateFrom)
+		dateTo, err = time.Parse(DateLayout, request.DateFrom)
 		if err != nil {
 			dateTo = time.Now()
 		}
@@ -109,7 +110,7 @@ func parseDataFromURL(r *http.Request) RequestForm {
 		} else if m["direct_to"][0] == "<" {
 			dateTo = dateTo.AddDate(0, 0, -1)
 		}
-		request.dateTo = dateTo.In(Location).Format(DateLayout)
+		request.DateTo = dateTo.In(Location).Format(DateLayout)
 	}
 	return request
 }
@@ -118,8 +119,8 @@ func (t *Transport) handleIndex(w http.ResponseWriter, r *http.Request) {
 	t.handleNewReport(w, false, r)
 }
 
-func (data *Transport) handleIndexWithFriends(w http.ResponseWriter, r *http.Request) {
-	data.handleNewReport(w, true, r)
+func (t *Transport) handleIndexWithFriends(w http.ResponseWriter, r *http.Request) {
+	t.handleNewReport(w, true, r)
 }
 
 func (t *Transport) handleNewReport(w http.ResponseWriter, withfriends bool, r *http.Request) {
@@ -128,8 +129,8 @@ func (t *Transport) handleNewReport(w http.ResponseWriter, withfriends bool, r *
 	t.RUnlock()
 
 	request := parseDataFromURL(r)
-	request.referURL = r.Host + r.URL.Path
-	request.path = r.URL.Path
+	request.ReferURL = r.Host + r.URL.Path
+	request.Path = r.URL.Path
 	DisplayData, err := t.reportDailyHourlyByMac(request, withfriends)
 	if err != nil {
 		fmt.Fprintf(w, "Проверьте налиие логов за запрашиваемый период<br> или подождите несколько минут.")
@@ -163,12 +164,12 @@ func (t *Transport) handleEditAlias(w http.ResponseWriter, r *http.Request) {
 		alias := r.FormValue("alias")
 		aliasS := t.Aliases[alias]
 
-		DisplayDataUser := DisplayDataUserType{
+		DisplayDataUser := model.DisplayDataUserType{
 			Header:          "Редактирование устройства",
 			Copyright:       "GoSquidLogAnalyzer <i>© 2020</i> by Vladislav Vegner",
 			Mail:            "mailto:vegner.vs@uttist.ru",
 			SizeOneKilobyte: SizeOneKilobyte,
-			InfoType: InfoType{
+			InfoType: model.InfoType{
 				InfoName:   aliasS.AliasName,
 				PersonType: aliasS.PersonType,
 				QuotaType:  aliasS.QuotaType,
@@ -222,7 +223,7 @@ func (t *Transport) handleLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	DisplayData := &DisplayDataType{
+	DisplayData := &model.DisplayDataType{
 		Header: "Лог работы",
 		// TODO Поменть на выгрузку из SQL
 		// TODO Дописать метод записи в SQL
@@ -279,7 +280,7 @@ func (t *Transport) handleBlocked(w http.ResponseWriter, r *http.Request) {
 }
 
 func (t *Transport) handleShowDevices(w http.ResponseWriter, r *http.Request) {
-	var arr []DeviceType
+	var arr []model.DeviceType
 	t.Lock()
 	for _, d := range t.devices {
 		arr = append(arr, d)
@@ -321,7 +322,7 @@ func (t *Transport) handleGetMac(w http.ResponseWriter, r *http.Request) {
 }
 
 func (t *Transport) handleShowAliases(w http.ResponseWriter, r *http.Request) {
-	var arr []AliasType
+	var arr []model.AliasType
 	t.Lock()
 	for _, d := range t.Aliases {
 		arr = append(arr, d)
