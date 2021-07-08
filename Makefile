@@ -57,9 +57,15 @@ build: ## Build program executable for linux platform.
 	mkdir -p ./bin
 	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build ${LDFLAGS} -o bin/${PROGRAM_NAME}_$(VERSION)_linux_$(COMMIT)_amd64 .
 
-build_alpine: ## Build program executable for linux platform.
+build_alpine: build_alpine_cgo build_alpine_cgo_ver ## Build program executable for linux platform.
+
+build_alpine_cgo: build_alpine_cgo_ver ## Build program executable for linux platform.
 	mkdir -p ./bin
 	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags "-linkmode external -extldflags '-static' -s -w" -o bin/${PROGRAM_NAME} .
+
+build_alpine_cgo_ver: ## Build program executable for Alpinelinux platform with CGO.
+	mkdir -p ./bin
+	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags "-linkmode external -extldflags '-static' -s -w" -o bin/${PROGRAM_NAME}_$(VERSION)_linux_$(COMMIT)_amd64 .
 
 build_all: ## Build program executable for all platform.
 	mkdir -p ./bin

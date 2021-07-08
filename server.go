@@ -398,7 +398,7 @@ func (t *Transport) checkQuotas(cfg *config.Config) {
 	hourNow := timeNow.Hour()
 	timeNowString := timeNow.Format(DateLayout)
 	devicesStat := GetDayStat(timeNowString, timeNowString, cfg.DSN)
-	for key := range t.devices {
+	for key := range devicesStat {
 		ds := devicesStat[key]
 		d := t.devices[key]
 		d.HourlyQuota = model.CheckNULLQuota(d.HourlyQuota, t.HourlyQuota)
