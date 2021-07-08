@@ -9,43 +9,55 @@ import (
 
 type DeviceType struct {
 	// From MT
-	Id                  string
-	ActiveAddress       string // 192.168.65.85
-	ActiveClientId      string // 1:e8:d8:d1:47:55:93
-	AllowDualStackQueue string
-	ActiveMacAddress    string // E8:D8:D1:47:55:93
-	ActiveServer        string // dhcp_lan
-	Address             string // pool_admin
-	AddressLists        string // inet
-	ClientId            string // 1:e8:d8:d1:47:55:93
-	Comment             string // nb=Vlad/com=UTTiST/col=Admin/quotahourly=500000000/quotadaily=50000000000
-	DhcpOption          string //
-	DisabledL           string // false
-	Dynamic             string // false
-	ExpiresAfter        string // 6m32s
-	HostName            string // root-hp
-	LastSeen            string // 3m28s
-	MacAddress          string // E8:D8:D1:47:55:93
-	Radius              string // false
-	Server              string // dhcp_lan
-	Status              string // bound
-	InsertQueueBefore   string
-	RateLimit           string
-	UseSrcMac           string
-	AgentCircuitId      string
-	BlockAccess         string
-	LeaseTime           string
-	AgentRemoteId       string
-	DhcpOptionSet       string
-	SrcMacAddress       string
-	AlwaysBroadcast     string
+	Id                  string `json:"Id"`
+	ActiveAddress       string `json:"ActiveAddress"`  // 192.168.65.85
+	ActiveClientId      string `json:"ActiveClientId"` // 1:e8:d8:d1:47:55:93
+	AllowDualStackQueue string `json:"AllowDualStackQueue"`
+	ActiveMacAddress    string `json:"ActiveMacAddress"` // E8:D8:D1:47:55:93
+	ActiveServer        string `json:"ActiveServer"`     // dhcp_lan
+	Address             string `json:"Address"`          // pool_admin
+	AddressLists        string `json:"AddressLists"`     // inet
+	ClientId            string `json:"ClientId"`         // 1:e8:d8:d1:47:55:93
+	Comment             string `json:"Comment"`          // nb=Vlad/com=UTTiST/col=Admin/quotahourly=500000000/quotadaily=50000000000
+	DhcpOption          string `json:"DhcpOption"`       //
+	DisabledL           string `json:"DisabledL"`        // false
+	Dynamic             string `json:"Dynamic"`          // false
+	ExpiresAfter        string `json:"ExpiresAfter"`     // 6m32s
+	HostName            string `json:"HostName"`         // root-hp
+	LastSeen            string `json:"LastSeen"`         // 3m28s
+	MacAddress          string `json:"MacAddress"`       // E8:D8:D1:47:55:93
+	Radius              string `json:"Radius"`           // false
+	Server              string `json:"Server"`           // dhcp_lan
+	Status              string `json:"Status"`           // bound
+	InsertQueueBefore   string `json:"InsertQueueBefore"`
+	RateLimit           string `json:"RateLimit"`
+	UseSrcMac           string `json:"UseSrcMac"`
+	AgentCircuitId      string `json:"AgentCircuitId"`
+	BlockAccess         string `json:"BlockAccess"`
+	LeaseTime           string `json:"LeaseTime"`
+	AgentRemoteId       string `json:"AgentRemoteId"`
+	DhcpOptionSet       string `json:"DhcpOptionSet"`
+	SrcMacAddress       string `json:"SrcMacAddress"`
+	AlwaysBroadcast     string `json:"AlwaysBroadcast"`
 	//User Defined
 	// timeout         time.Time
-	Hardware        bool
-	Manual          bool
-	Blocked         bool
-	ShouldBeBlocked bool
-	TypeD           string
+	Hardware        bool   `json:"Hardware"`
+	Manual          bool   `json:"Manual"`
+	Blocked         bool   `json:"Blocked"`
+	ShouldBeBlocked bool   `json:"ShouldBeBlocked"`
+	TypeD           string `json:"TypeD"`
+	ID              int    `json:"id"`
+	IP              string `json:"ip"`
+	Mac             string `json:"mac"`
+	Disabled        bool   `json:"Disabled"`
+	TimeoutBlock    string `json:"TimeoutBlock"`
+	HourlyQuota     uint64 `json:"HourlyQuota"`
+	DailyQuota      uint64 `json:"DailyQuota"`
+	MonthlyQuota    uint64 `json:"MonthlyQuota"`
+	Name            string `json:"Name"`
+	Position        string `json:"Position"`
+	Company         string `json:"Company"`
+	IDUser          string `json:"IDUser"`
 }
 
 func (d *DeviceType) ToQuota() QuotaType {
