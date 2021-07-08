@@ -40,13 +40,10 @@ func BlockOverAPI(a *BlockDevices, p model.ParseType) {
 	resp, err := client.Do(req)
 	if err != nil {
 		logrus.Error(err)
+		return
 	}
 	defer resp.Body.Close()
 
-	// fmt.Println("response Status:", resp.Status)
-	// fmt.Println("response Headers:", resp.Header)
-	// body, _ := ioutil.ReadAll(resp.Body)
-	// fmt.Println("response Body:", string(body))
 }
 
 func GetDataOverApi(p model.ParseType) []model.DeviceType {
