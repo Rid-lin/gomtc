@@ -7,7 +7,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -29,34 +28,24 @@ func NewTransport(cfg *config.Config) *Transport {
 	)
 
 	return &Transport{
-		store:         memorystore.New(),
-		devices:       make(map[model.KeyDevice]model.DeviceType),
-		AliasesStrArr: make(map[string][]string),
-		Aliases:       make(map[string]model.AliasType),
-		statofYears:   make(map[int]model.StatOfYearType),
-		change:        make(BlockDevices),
-		ConfigPath:    cfg.ConfigPath,
-		// DevicesRetryDelay: cfg.DevicesRetryDelay,
+		store:            memorystore.New(),
+		DSN:              cfg.DSN,
+		devices:          make(map[model.KeyDevice]model.DeviceType),
+		Aliases:          make(map[string]model.AliasType),
+		statofYears:      make(map[int]model.StatOfYearType),
+		change:           make(BlockDevices),
+		ConfigPath:       cfg.ConfigPath,
 		gomtcSshHost:     cfg.GomtcSshHost,
 		BlockAddressList: cfg.BlockGroup,
 		ManualAddresList: cfg.ManualGroup,
 		friends:          cfg.Friends,
 		AssetsPath:       cfg.AssetsPath,
 		SizeOneKilobyte:  cfg.SizeOneKilobyte,
-		// debug:               cfg.Debug,
-		stopReadFromUDP: make(chan uint8, 2),
-		parseChan:       make(chan *time.Time),
-		renewOneMac:     make(chan string, 100),
-		newLogChan:      gss.LogChan,
-		exitChan:        gss.ExitChan,
-		// sshCredentials: SSHCredentials{
-		// 	SSHHost:       cfg.MTAddr,
-		// 	SSHPort:       cfg.SSHPort,
-		// 	SSHUser:       cfg.MTUser,
-		// 	SSHPass:       cfg.MTPass,
-		// 	MaxSSHRetries: cfg.MaxSSHRetries,
-		// 	SSHRetryDelay: cfg.SSHRetryDelay,
-		// },
+		stopReadFromUDP:  make(chan uint8, 2),
+		parseChan:        make(chan *time.Time),
+		renewOneMac:      make(chan string, 100),
+		newLogChan:       gss.LogChan,
+		exitChan:         gss.ExitChan,
 		QuotaType: model.QuotaType{
 			HourlyQuota:  cfg.DefaultQuotaHourly * cfg.SizeOneKilobyte * cfg.SizeOneKilobyte,
 			DailyQuota:   cfg.DefaultQuotaDaily * cfg.SizeOneKilobyte * cfg.SizeOneKilobyte,
@@ -103,11 +92,12 @@ func (t *Transport) runOnce(cfg *config.Config) {
 	t.getDevices()
 	t.parseLog(cfg)
 	t.updateAliases(p)
-	t.SaveStatisticswithBuffer(path.Join(cfg.ConfigPath, "sqlite.db"), 1024*64)
+	t.SaveStatisticswithBuffer(cfg.DSN, 1024*64)
 	t.Lock()
 	t.statofYears = map[int]model.StatOfYearType{}
 	t.Unlock()
 	t.checkQuotas(cfg)
+	t.BlockAliases()
 	t.BlockDevices()
 	t.SendGroupStatus(cfg.NoControl)
 	t.getDevices()
@@ -124,6 +114,7 @@ func (t *Transport) getDevices() {
 		// SSHCredentials:   t.sshCredentials,
 		QuotaType:        t.QuotaType,
 		BlockAddressList: t.BlockAddressList,
+		GomtcSshHost:     t.gomtcSshHost,
 	})
 	for _, device := range devices {
 		device.Manual = v.InAddressList(device.AddressLists, t.ManualAddresList)
@@ -145,9 +136,10 @@ func (t *Transport) SendGroupStatus(NoControl bool) {
 		// SSHCredentials:   t.sshCredentials,
 		QuotaType:        t.QuotaType,
 		BlockAddressList: t.BlockAddressList,
+		GomtcSshHost:     t.gomtcSshHost,
 	}
 	t.RUnlock()
-	t.change.BlockDevice(p)
+	t.change.SendToBlockDevices(p)
 	t.Lock()
 	t.change = BlockDevices{}
 	t.Unlock()
@@ -399,14 +391,33 @@ func (t *Transport) addLineOutToMapOfReports(l *model.LineOfLogType) {
 
 func (t *Transport) checkQuotas(cfg *config.Config) {
 	t.Lock()
-	tn := time.Now().In(Location)
-	hour := tn.Hour()
-	tns := tn.Format(DateLayout)
-	devicesStat := GetDayStat(tns, tns, path.Join(cfg.ConfigPath, "sqlite.db"))
+	timeNow := time.Now().In(Location)
+	hourNow := timeNow.Hour()
+	timeNowString := timeNow.Format(DateLayout)
+	devicesStat := GetDayStat(timeNowString, timeNowString, cfg.DSN)
 	for key := range t.devices {
-		alias := t.Aliases[key.Mac]
 		ds := devicesStat[key]
-		if ds.PerHour[hour] >= alias.HourlyQuota {
+		d := t.devices[key]
+		d.HourlyQuota = model.CheckNULLQuota(d.HourlyQuota, t.HourlyQuota)
+		d.DailyQuota = model.CheckNULLQuota(d.DailyQuota, t.DailyQuota)
+		d.MonthlyQuota = model.CheckNULLQuota(d.MonthlyQuota, t.MonthlyQuota)
+		if ds.PerHour[hourNow] >= d.HourlyQuota {
+			d.ShouldBeBlocked = true
+			d.TimeoutBlock = "hour"
+		} else if ds.VolumePerDay >= d.DailyQuota {
+			d.ShouldBeBlocked = true
+			d.TimeoutBlock = "day"
+		} else {
+			d.ShouldBeBlocked = false
+		}
+		t.devices[key] = d
+
+		alias := t.Aliases[key.Mac]
+		alias.AliasName = key.Mac
+		alias.HourlyQuota = model.CheckNULLQuota(alias.HourlyQuota, t.HourlyQuota)
+		alias.DailyQuota = model.CheckNULLQuota(alias.DailyQuota, t.DailyQuota)
+		alias.MonthlyQuota = model.CheckNULLQuota(alias.MonthlyQuota, t.MonthlyQuota)
+		if ds.PerHour[hourNow] >= alias.HourlyQuota {
 			alias.ShouldBeBlocked = true
 			alias.TimeoutBlock = "hour"
 		} else if ds.VolumePerDay >= alias.DailyQuota {
@@ -417,20 +428,49 @@ func (t *Transport) checkQuotas(cfg *config.Config) {
 		}
 		t.Aliases[alias.AliasName] = alias
 	}
-	// for key, d := range devicesStat {
-	// 	alias := t.Aliases[key.mac]
-	// 	if d.VolumePerDay >= alias.DailyQuota || d.PerHour[hour] >= alias.HourlyQuota {
-	// 		alias.ShouldBeBlocked = true
-	// 	} else {
-	// 		alias.ShouldBeBlocked = false
-	// 	}
-	// 	t.Aliases[alias.AliasName] = alias
-	// }
-
 	t.Unlock()
 }
 
 func (t *Transport) BlockDevices() {
+	t.Lock()
+	for _, d := range t.devices {
+		if d.Manual {
+			continue
+		}
+		key := model.KeyDevice{}
+		switch {
+		case d.ActiveMacAddress != "":
+			key = model.KeyDevice{Mac: d.ActiveMacAddress}
+		case d.MacAddress != "":
+			key = model.KeyDevice{Mac: d.MacAddress}
+		}
+		switch {
+		case d.Blocked && !d.ShouldBeBlocked:
+			d = d.UnBlock(t.BlockAddressList, key)
+			t.change[key] = DeviceToBlock{
+				Id:       d.Id,
+				Mac:      key.Mac,
+				IP:       d.ActiveAddress,
+				Groups:   d.AddressLists,
+				Disabled: v.ParameterToBool(d.DisabledL),
+			}
+		case !d.Blocked && d.ShouldBeBlocked:
+			d = d.Block(t.BlockAddressList, key)
+			t.change[key] = DeviceToBlock{
+				Id:       d.Id,
+				Mac:      key.Mac,
+				IP:       d.ActiveAddress,
+				Groups:   d.AddressLists,
+				Disabled: v.ParameterToBool(d.DisabledL),
+				Delay:    t.Aliases[key.Mac].TimeoutBlock,
+			}
+		}
+		t.devices[key] = d
+	}
+	t.Unlock()
+}
+
+func (t *Transport) BlockAliases() {
 	t.Lock()
 	for _, d := range t.devices {
 		if d.Manual {
