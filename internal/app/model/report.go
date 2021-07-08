@@ -65,15 +65,15 @@ type Author struct {
 	Mail      string
 }
 
-func add(slice []LineOfDisplay, line LineOfDisplay) []LineOfDisplay {
-	for index, item := range slice {
-		if line.Alias == item.Alias {
-			slice[index].PerHour = line.PerHour
-			return slice
-		}
-	}
-	return append(slice, line)
-}
+// func add(slice []LineOfDisplay, line LineOfDisplay) []LineOfDisplay {
+// 	for index, item := range slice {
+// 		if line.Alias == item.Alias {
+// 			slice[index].PerHour = line.PerHour
+// 			return slice
+// 		}
+// 	}
+// 	return append(slice, line)
+// }
 
 func (rq *RequestForm) ToLine() *LineOfLogType {
 	l := LineOfLogType{}
