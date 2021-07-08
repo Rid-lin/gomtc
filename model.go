@@ -22,26 +22,25 @@ type Transport struct {
 	store             store.Store
 	Aliases           map[string]model.AliasType
 	statofYears       map[int]model.StatOfYearType
-	AliasesStrArr     map[string][]string
 	change            BlockDevices
 	devices           DevicesMapType
 	friends           []string
+	DSN               string
 	AssetsPath        string
 	BlockAddressList  string
 	ManualAddresList  string
-	SizeOneKilobyte   uint64
 	DevicesRetryDelay string
 	ConfigPath        string
 	gomtcSshHost      string
-	// sshCredentials    SSHCredentials
-	timerParse      *time.Timer
-	lastUpdated     time.Time
-	lastUpdatedMT   time.Time
-	renewOneMac     chan string
-	stopReadFromUDP chan uint8
-	exitChan        chan os.Signal
-	parseChan       chan *time.Time
-	newLogChan      chan os.Signal
+	SizeOneKilobyte   uint64
+	timerParse        *time.Timer
+	lastUpdated       time.Time
+	lastUpdatedMT     time.Time
+	renewOneMac       chan string
+	stopReadFromUDP   chan uint8
+	exitChan          chan os.Signal
+	parseChan         chan *time.Time
+	newLogChan        chan os.Signal
 	model.NewContType
 	model.Author
 	model.QuotaType
