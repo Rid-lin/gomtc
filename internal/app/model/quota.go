@@ -24,3 +24,10 @@ func CheckNULLQuotas(setValue, deafultValue QuotaType) QuotaType {
 	}
 	return quotaReturned
 }
+
+func CheckNULLQuota(q, qd uint64) uint64 {
+	if q == 0 {
+		q = qd
+	}
+	return q
+}
