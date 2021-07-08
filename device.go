@@ -8,7 +8,7 @@ func GetDevicesFromRemote(p model.ParseType) []model.DeviceType {
 	return GetDataOverApi(p)
 }
 
-func (a *BlockDevices) BlockDevice(p model.ParseType) {
+func (a *BlockDevices) SendToBlockDevices(p model.ParseType) {
 	BlockOverAPI(a, p)
 	return
 }
