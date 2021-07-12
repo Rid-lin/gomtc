@@ -13,7 +13,9 @@ type ReportDataType []model.LineOfDisplay
 func (t *Transport) reportDailyHourlyByMac(rq model.RequestForm, showFriends bool) (model.DisplayDataType, error) {
 	start := time.Now()
 	devicesStat := GetDayStat(rq.DateFrom, rq.DateTo, t.DSN)
+	t.RLock()
 	ReportData := ToReportData(t.Aliases, devicesStat, t.devices)
+	t.RUnlock()
 	sort.Sort(ReportData)
 	ReportData = ReportData.percentileCalculation(1)
 	if !showFriends {
@@ -119,7 +121,6 @@ func ToReportData(as map[string]model.AliasType, sd map[model.KeyDevice]model.St
 		line.Alias = key.Mac
 		line.VolumePerDay = value.VolumePerDay
 		totalVolumePerDay += value.VolumePerDay
-		// TODO подумать над ключом
 		line.InfoType.PersonType = as[key.Mac].PersonType
 		line.InfoType.QuotaType = as[key.Mac].QuotaType
 		line.InfoType.DeviceType = ds[key]
