@@ -573,15 +573,6 @@ func (t *Transport) timeCalculationAndPrinting() {
 	// 	t.TotalLineParsed/ExTimeInSec)
 }
 
-func timeCalculation(StartTime, EndTime time.Time, Location *time.Location) (string, string, float64) {
-	ExTime := EndTime.Sub(StartTime)
-	ExTimeInSec := uint64(ExTime.Seconds())
-	if ExTimeInSec == 0 {
-		ExTimeInSec = 1
-	}
-	return StartTime.In(Location).Format(DateTimeLayout), EndTime.In(Location).Format(DateTimeLayout), ExTime.Seconds()
-}
-
 func Exit(ve interface{}) func(ve interface{}) {
 	return func(ve interface{}) {
 		if db, ok := ve.(sql.DB); ok {

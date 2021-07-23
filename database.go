@@ -172,7 +172,7 @@ func WriteLogofParseJob(fileName string, start, end time.Time, location *time.Lo
 	if ExTimeInSec == 0 {
 		ExTimeInSec = 1
 	}
-	_, err = db.Exec(schemaSQL,
+	_, err = db.Exec(insertSQL,
 		start.In(Location).Format(DateTimeLayout),
 		end.In(Location).Format(DateTimeLayout),
 		fmt.Sprintf("Line parsed^%v, added:%v, skipped:%v, error:%v. Speed:%v",
@@ -199,9 +199,9 @@ func ReadLogParseJob(fileName string) []*model.LogLine {
 		return logs
 	}
 	defer db.Close()
-	SQL := fmt.Sprintf(`SELECT date_time_start, date_time_end, message, source
+	SQL := `SELECT date_time_start, date_time_end, message, source
 	FROM logs
-	ORDER BY date_time_start DESC;`)
+	ORDER BY date_time_start DESC;`
 	rows, err := db.Query(SQL)
 	if err != nil {
 		logrus.Error("error when creating a table when writing a log:", err)

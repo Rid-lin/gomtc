@@ -12,7 +12,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var Location *time.Location
+// var Location *time.Location
 var ConfigFilePath string
 
 type Config struct {
@@ -40,7 +40,7 @@ type Config struct {
 	ParseAllFiles       bool     `default:"false" usage:"Scans all files in the folder where access.lоg is located once, deleting all data from the database"`
 }
 
-func NewConfig() *Config {
+func NewConfig() (*Config, *time.Location) {
 	// fix for https://github.com/cristalhq/aconfig/issues/82
 	args := []string{}
 	for _, a := range os.Args {
@@ -99,12 +99,12 @@ func NewConfig() *Config {
 	}
 	log.SetLevel(lvl)
 
-	Location, err = time.LoadLocation(cfg.Loc)
+	location, err := time.LoadLocation(cfg.Loc)
 	if err != nil {
 		log.Errorf("Error loading Location(%v):%v", cfg.Loc, err)
-		Location = time.UTC
+		location = time.UTC
 	}
 	log.Debugf("Config %#v:", cfg)
 
-	return &cfg
+	return &cfg, location
 }

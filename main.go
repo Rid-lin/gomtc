@@ -18,8 +18,8 @@ const DateLayout = "2006-01-02"
 const DateTimeLayout = "2006-01-02 15:04:05"
 
 func main() {
-	cfg := config.NewConfig()
-	Location = config.Location
+	var cfg *config.Config
+	cfg, Location = config.NewConfig()
 
 	t := NewTransport(cfg)
 

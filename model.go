@@ -54,7 +54,7 @@ type ResponseType struct {
 	HostName string
 }
 
-type DevicesType []model.DeviceType
+// type DevicesType []model.DeviceType
 type DevicesMapType map[model.KeyDevice]model.DeviceType
 type BlockDevices map[model.KeyDevice]DeviceToBlock
 
