@@ -225,9 +225,7 @@ func (t *Transport) handleLog(w http.ResponseWriter, r *http.Request) {
 
 	DisplayData := &model.DisplayLog{
 		Header: "Лог работы",
-		// TODO Поменть на выгрузку из SQL
-		// TODO Дописать метод записи в SQL
-		Logs: t.store.Log().GetAll(),
+		Logs:   ReadLogParseJob(t.DSN),
 	}
 
 	err = indextmpl.ExecuteTemplate(w, "log", DisplayData)

@@ -11,16 +11,12 @@ import (
 
 //Store ..
 type Store struct {
-	db                    *sql.DB
 	devicesStatRepository *DeviceStatRepository
-	logRepository         *LogRepository
 }
 
 //New ..
 func New(db *sql.DB) *Store {
-	return &Store{
-		db: db,
-	}
+	return &Store{}
 }
 
 //DeviceStat ..
@@ -34,15 +30,4 @@ func (s *Store) DeviceStat() store.DeviceStatRepository {
 		stats: make(map[model.KeyStat][]*model.StatDevice),
 	}
 	return s.devicesStatRepository
-}
-
-func (s *Store) Log() store.LogRepository {
-	if s.logRepository != nil {
-		return s.logRepository
-	}
-
-	s.logRepository = &LogRepository{
-		store: s,
-	}
-	return s.logRepository
 }

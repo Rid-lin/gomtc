@@ -23,18 +23,17 @@ import (
 )
 
 func NewTransport(cfg *config.Config) *Transport {
-	gss := NewGSS(
-		Exit(cfg), cfg,
-		GetSIGHUP(cfg), cfg,
-	)
-
 	db, err := newDB(cfg.DSN)
 	if err != nil {
 		log.Error(err)
 		os.Exit(2)
 	}
+	gss := NewGSS(
+		Exit(db), db,
+		GetSIGHUP(cfg), cfg,
+	)
 
-	defer db.Close()
+	// defer db.Close()
 
 	return &Transport{
 		store:            memorystore.New(db),
@@ -123,7 +122,7 @@ func (t *Transport) runOnce(cfg *config.Config) {
 	t.SendGroupStatus(cfg.NoMT, cfg.NoControl)
 	t.getDevices(cfg.NoMT)
 
-	// t.writeLog(cfg)
+	WriteLogofParseJob(cfg.DSN, t.StartTime, t.EndTime, Location, t.TotalLineParsed, t.TotalLineAdded, t.TotalLineSkiped, t.TotalLineError)
 	// t.Count = Count{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
 	t.setTimerParse(cfg.ParseDelay)
@@ -574,8 +573,20 @@ func (t *Transport) timeCalculationAndPrinting() {
 	// 	t.TotalLineParsed/ExTimeInSec)
 }
 
+func timeCalculation(StartTime, EndTime time.Time, Location *time.Location) (string, string, float64) {
+	ExTime := EndTime.Sub(StartTime)
+	ExTimeInSec := uint64(ExTime.Seconds())
+	if ExTimeInSec == 0 {
+		ExTimeInSec = 1
+	}
+	return StartTime.In(Location).Format(DateTimeLayout), EndTime.In(Location).Format(DateTimeLayout), ExTime.Seconds()
+}
+
 func Exit(ve interface{}) func(ve interface{}) {
 	return func(ve interface{}) {
+		if db, ok := ve.(sql.DB); ok {
+			db.Close()
+		}
 	}
 }
 
