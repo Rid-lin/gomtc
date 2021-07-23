@@ -13,6 +13,7 @@ import (
 )
 
 var Location *time.Location
+var ConfigFilePath string
 
 type Config struct {
 	DSN                 string   `default:"" usage:"Database server name (default:$confg_patch/sqlite.db)"`
@@ -62,6 +63,7 @@ func NewConfig() *Config {
 		FailOnFileNotFound: false,
 		EnvPrefix:          "GOMTC",
 		FlagPrefix:         "",
+		FileFlag:           "config",
 		Files: []string{
 			"./config.yaml",
 			"./config/config.yaml",
@@ -79,6 +81,9 @@ func NewConfig() *Config {
 		},
 		Args: args[1:], // [1:] важно, см. доку к FlagSet.Parse
 	})
+
+	// flagSet := loader.Flags()
+	// flagSet.StringVar(&ConfigFilePath, "config", "", "path to specified config files")
 
 	if err := loader.Load(); err != nil {
 		log.Error(err)

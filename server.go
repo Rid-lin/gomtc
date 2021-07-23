@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"compress/gzip"
+	"database/sql"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -27,8 +28,16 @@ func NewTransport(cfg *config.Config) *Transport {
 		GetSIGHUP(cfg), cfg,
 	)
 
+	db, err := newDB(cfg.DSN)
+	if err != nil {
+		log.Error(err)
+		os.Exit(2)
+	}
+
+	defer db.Close()
+
 	return &Transport{
-		store:            memorystore.New(),
+		store:            memorystore.New(db),
 		DSN:              cfg.DSN,
 		devices:          make(map[model.KeyDevice]model.DeviceType),
 		Aliases:          make(map[string]model.AliasType),
@@ -56,6 +65,18 @@ func NewTransport(cfg *config.Config) *Transport {
 			Mail:      "mailto:vegner.vs@uttist.ru",
 		},
 	}
+}
+
+func newDB(databaseURL string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite3", databaseURL)
+	if err != nil {
+		return nil, err
+	}
+	if err := db.Ping(); err != nil {
+		return nil, err
+	}
+
+	return db, nil
 }
 
 func (t *Transport) Start(cfg *config.Config) {

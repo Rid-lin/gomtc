@@ -223,11 +223,11 @@ func (t *Transport) handleLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	DisplayData := &model.DisplayDataType{
+	DisplayData := &model.DisplayLog{
 		Header: "Лог работы",
 		// TODO Поменть на выгрузку из SQL
 		// TODO Дописать метод записи в SQL
-		// Logs:   t.logs,
+		Logs: t.store.Log().GetAll(),
 	}
 
 	err = indextmpl.ExecuteTemplate(w, "log", DisplayData)
