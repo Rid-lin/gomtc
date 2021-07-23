@@ -1,8 +1,12 @@
 package memorystore
 
 import (
+	"database/sql"
+
 	"git.vegner.org/vsvegner/gomtc/internal/app/model"
 	"git.vegner.org/vsvegner/gomtc/internal/store"
+
+	_ "github.com/mattn/go-sqlite3" //..
 )
 
 //Store ..
@@ -11,7 +15,7 @@ type Store struct {
 }
 
 //New ..
-func New() *Store {
+func New(db *sql.DB) *Store {
 	return &Store{}
 }
 
