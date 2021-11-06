@@ -11,7 +11,7 @@ import (
 )
 
 func TestGetDayStat(t *testing.T) {
-	cfg := NewConfig()
+	cfg, _ := NewConfig()
 	type args struct {
 		from     string
 		to       string

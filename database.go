@@ -1,12 +1,14 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
 	"git.vegner.org/vsvegner/gomtc/internal/app/model"
 	"git.vegner.org/vsvegner/gomtc/internal/store"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -131,4 +133,89 @@ func (t *Transport) DeletingDateData(date, fileName string) {
 	}
 	row, err := result.RowsAffected()
 	log.Tracef("result to delete from table stat:%v,%v", row, err)
+}
+
+func WriteLogofParseJob(fileName string, start, end time.Time, location *time.Location, lpar, ladd, lski, lerr uint64) {
+	const (
+		insertSQL = `
+	INSERT INTO stat (
+		date_time_start, date_time_end, message, source
+	) VALUES (
+		?,?,?,?
+	)
+	`
+		schemaSQL = `
+	CREATE TABLE IF NOT EXISTS "log" (
+		"id"	INTEGER NOT NULL UNIQUE,
+		"date_time_start"	TEXT NOT NULL DEFAULT '1970-01-01',
+		"date_time_end"	TEXT NOT NULL DEFAULT '1970-01-01',
+		"message"	TEXT NOT NULL,
+		"source"	TEXT NOT NULL,
+		PRIMARY KEY("id" AUTOINCREMENT)
+		);
+	`
+	)
+	db, err := sql.Open("sqlite3", fileName)
+	if err != nil {
+		logrus.Error("error opening DB when writing a log:", err)
+	}
+	if err := db.Ping(); err != nil {
+		logrus.Error("DB ping error when writing a log:", err)
+	}
+	defer db.Close()
+
+	_, err = db.Exec(schemaSQL)
+	if err != nil {
+		logrus.Error("error when creating a table when writing a log:", err)
+	}
+	ExTimeInSec := uint64(end.Sub(start).Seconds())
+	if ExTimeInSec == 0 {
+		ExTimeInSec = 1
+	}
+	_, err = db.Exec(insertSQL,
+		start.In(Location).Format(DateTimeLayout),
+		end.In(Location).Format(DateTimeLayout),
+		fmt.Sprintf("Line parsed^%v, added:%v, skipped:%v, error:%v. Speed:%v",
+			lpar,
+			ladd,
+			lski,
+			lerr,
+			lpar/ExTimeInSec),
+		"main")
+	if err != nil {
+		logrus.Error("error when writing a log:", err)
+	}
+}
+
+func ReadLogParseJob(fileName string) []*model.LogLine {
+	logs := []*model.LogLine{}
+	db, err := sql.Open("sqlite3", fileName)
+	if err != nil {
+		logrus.Error("error opening DB when reading a log:", err)
+		return logs
+	}
+	if err := db.Ping(); err != nil {
+		logrus.Error("DB ping error when reading a log:", err)
+		return logs
+	}
+	defer db.Close()
+	SQL := `SELECT date_time_start, date_time_end, message, source
+	FROM logs
+	ORDER BY date_time_start DESC;`
+	rows, err := db.Query(SQL)
+	if err != nil {
+		logrus.Error("error when creating a table when writing a log:", err)
+		return logs
+	}
+	for rows.Next() {
+		logline := &model.LogLine{}
+		err := rows.Scan(logline.TimeStart, logline.TimeEnd, logline.Message, logline.Source)
+		if err != nil {
+			log.Error(err)
+			continue
+		}
+
+		logs = append(logs, logline)
+	}
+	return logs
 }

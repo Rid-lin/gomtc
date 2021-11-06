@@ -33,7 +33,9 @@ func BlockOverAPI(a *BlockDevices, p model.ParseType) {
 	}
 	url := p.GomtcSshHost + "/api/v1/block/" + p.BlockAddressList
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonStr))
-	// req.Header.Set("X-Custom-Header", "myvalue")
+	if err != nil {
+		logrus.Error(err)
+	}
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}

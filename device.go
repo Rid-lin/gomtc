@@ -10,7 +10,6 @@ func GetDevicesFromRemote(p model.ParseType) []model.DeviceType {
 
 func (a *BlockDevices) SendToBlockDevices(p model.ParseType) {
 	BlockOverAPI(a, p)
-	return
 }
 
 // func parseInfoFromMTAsValueToSlice(p parseType) []DeviceType {

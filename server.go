@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"compress/gzip"
+	"database/sql"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -22,13 +23,20 @@ import (
 )
 
 func NewTransport(cfg *config.Config) *Transport {
+	db, err := newDB(cfg.DSN)
+	if err != nil {
+		log.Error(err)
+		os.Exit(2)
+	}
 	gss := NewGSS(
-		Exit(cfg), cfg,
+		Exit(db), db,
 		GetSIGHUP(cfg), cfg,
 	)
 
+	// defer db.Close()
+
 	return &Transport{
-		store:            memorystore.New(),
+		store:            memorystore.New(db),
 		DSN:              cfg.DSN,
 		devices:          make(map[model.KeyDevice]model.DeviceType),
 		Aliases:          make(map[string]model.AliasType),
@@ -56,6 +64,18 @@ func NewTransport(cfg *config.Config) *Transport {
 			Mail:      "mailto:vegner.vs@uttist.ru",
 		},
 	}
+}
+
+func newDB(databaseURL string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite3", databaseURL)
+	if err != nil {
+		return nil, err
+	}
+	if err := db.Ping(); err != nil {
+		return nil, err
+	}
+
+	return db, nil
 }
 
 func (t *Transport) Start(cfg *config.Config) {
@@ -102,7 +122,7 @@ func (t *Transport) runOnce(cfg *config.Config) {
 	t.SendGroupStatus(cfg.NoMT, cfg.NoControl)
 	t.getDevices(cfg.NoMT)
 
-	// t.writeLog(cfg)
+	WriteLogofParseJob(cfg.DSN, t.StartTime, t.EndTime, Location, t.TotalLineParsed, t.TotalLineAdded, t.TotalLineSkiped, t.TotalLineError)
 	// t.Count = Count{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
 	t.setTimerParse(cfg.ParseDelay)
@@ -555,6 +575,9 @@ func (t *Transport) timeCalculationAndPrinting() {
 
 func Exit(ve interface{}) func(ve interface{}) {
 	return func(ve interface{}) {
+		if db, ok := ve.(sql.DB); ok {
+			db.Close()
+		}
 	}
 }
 
